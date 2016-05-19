@@ -65,6 +65,17 @@ This is a collection of tutorials that should cover most aspects of the
 fastcgi++ library
 
 \subpage helloWorld : A simple example outputting "Hello World" in five
-languages using wide characters internally and UTF-8 externally.
+languages using wide characters internally and utf-8 externally. It covers the
+following topics:
+ - Defining your Fastcgipp::Request class
+ - Wide character and utf-8 support
+ - Initializing and starting a basic Fastcgipp::Manager object
+
+\subpage echo : A FastCGI application that echoes everything back to the client.
+It covers the following topics:
+ - Allowing POST uploads
+ - Setting a cookie
+ - Accessing all your environment data in Fastcgipp::Http::Environment
+ - Using the Fastcgipp::Request::dump() functions
 
 */

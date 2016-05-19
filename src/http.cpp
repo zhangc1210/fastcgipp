@@ -304,12 +304,10 @@ template<class charT> void Fastcgipp::Http::Environment<charT>::fill(
             if(std::equal(name, value, "HTTP_IF_MODIFIED_SINCE"))
             {
                 std::stringstream dateStream;
-                std::tm time;
                 dateStream.write(&*value, end-value);
                 dateStream >> std::get_time(
-                        &time,
+                        &ifModifiedSince,
                         "%a, %d %b %Y %H:%M:%S GMT");
-                ifModifiedSince = std::mktime(&time);
             }
             break;
         }

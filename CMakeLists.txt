@@ -116,8 +116,13 @@ add_executable(helloworld.fcgi EXCLUDE_FROM_ALL examples/helloworld.cpp)
 add_dependencies(helloworld.fcgi fastcgipp)
 target_link_libraries(helloworld.fcgi PRIVATE fastcgipp)
 
+add_executable(echo.fcgi EXCLUDE_FROM_ALL examples/echo.cpp)
+add_dependencies(echo.fcgi fastcgipp)
+target_link_libraries(echo.fcgi PRIVATE fastcgipp)
+
 add_custom_target(
     examples DEPENDS
+    echo.fcgi
     helloworld.fcgi)
 
 # And finally the documentation

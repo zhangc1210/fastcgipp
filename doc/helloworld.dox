@@ -3,17 +3,21 @@
 \page helloWorld Hello World
 
 Our goal here will be to walk through the helloworld.fcgi application that
-responds to clients with a "Hello World" in five different languages. This
-example can be built with a simple
-```
-make helloworld.fcgi
-```
+responds to clients with a "Hello World" in five different languages. It
+covers the following topics:
+ - Defining your Fastcgipp::Request class
+ - Wide character and utf-8 support
+ - Initializing and starting a basic Fastcgipp::Manager object
 
-\section walkthrough Walkthrough
+This example can be built with a simple
+
+    make helloworld.fcgi
+
+### Walkthrough ###
 
 The first step is to make our request handling class. It must at minimum:
  1. Be derived from Fastcgipp::Request
- 2. Define the virtual response() member function from Fastcgipp::Request
+ 2. Define the virtual Fastcgipp::Request::response() member function
 
 First things first let's decide on what kind of character set we will use.
 Obviously with all these different languages we can't use something like
@@ -77,7 +81,8 @@ This tells the manager to start it's worker threads.
 Now we just pause execution until the manager threads have completed.
 \snippet examples/helloworld.cpp Join
 
-\section code Full Source Code
+### Full Source Code ###
+
 \include helloworld.cpp
 
 */
