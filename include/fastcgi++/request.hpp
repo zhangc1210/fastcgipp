@@ -105,9 +105,11 @@ namespace Fastcgipp
          * @param maxPostSize This would be the maximum size, in bytes, you want
          *                    to allow for post data. Any data beyond this size
          *                    would result in a call to bigPostErrorHandler(). A
-         *                    value of -1 represents unlimited.
+         *                    value of -1 represents unlimited. With the default
+         *                    being 0, POST uploading is by \a default
+         *                    prohibited.
          */
-        Request(const ssize_t maxPostSize=-1):
+        Request(const ssize_t maxPostSize=0):
             out(&m_outStreamBuffer),
             err(&m_errStreamBuffer),
             m_maxPostSize(maxPostSize),
