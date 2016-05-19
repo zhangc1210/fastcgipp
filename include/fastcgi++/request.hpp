@@ -255,6 +255,35 @@ namespace Fastcgipp
          */
         Message m_message;
 
+        //! Dumps raw data directly into the FastCGI protocol
+        /*!
+         * This function exists as a mechanism to dump raw data out the stream
+         * bypassing the stream buffer or any code conversion mechanisms. If the
+         * user has any binary data to send, this is the function to do it with.
+         *
+         * @param[in] data Pointer to first byte of data to send
+         * @param[in] size Size in bytes of data to be sent
+         */
+        void dump(const char* data, size_t size)
+        {
+            m_outStreamBuffer.dump(data, size);
+        }
+
+        //! Dumps an input stream directly into the FastCGI protocol
+        /*!
+         * This function exists as a mechanism to dump a raw input stream out
+         * this stream bypassing the stream buffer or any code conversion
+         * mechanisms. Typically this would be a filestream associated with an
+         * image or something. The stream is transmitted until an EOF.
+         *
+         * @param[in] stream Reference to input stream that should be
+         *                   transmitted.
+         */
+        void dump(std::basic_istream<char>& stream)
+        {
+            m_outStreamBuffer.dump(stream);
+        }
+
     private:
         //! The callback function for dealings outside the fastcgi++ library
         /*!
