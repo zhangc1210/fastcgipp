@@ -704,8 +704,9 @@ int main()
     {
         std::random_device device;
         std::uniform_int_distribution<unsigned short> alphanumeric(0, 61);
-        Fastcgipp::Http::Sessions<std::wstring> sessions(3, 4);
+        Fastcgipp::Http::Sessions<std::wstring> sessions(3);
         std::wstringstream ss;
+        const Fastcgipp::Http::SessionId badId;
 
         for(int i=0; i<100; ++i)
         {
@@ -720,9 +721,9 @@ int main()
         if(sessions.size() != 100)
             FAIL_LOG("Fastcgipp::Http::Sessions error inserting");
         std::this_thread::sleep_for(std::chrono::seconds(2));
-        sessions.cleanup();
+        sessions.get(badId);
         if(sessions.size() != 100)
-            FAIL_LOG("Fastcgipp::Http::Sessions cleanup worked when it "\
+            FAIL_LOG("Fastcgipp::Http::Sessions cleanup happened when it "\
                     "shouldn't have");
 
         for(int i=0; i<100; ++i)
@@ -738,8 +739,8 @@ int main()
         }
         if(sessions.size() != 200)
             FAIL_LOG("Fastcgipp::Http::Sessions error inserting more sessions");
-        std::this_thread::sleep_for(std::chrono::seconds(3));
-        sessions.cleanup();
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+        sessions.get(badId);
         if(sessions.size() != 100)
             FAIL_LOG("Fastcgipp::Http::Sessions cleanup didn't work");
 

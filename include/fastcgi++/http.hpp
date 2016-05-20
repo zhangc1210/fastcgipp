@@ -2,7 +2,7 @@
  * @file       http.hpp
  * @brief      Declares elements of the HTTP protocol
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 19, 2016
+ * @date       May 20, 2016
  * @copyright  Copyright &copy; 2016 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -611,7 +611,7 @@ namespace Fastcgipp
          *
          * @tparam T Class containing session data.
          *
-         * @date    March 24, 2016
+         * @date    May 20, 2016
          * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
          */
         template<class T> class Sessions
@@ -619,9 +619,6 @@ namespace Fastcgipp
         private:
             //! Amount of seconds to keep sessions around for.
             const unsigned int m_keepAlive;
-
-            //! How often the container should find old sessions and purge.
-            const unsigned int m_cleanupFrequency;
 
             //! The time that the next session cleanup should be done.
             std::time_t m_cleanupTime;
@@ -633,31 +630,15 @@ namespace Fastcgipp
             mutable std::mutex m_mutex;
 
         public:
-            //! Constructor takes session keep alive times and cleanup frequency.
+            //! Constructor takes session keep alive times
             /*!
              * @param[in] keepAlive Amount of seconds a session will stay alive
              *                      for.
-             * @param[in] cleanupFrequency How often (in seconds) the container
-             *                             should find old sessions and delete
-             *                             them.
              */
-            Sessions(
-                    unsigned int keepAlive,
-                    unsigned int cleanupFrequency):
+            Sessions(unsigned int keepAlive):
                 m_keepAlive(keepAlive),
-                m_cleanupFrequency(cleanupFrequency),
-                m_cleanupTime(std::time(nullptr)+cleanupFrequency)
+                m_cleanupTime(std::time(nullptr)+keepAlive)
             {}
-
-            //! Clean out old sessions.
-            /*!
-             * Calling this function will clear out any expired sessions from
-             * the container. This function must be called for any cleanup to
-             * take place, however calling may not actually cause a cleanup.
-             * The amount of seconds specified in cleanupFrequency must have
-             * expired since the last cleanup for it to actually take place.
-             */
-            void cleanup();
 
             //! Get session data from session ID
             /*!
@@ -665,7 +646,7 @@ namespace Fastcgipp
              * @return Shared pointer to session data. The pointer will evaluate
              *         to false if the session does not actually exist.
              */
-            std::shared_ptr<const T> get(const SessionId& id) const;
+            std::shared_ptr<const T> get(const SessionId& id);
 
             //! How many active sessions are there?
             size_t size() const
@@ -787,38 +768,39 @@ Fastcgipp::Http::Sessions<T>::generate(const std::shared_ptr<const T>& data)
     return retVal.first->first;
 }
 
-template<class T> void Fastcgipp::Http::Sessions<T>::cleanup()
+template<class T> std::shared_ptr<const T>
+Fastcgipp::Http::Sessions<T>::get(const SessionId& id)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
     const std::time_t now = std::time(nullptr);
-    if(now < m_cleanupTime)
-        return;
-
     const std::time_t oldest(now-m_keepAlive);
 
-    auto session = m_sessions.begin();
-    while(session != m_sessions.end())
+    if(now >= m_cleanupTime)
+    {
+        auto session = m_sessions.begin();
+        while(session != m_sessions.end())
+        {
+            if(session->first.m_timestamp < oldest)
+                session = m_sessions.erase(session);
+            else
+                ++session;
+        }
+        m_cleanupTime = std::time(nullptr)+m_keepAlive;
+    }
+
+    const auto session = m_sessions.find(id);
+    if(session != m_sessions.cend())
     {
         if(session->first.m_timestamp < oldest)
-            session = m_sessions.erase(session);
+            m_sessions.erase(session);
         else
-            ++session;
+        {
+            session->first.refresh();
+            return session->second;
+        }
     }
-    m_cleanupTime = std::time(nullptr)+m_cleanupFrequency;
-}
 
-template<class T> std::shared_ptr<const T>
-Fastcgipp::Http::Sessions<T>::get(const SessionId& id) const
-{
-    std::lock_guard<std::mutex> lock(m_mutex);
-    const auto session = m_sessions.find(id);
-    if(session == m_sessions.cend())
-        return std::shared_ptr<const T>();
-    else
-    {
-        session->first.refresh();
-        return session->second;
-    }
+    return std::shared_ptr<const T>();
 }
 
 #endif
