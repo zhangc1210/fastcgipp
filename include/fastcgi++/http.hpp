@@ -36,6 +36,7 @@
 #include <cstring>
 #include <algorithm>
 #include <map>
+#include <set>
 #include <vector>
 #include <memory>
 #include <array>
@@ -232,6 +233,42 @@ namespace Fastcgipp
                 std::basic_istream<charT, Traits>& is,
                 Address& address);
 
+        //! Simple structure for defining a localized language
+        /*!
+         * @date    May 20, 2016
+         * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
+         */
+        struct Language
+        {
+            //! Qualily (preference) valid for the language
+            float quality;
+
+            //! Language itself i.e. "en"
+            std::string language;
+
+            //! Locality itself i.e. "CA"
+            std::string locality;
+
+            bool operator==(const Language& x) const
+            {
+                return quality == x.quality;
+            }
+
+            bool operator<(const Language& x) const
+            {
+                return quality > x.quality;
+            }
+        };
+
+        //! Standard container for languages
+        typedef std::multiset<Language> Languages;
+
+        //! Languages stream insertion operator
+        template<class charT, class Traits>
+        std::basic_ostream<charT, Traits>& operator<<(
+                std::basic_ostream<charT, Traits>& os,
+                const Languages& languages);
+
         //! Data structure of HTTP environment data
         /*!
          * This structure contains all HTTP environment data for each
@@ -240,7 +277,7 @@ namespace Fastcgipp
          *
          * @tparam charT Character type to use for strings
          *
-         * @date    May 19, 2016
+         * @date    May 20, 2016
          * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
          */
         template<class charT> struct Environment
@@ -255,7 +292,7 @@ namespace Fastcgipp
             std::basic_string<charT> acceptContentTypes;
 
             //! Languages the client accepts
-            std::basic_string<charT> acceptLanguages;
+            Languages acceptLanguages;
 
             //! Character sets the clients accepts
             std::basic_string<charT> acceptCharsets;
@@ -435,6 +472,21 @@ namespace Fastcgipp
          * @tparam charT Character type
          */
         template<class charT> int atoi(const charT* start, const charT* end);
+
+        //! Convert a char string to a float
+        /*!
+         * This function is very similar to std::atof() except that it takes
+         * start/end values of a non null terminated char string instead of a
+         * null terminated string. The first character must be either a number
+         * or a minus sign (-). As soon as the end is reached or a non
+         * numerical character is reached, the result is tallied and returned.
+         *
+         * @param[in] start Pointer to the first byte in the string
+         * @param[in] end Pointer to the last byte in the string + 1
+         * @return Float value represented by the string
+         * @tparam charT Character type
+         */
+        template<class charT> float atof(const charT* start, const charT* end);
 
         //! Decodes a url-encoded string into a multimap container
         /*!

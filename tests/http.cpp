@@ -495,6 +495,13 @@ int main()
                         L"<\"русский\">;"));
         }
 
+        Fastcgipp::Http::Languages properLanguages
+        {
+            {1.0, "en", "CA"},
+            {0.7, "en", "US"},
+            {0.3, "en", ""}
+        };
+
         // Doing test with multipart POST
         {
             Fastcgipp::Http::Environment<wchar_t> environment;
@@ -517,8 +524,7 @@ int main()
                         environment.acceptContentTypes != L"text/html,"
                             "application/xhtml+xml,application/xml;q=0.9,*/*;"
                             "q=0.8" ||
-                        environment.acceptLanguages != L"en-CA,en-US;q=0.7,en;"
-                            "q=0.3" ||
+                        environment.acceptLanguages != properLanguages ||
                         environment.acceptCharsets != L"" ||
                         environment.referer != L"http://localhost/examples/"
                             "echo-form.html" ||
@@ -628,8 +634,7 @@ int main()
                         environment.acceptContentTypes != L"text/html,"
                             "application/xhtml+xml,application/xml;q=0.9,*/*;"
                             "q=0.8" ||
-                        environment.acceptLanguages != L"en-CA,en-US;q=0.7,en;"
-                            "q=0.3" ||
+                        environment.acceptLanguages != properLanguages ||
                         environment.acceptCharsets != L"" ||
                         environment.referer != L"http://localhost/examples/"
                             "echo-form.html" ||

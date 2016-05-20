@@ -73,6 +73,46 @@ int Fastcgipp::Http::atoi(const charT* start, const charT* end)
     return neg?-result:result;
 }
 
+template float Fastcgipp::Http::atof<char>(const char* start, const char* end);
+template float Fastcgipp::Http::atof<wchar_t>(
+        const wchar_t* start,
+        const wchar_t* end);
+template<class charT>
+float Fastcgipp::Http::atof(const charT* start, const charT* end)
+{
+    if(end <= start)
+        return 0;
+
+    bool neg=false;
+    if(*start=='-')
+    {
+        neg=true;
+        ++start;
+    }
+    double result=0;
+    double multiplier=0;
+    while(start<end)
+    {
+        if(0x30 <= *start && *start <= 0x39)
+        {
+            if(multiplier == 0)
+                result = result*10+(*start&0x0f);
+            else
+            {
+                result += (*start&0x0f)*multiplier;
+                multiplier *= 0.1;
+            }
+        }
+        else if(*start == '.')
+            multiplier = 0.1;
+        else
+            break;
+        ++start;
+    }
+
+    return neg?-result:result;
+}
+
 std::vector<char>::iterator Fastcgipp::Http::percentEscapedToRealBytes(
         std::vector<char>::const_iterator start,
         std::vector<char>::const_iterator end,
@@ -298,7 +338,64 @@ template<class charT> void Fastcgipp::Http::Environment<charT>::fill(
             break;
         case 20:
             if(std::equal(name, value, "HTTP_ACCEPT_LANGUAGE"))
-                vecToString(value, end, acceptLanguages);
+            {
+                Language language;
+                std::vector<char>::const_iterator groupStart = value;
+                std::vector<char>::const_iterator groupEnd;
+                std::vector<char>::const_iterator semicolon;
+                std::vector<char>::const_iterator dash;
+                std::vector<char>::const_iterator subStart;
+                std::vector<char>::const_iterator subEnd;
+                while(groupStart < end)
+                {
+                    groupEnd = std::find(groupStart, end, ',');
+
+                    // Setup the quality
+                    semicolon = std::find(groupStart, groupEnd, ';');
+                    subStart = semicolon+3;
+                    if(subStart < groupEnd)
+                    {
+                        while(subStart < groupEnd && *subStart == ' ')
+                            ++subStart;
+
+                        subEnd = groupEnd;
+                        while(subEnd > subStart && *(subEnd-1) == ' ')
+                            --subEnd;
+
+                        language.quality = atof(&*subStart, &*subEnd);
+                    }
+                    else
+                        language.quality = 1.0;
+
+                    // Setup the locality
+                    dash = std::find(groupStart, semicolon, '-');
+                    subStart = dash+1;
+                    if(dash < semicolon)
+                    {
+                        subEnd = semicolon;
+                        while(subEnd != subStart && *(subEnd-1) == ' ')
+                            --subEnd;
+
+                        vecToString(subStart, subEnd, language.locality);
+                    }
+                    else
+                        language.locality.clear();
+
+                    // Setup the language
+                    subStart = groupStart;
+                    while(subStart != dash && *subStart == ' ')
+                        ++subStart;
+
+                    subEnd = dash;
+                    while(subEnd != subStart && *(subEnd-1) == ' ')
+                        --subEnd;
+
+                    vecToString(subStart, subEnd, language.language);
+
+                    acceptLanguages.insert(std::move(language));
+                    groupStart = groupEnd+1;
+                }
+            }
             break;
         case 22:
             if(std::equal(name, value, "HTTP_IF_MODIFIED_SINCE"))
@@ -1147,4 +1244,43 @@ Fastcgipp::Http::Address::operator bool() const
     if(std::equal(m_data.begin(), m_data.end(), nullString.begin()))
         return false;
     return true;
+}
+
+template std::basic_ostream<char, std::char_traits<char>>&
+Fastcgipp::Http::operator<< <char, std::char_traits<char>>(
+        std::basic_ostream<char, std::char_traits<char>>& os,
+        const Languages& languages);
+template std::basic_ostream<wchar_t, std::char_traits<wchar_t>>&
+Fastcgipp::Http::operator<< <wchar_t, std::char_traits<wchar_t>>(
+        std::basic_ostream<wchar_t, std::char_traits<wchar_t>>& os,
+        const Languages& languages);
+template<class charT, class Traits> std::basic_ostream<charT, Traits>&
+Fastcgipp::Http::operator<<(
+        std::basic_ostream<charT, Traits>& os,
+        const Languages& languages)
+{
+    if(languages.empty())
+        return os;
+
+    const auto flags = os.flags();
+    const auto oldPrecision = os.precision(2);
+    os.setf(std::ios_base::fixed, std::ios_base::floatfield);
+    auto language = languages.cbegin();
+    while(true)
+    {
+        os << language->language.c_str();
+        if(!language->locality.empty())
+            os << '-' << language->locality.c_str();
+        if(language->quality != 1.0)
+            os << ";q=" << language->quality;
+        ++language;
+        if(language == languages.cend())
+            break;
+        else
+            os << ',';
+    }
+    os.setf(flags);
+    os.precision(oldPrecision);
+
+    return os;
 }
