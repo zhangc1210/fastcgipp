@@ -243,3 +243,53 @@ template<class charT> void Fastcgipp::Request<charT>::configure(
             Protocol::RecordType::ERR,
             std::bind(send, _1, _2, false));
 }
+
+template unsigned Fastcgipp::Request<char>::setLanguage(
+        const std::vector<std::string>& languages);
+template unsigned Fastcgipp::Request<wchar_t>::setLanguage(
+        const std::vector<std::string>& languages);
+template<class charT> unsigned Fastcgipp::Request<charT>::setLanguage(
+        const std::vector<std::string>& languages)
+{
+    unsigned index=0;
+
+    for(const std::string& language: environment().acceptLanguages)
+    {
+        const auto it = std::find(
+                languages.cbegin(),
+                languages.cend(),
+                language);
+        if(it != languages.cend())
+        {
+            index = it-languages.cbegin();
+            break;
+        }
+    }
+
+    try
+    {
+        if(index<languages.size())
+            out.imbue(std::locale(languages[index]+codepage()));
+        else
+            out.imbue(std::locale("C"));
+    }
+    catch(...)
+    {
+        ERROR_LOG("Unable to set locale")
+    }
+
+    return index;
+}
+
+namespace Fastcgipp
+{
+    template<> const char* Fastcgipp::Request<wchar_t>::codepage() const
+    {
+        return ".UTF-8";
+    }
+
+    template<> const char* Fastcgipp::Request<char>::codepage() const
+    {
+        return "";
+    }
+}

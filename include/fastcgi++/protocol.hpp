@@ -120,7 +120,6 @@ namespace Fastcgipp
                         return x.m_id < y.m_id;
                     else
                         return x.m_socket < y.m_socket;
-
                 }
 
                 bool operator()(const RequestId& id, const Socket& socket) const

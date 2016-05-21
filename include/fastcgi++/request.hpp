@@ -286,6 +286,15 @@ namespace Fastcgipp
             m_outStreamBuffer.dump(stream);
         }
 
+        //! Pick a language and set the output stream's locale
+        /*!
+         * Basically this finds the first language in
+         * environment().acceptLanguages that is also in the container passed as
+         * a parameter. Then it sets the locale for out with it and returns the
+         * index in the parameters that points to the chosen language.
+         */
+        unsigned setLanguage(const std::vector<std::string>& languages);
+
     private:
         //! The callback function for dealings outside the fastcgi++ library
         /*!
@@ -334,6 +343,9 @@ namespace Fastcgipp
 
         //! Stream buffer for the err stream
         FcgiStreambuf<charT> m_errStreamBuffer;
+
+        //! Codepage
+        inline const char* codepage() const;
     };
 }
 

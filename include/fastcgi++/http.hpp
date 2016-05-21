@@ -2,7 +2,7 @@
  * @file       http.hpp
  * @brief      Declares elements of the HTTP protocol
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 20, 2016
+ * @date       May 21, 2016
  * @copyright  Copyright &copy; 2016 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -36,7 +36,6 @@
 #include <cstring>
 #include <algorithm>
 #include <map>
-#include <set>
 #include <vector>
 #include <memory>
 #include <array>
@@ -233,42 +232,6 @@ namespace Fastcgipp
                 std::basic_istream<charT, Traits>& is,
                 Address& address);
 
-        //! Simple structure for defining a localized language
-        /*!
-         * @date    May 20, 2016
-         * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
-         */
-        struct Language
-        {
-            //! Qualily (preference) valid for the language
-            float quality;
-
-            //! Language itself i.e. "en"
-            std::string language;
-
-            //! Locality itself i.e. "CA"
-            std::string locality;
-
-            bool operator==(const Language& x) const
-            {
-                return quality == x.quality;
-            }
-
-            bool operator<(const Language& x) const
-            {
-                return quality > x.quality;
-            }
-        };
-
-        //! Standard container for languages
-        typedef std::multiset<Language> Languages;
-
-        //! Languages stream insertion operator
-        template<class charT, class Traits>
-        std::basic_ostream<charT, Traits>& operator<<(
-                std::basic_ostream<charT, Traits>& os,
-                const Languages& languages);
-
         //! Data structure of HTTP environment data
         /*!
          * This structure contains all HTTP environment data for each
@@ -292,7 +255,7 @@ namespace Fastcgipp
             std::basic_string<charT> acceptContentTypes;
 
             //! Languages the client accepts
-            Languages acceptLanguages;
+            std::vector<std::string> acceptLanguages;
 
             //! Character sets the clients accepts
             std::basic_string<charT> acceptCharsets;

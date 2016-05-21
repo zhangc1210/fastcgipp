@@ -51,8 +51,20 @@ L"<html>"
             L"<b>Accepted Content Types:</b> " << Encoding::HTML
                 << environment().acceptContentTypes << Encoding::NONE
                 << L"<br />"
-            L"<b>Accepted Languages:</b> " << Encoding::HTML
-                << environment().acceptLanguages << Encoding::NONE << L"<br />"
+            L"<b>Accepted Languages:</b> " << Encoding::HTML;
+        if(!environment().acceptLanguages.empty())
+        {
+            auto language = environment().acceptLanguages.cbegin();
+            while(true)
+            {
+                out << language->c_str();
+                ++language;
+                if(language == environment().acceptLanguages.cend())
+                    break;
+                out << ',';
+            }
+        }
+        out << Encoding::NONE << L"<br />"
             L"<b>Accepted Characters Sets:</b> " << Encoding::HTML
                 << environment().acceptCharsets << Encoding::NONE << L"<br />"
             L"<b>Referer:</b> " << Encoding::HTML << environment().referer
@@ -68,8 +80,9 @@ L"<html>"
             L"<b>Request Method:</b> " << environment().requestMethod
                 << L"<br />"
             L"<b>Content Length:</b> " << environment().contentLength
-                << L"<br />"
-            L"<b>Keep Alive Time:</b> " << environment().keepAlive << L"s<br />"
+                << L" bytes<br />"
+            L"<b>Keep Alive Time:</b> " << environment().keepAlive
+                << L" seconds<br />"
             L"<b>Server Address:</b> " << environment().serverAddress
                 << L"<br />"
             L"<b>Server Port:</b> " << environment().serverPort << L"<br />"

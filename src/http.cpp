@@ -2,7 +2,7 @@
  * @file       http.cpp
  * @brief      Defines elements of the HTTP protocol
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 6, 2016
+ * @date       May 21, 2016
  * @copyright  Copyright &copy; 2016 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -339,60 +339,31 @@ template<class charT> void Fastcgipp::Http::Environment<charT>::fill(
         case 20:
             if(std::equal(name, value, "HTTP_ACCEPT_LANGUAGE"))
             {
-                Language language;
                 std::vector<char>::const_iterator groupStart = value;
                 std::vector<char>::const_iterator groupEnd;
-                std::vector<char>::const_iterator semicolon;
-                std::vector<char>::const_iterator dash;
                 std::vector<char>::const_iterator subStart;
                 std::vector<char>::const_iterator subEnd;
+                size_t dash;
                 while(groupStart < end)
                 {
+                    acceptLanguages.push_back(std::string());
+                    std::string& language = acceptLanguages.back();
+
                     groupEnd = std::find(groupStart, end, ',');
 
-                    // Setup the quality
-                    semicolon = std::find(groupStart, groupEnd, ';');
-                    subStart = semicolon+3;
-                    if(subStart < groupEnd)
-                    {
-                        while(subStart < groupEnd && *subStart == ' ')
-                            ++subStart;
-
-                        subEnd = groupEnd;
-                        while(subEnd > subStart && *(subEnd-1) == ' ')
-                            --subEnd;
-
-                        language.quality = atof(&*subStart, &*subEnd);
-                    }
-                    else
-                        language.quality = 1.0;
-
                     // Setup the locality
-                    dash = std::find(groupStart, semicolon, '-');
-                    subStart = dash+1;
-                    if(dash < semicolon)
-                    {
-                        subEnd = semicolon;
-                        while(subEnd != subStart && *(subEnd-1) == ' ')
-                            --subEnd;
-
-                        vecToString(subStart, subEnd, language.locality);
-                    }
-                    else
-                        language.locality.clear();
-
-                    // Setup the language
+                    subEnd = std::find(groupStart, groupEnd, ';');
                     subStart = groupStart;
-                    while(subStart != dash && *subStart == ' ')
+                    while(subStart != subEnd && *subStart == ' ')
                         ++subStart;
-
-                    subEnd = dash;
                     while(subEnd != subStart && *(subEnd-1) == ' ')
                         --subEnd;
+                    vecToString(subStart, subEnd, language);
 
-                    vecToString(subStart, subEnd, language.language);
+                    dash = language.find('-');
+                    if(dash != std::string::npos)
+                        language[dash] = '_';
 
-                    acceptLanguages.insert(std::move(language));
                     groupStart = groupEnd+1;
                 }
             }
@@ -1244,43 +1215,4 @@ Fastcgipp::Http::Address::operator bool() const
     if(std::equal(m_data.begin(), m_data.end(), nullString.begin()))
         return false;
     return true;
-}
-
-template std::basic_ostream<char, std::char_traits<char>>&
-Fastcgipp::Http::operator<< <char, std::char_traits<char>>(
-        std::basic_ostream<char, std::char_traits<char>>& os,
-        const Languages& languages);
-template std::basic_ostream<wchar_t, std::char_traits<wchar_t>>&
-Fastcgipp::Http::operator<< <wchar_t, std::char_traits<wchar_t>>(
-        std::basic_ostream<wchar_t, std::char_traits<wchar_t>>& os,
-        const Languages& languages);
-template<class charT, class Traits> std::basic_ostream<charT, Traits>&
-Fastcgipp::Http::operator<<(
-        std::basic_ostream<charT, Traits>& os,
-        const Languages& languages)
-{
-    if(languages.empty())
-        return os;
-
-    const auto flags = os.flags();
-    const auto oldPrecision = os.precision(2);
-    os.setf(std::ios_base::fixed, std::ios_base::floatfield);
-    auto language = languages.cbegin();
-    while(true)
-    {
-        os << language->language.c_str();
-        if(!language->locality.empty())
-            os << '-' << language->locality.c_str();
-        if(language->quality != 1.0)
-            os << ";q=" << language->quality;
-        ++language;
-        if(language == languages.cend())
-            break;
-        else
-            os << ',';
-    }
-    os.setf(flags);
-    os.precision(oldPrecision);
-
-    return os;
 }

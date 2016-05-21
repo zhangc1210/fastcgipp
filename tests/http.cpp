@@ -495,11 +495,11 @@ int main()
                         L"<\"русский\">;"));
         }
 
-        Fastcgipp::Http::Languages properLanguages
+        const std::vector<std::string> properLanguages
         {
-            {1.0, "en", "CA"},
-            {0.7, "en", "US"},
-            {0.3, "en", ""}
+            "en_CA",
+            "en_US",
+            "en"
         };
 
         // Doing test with multipart POST
