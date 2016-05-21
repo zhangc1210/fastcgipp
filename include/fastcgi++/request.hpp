@@ -2,7 +2,7 @@
  * @file       request.hpp
  * @brief      Declares the Request class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 19, 2016
+ * @date       May 21, 2016
  * @copyright  Copyright &copy; 2016 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -94,7 +94,7 @@ namespace Fastcgipp
      *
      * @tparam charT Character type for internal processing (wchar_t or char)
      *
-     * @date    May 19, 2016
+     * @date    May 21, 2016
      * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
      */
     template<class charT> class Request: public Request_base
@@ -115,7 +115,10 @@ namespace Fastcgipp
             m_maxPostSize(maxPostSize),
             m_state(Protocol::RecordType::PARAMS),
             m_status(Protocol::ProtocolStatus::REQUEST_COMPLETE)
-        {}
+        {
+            out.imbue(std::locale("C"));
+            err.imbue(std::locale("C"));
+        }
 
         //! Configures the request with the data it needs.
         /*!

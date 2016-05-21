@@ -303,7 +303,7 @@ namespace Fastcgipp
             uint16_t remotePort;
 
             //! Timestamp the client has for this document
-            std::tm ifModifiedSince;
+            std::time_t ifModifiedSince;
 
             //! Container with all url-encoded cookie data
             std::multimap<

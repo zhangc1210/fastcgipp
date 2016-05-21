@@ -90,8 +90,8 @@ L"<html>"
             L"<b>Client Port:</b> " << environment().remotePort << L"<br />"
             L"<b>Etag:</b> " << environment().etag << L"<br />"
             L"<b>If Modified Since:</b> " << Encoding::HTML
-                << std::put_time(&environment().ifModifiedSince, L"%c")
-                << Encoding::NONE <<
+                << std::put_time(std::gmtime(&environment().ifModifiedSince)
+                        , L"%c %Z") << Encoding::NONE <<
         L"</p>";
         //! [Environment]
 
