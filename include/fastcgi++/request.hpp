@@ -2,7 +2,7 @@
  * @file       request.hpp
  * @brief      Declares the Request class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 21, 2016
+ * @date       May 25, 2016
  * @copyright  Copyright &copy; 2016 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -94,7 +94,7 @@ namespace Fastcgipp
      *
      * @tparam charT Character type for internal processing (wchar_t or char)
      *
-     * @date    May 21, 2016
+     * @date    May 25, 2016
      * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
      */
     template<class charT> class Request: public Request_base
@@ -272,6 +272,20 @@ namespace Fastcgipp
         void dump(const char* data, size_t size)
         {
             m_outStreamBuffer.dump(data, size);
+        }
+
+        //! Dumps raw data directly into the FastCGI protocol
+        /*!
+         * This function exists as a mechanism to dump raw data out the stream
+         * bypassing the stream buffer or any code conversion mechanisms. If the
+         * user has any binary data to send, this is the function to do it with.
+         *
+         * @param[in] data Pointer to first byte of data to send
+         * @param[in] size Size in bytes of data to be sent
+         */
+        void dump(const unsigned char* data, size_t size)
+        {
+            m_outStreamBuffer.dump((const char*)data, size);
         }
 
         //! Dumps an input stream directly into the FastCGI protocol
