@@ -40,7 +40,7 @@
 #include <set>
 #include <atomic>
 
-#include "fastcgi++/config.h"
+#include "fastcgi++/config.hpp"
 
 #ifdef FASTCGIPP_UNIX
 #include <vector>

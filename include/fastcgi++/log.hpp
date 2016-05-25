@@ -29,7 +29,7 @@
 #ifndef FASTCGIPP_LOG_HPP
 #define FASTCGIPP_LOG_HPP
 
-#include "fastcgi++/config.h"
+#include "fastcgi++/config.hpp"
 
 #include <ostream>
 #include <mutex>

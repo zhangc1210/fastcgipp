@@ -27,7 +27,7 @@
 *******************************************************************************/
 
 #include "fastcgi++/protocol.hpp"
-#include "fastcgi++/config.h"
+#include "fastcgi++/config.hpp"
 
 bool Fastcgipp::Protocol::processParamHeader(
         std::vector<char>::const_iterator data,

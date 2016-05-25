@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(fastcgi++ CXX)
+project(fastcgi++ LANGUAGES CXX)
 
 set(VERSION "3.0alpha")
 string(TIMESTAMP BUILD_TIME UTC)
@@ -43,8 +43,8 @@ include_directories(
 
 # Our configuration 
 configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/include/fastcgi++/config.h" @ONLY)
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/config.hpp.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/include/fastcgi++/config.hpp" @ONLY)
 
 # The shared library itself
 add_library(fastcgipp SHARED
@@ -61,7 +61,7 @@ install(TARGETS fastcgipp LIBRARY DESTINATION lib)
 
 # Install the header file
 install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/include/fastcgi++/config.h"
+    "${CMAKE_CURRENT_BINARY_DIR}/include/fastcgi++/config.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/fcgistreambuf.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/http.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/log.hpp"
