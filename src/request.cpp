@@ -244,41 +244,57 @@ template<class charT> void Fastcgipp::Request<charT>::configure(
             std::bind(send, _1, _2, false));
 }
 
-template unsigned Fastcgipp::Request<char>::setLanguage(
-        const std::vector<std::string>& languages);
-template unsigned Fastcgipp::Request<wchar_t>::setLanguage(
-        const std::vector<std::string>& languages);
-template<class charT> unsigned Fastcgipp::Request<charT>::setLanguage(
-        const std::vector<std::string>& languages)
+template unsigned Fastcgipp::Request<char>::pickLocale(
+        const std::vector<std::string>& locales);
+template unsigned Fastcgipp::Request<wchar_t>::pickLocale(
+        const std::vector<std::string>& locales);
+template<class charT> unsigned Fastcgipp::Request<charT>::pickLocale(
+        const std::vector<std::string>& locales)
 {
     unsigned index=0;
 
     for(const std::string& language: environment().acceptLanguages)
     {
-        const auto it = std::find(
-                languages.cbegin(),
-                languages.cend(),
-                language);
-        if(it != languages.cend())
+        if(language.size() <= 5)
         {
-            index = it-languages.cbegin();
-            break;
+            const auto it = std::find_if(
+                    locales.cbegin(),
+                    locales.cend(),
+                    [&language] (const std::string& locale)
+                    {
+                        return std::equal(
+                                language.cbegin(),
+                                language.cend(),
+                                locale.cbegin());
+                    });
+
+            if(it != locales.cend())
+            {
+                index = it-locales.cbegin();
+                break;
+            }
         }
     }
 
+    return index;
+}
+
+template void Fastcgipp::Request<char>::setLocale(
+        const std::string& locale);
+template void Fastcgipp::Request<wchar_t>::setLocale(
+        const std::string& locale);
+template<class charT> void Fastcgipp::Request<charT>::setLocale(
+        const std::string& locale)
+{
     try
     {
-        if(index<languages.size())
-            out.imbue(std::locale(languages[index]+codepage()));
-        else
-            out.imbue(std::locale("C"));
+        out.imbue(std::locale(locale+codepage()));
     }
     catch(...)
     {
         ERROR_LOG("Unable to set locale")
+        out.imbue(std::locale("C"));
     }
-
-    return index;
 }
 
 namespace Fastcgipp

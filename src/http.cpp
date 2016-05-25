@@ -372,6 +372,7 @@ template<class charT> void Fastcgipp::Http::Environment<charT>::fill(
             if(std::equal(name, value, "HTTP_IF_MODIFIED_SINCE"))
             {
                 std::tm time;
+                std::fill((char*)&time, (char*)&time+sizeof(time), 0);
                 std::stringstream dateStream;
                 dateStream.write(&*value, end-value);
                 dateStream >> std::get_time(

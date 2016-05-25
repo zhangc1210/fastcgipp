@@ -2,7 +2,7 @@
  * @file       http.hpp
  * @brief      Declares elements of the HTTP protocol
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 21, 2016
+ * @date       May 25, 2016
  * @copyright  Copyright &copy; 2016 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -240,7 +240,7 @@ namespace Fastcgipp
          *
          * @tparam charT Character type to use for strings
          *
-         * @date    May 20, 2016
+         * @date    May 25, 2016
          * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
          */
         template<class charT> struct Environment
@@ -282,13 +282,13 @@ namespace Fastcgipp
             std::vector<std::basic_string<charT>> pathInfo;
 
             //! The etag the client assumes this document should have
-            int etag;
+            unsigned etag;
 
             //! How many seconds the connection should be kept alive
-            int keepAlive;
+            unsigned keepAlive;
 
             //! Length of content to be received from the client (post data)
-            unsigned int contentLength;
+            unsigned contentLength;
 
             //! IP address of the server
             Address serverAddress;
@@ -380,7 +380,8 @@ namespace Fastcgipp
                 keepAlive(0),
                 contentLength(0),
                 serverPort(0),
-                remotePort(0)
+                remotePort(0),
+                ifModifiedSince(0)
             {}
         private:
             //! Parses "multipart/form-data" http post data
