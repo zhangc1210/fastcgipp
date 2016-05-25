@@ -454,46 +454,32 @@ int main()
         Fastcgipp::Http::Address loopback;
         loopback.m_data.back() = 1;
 
-        std::vector<std::wstring> properPath;
+        static const std::vector<std::wstring> properPath
         {
-            properPath.push_back(L"this");
-            properPath.push_back(L"is");
-            properPath.push_back(L"a");
-            properPath.push_back(L"test\\ path");
-        }
+            L"this",
+            L"is",
+            L"a",
+            L"test\\ path"
+        };
 
-        std::multimap<std::wstring, std::wstring> properGets;
+        std::multimap<std::wstring, std::wstring> properGets
         {
-            properGets.insert(std::pair<std::wstring, std::wstring>(
-                        L"enctype",
-                        L"multipart"));
-            properGets.insert(std::pair<std::wstring, std::wstring>(
-                        L"getVar",
-                        L"testing"));
-            properGets.insert(std::pair<std::wstring, std::wstring>(
-                        L"secondGetVar",
-                        L"tested"));
-            properGets.insert(std::pair<std::wstring, std::wstring>(
-                        L"utf8GetVarTest",
-                        L"проверка"));
-        }
+            {L"enctype", L"multipart"},
+            {L"getVar", L"testing"},
+            {L"secondGetVar", L"tested"},
+            {L"utf8GetVarTest", L"проверка"}
+        };
 
-        std::multimap<std::wstring, std::wstring> properPosts;
+        std::multimap<std::wstring, std::wstring> properPosts
         {
-            properPosts.insert(std::pair<std::wstring, std::wstring>(
-                        L"submit",
-                        L"submit"));
-            properPosts.insert(std::pair<std::wstring, std::wstring>(
-                        L"+= aquí está el campo",
-                        L"Él está con un niño"));
-        }
+            {L"submit", L"submit"},
+            {L"+= aquí está el campo", L"Él está con un niño"}
+        };
 
-        std::multimap<std::wstring, std::wstring> properCookies;
+        static const std::multimap<std::wstring, std::wstring> properCookies
         {
-            properCookies.insert(std::pair<std::wstring, std::wstring>(
-                        L"echoCookie",
-                        L"<\"русский\">;"));
-        }
+            {L"echoCookie", L"<\"русский\">;"}
+        };
 
         static const std::vector<std::string> properLanguages
         {
