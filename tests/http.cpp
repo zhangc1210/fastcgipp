@@ -495,7 +495,7 @@ int main()
                         L"<\"русский\">;"));
         }
 
-        const std::vector<std::string> properLanguages
+        static const std::vector<std::string> properLanguages
         {
             "en_CA",
             "en_US",
@@ -507,7 +507,8 @@ int main()
             Fastcgipp::Http::Environment<wchar_t> environment;
             {
                 {
-#include "multipartParam.h"
+                    const unsigned char multipartParam[] = 
+#include "multipartParam.hpp"
                     std::vector<char> parms(
                             multipartParam,
                             multipartParam+sizeof(multipartParam));
@@ -564,7 +565,8 @@ int main()
 
                 // Checking posts
                 {
-#include "multipartPost.h"
+                    static const unsigned char multipartPost[] = 
+#include "multipartPost.hpp"
                     std::vector<char> data(
                             multipartPost,
                             multipartPost+sizeof(multipartPost));
@@ -583,7 +585,8 @@ int main()
 
                 // Checking files
                 {
-#include "gnu.png.h"
+                    static const unsigned char gnu_png[] = 
+#include "gnu.png.hpp"
                     if(
                             environment.files.size() != 1 ||
                             environment.files.begin()->first != L"aFile" ||
@@ -608,7 +611,8 @@ int main()
             Fastcgipp::Http::Environment<wchar_t> environment;
             {
                 {
-#include "urlencodedParam.h"
+                    static const unsigned char urlencodedParam[] = 
+#include "urlencodedParam.hpp"
                     std::vector<char> parms(
                             urlencodedParam,
                             urlencodedParam+sizeof(urlencodedParam));
@@ -674,7 +678,8 @@ int main()
 
                 // Checking posts
                 {
-#include "urlencodedPost.h"
+                    const unsigned char urlencodedPost[] = 
+#include "urlencodedPost.hpp"
                     std::vector<char> data(
                             urlencodedPost,
                             urlencodedPost+sizeof(urlencodedPost));
