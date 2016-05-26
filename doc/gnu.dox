@@ -1,0 +1,102 @@
+/*!
+
+\page gnu GNU
+
+Our goal here will be to developed a full FastCGI application that provides both
+HTML and image data to clients. We will utilize caching facilities along with
+some localization methods. Concepts covered include:
+ - Outputting non-HTML data.
+ - Using fastcgi++'s localization functionality to provide content to an
+   international audience.
+ - Implementing caching to provide dramatic performance increases to clients.
+
+You can build it with
+
+    make gnu.fcgi
+
+### Walkthrough ###
+
+First we'll define our request class.
+\snippet examples/gnu.cpp Request definition
+
+First in our request class we'll need a static vector of strings to define what
+locales we're going to support. This will become more clear later on.
+\snippet examples/gnu.cpp Locales declaration
+
+Next we need a static two-dimensional vector of strings to define the textual
+data we'll be sending to the client as it relates to the requested locality.
+This will, as well, become more clear later on.
+\snippet examples/gnu.cpp Catalogues declaration
+
+This is simply a static declaration of the image data we will be providing.
+\snippet examples/gnu.cpp Image declaration
+
+We'll keep a timestamp of when the FastCGI application was actually started for
+caching purposes. Unfortunately we need both std::tm and std::time_t objects
+defined because of the dumbass lack of thread-safety with std::gmtime().
+\snippet examples/gnu.cpp startTime declaration
+
+Let's define an inline function to handle the outputting of the image.
+\snippet examples/gnu.cpp Image output
+
+Here's where we decide if the client has a new enough version of this image.
+Fastcgipp::Http::Environment::ifModifiedSince is set by the client to tell us
+when their version of this resource was last modified (which in turn comes from
+us). We compare to our start time to decide.
+\snippet examples/gnu.cpp Cached image
+
+If their version isn't new enough, however, we must send them one. Notice the
+extra header line where we specify when the image was last modified.
+\snippet examples/gnu.cpp Uncached image
+
+Here we define an inline function to handle the outputting of the HTML
+data.
+\snippet examples/gnu.cpp HTML output
+
+This is where we decide what language/locale the client will get. We use
+Fastcgipp::Request::pickLocale() for this. It will cross-reference the vector of
+locales we support with the list of languages/regions that the client wants and
+selects the best option. What we get back is an index value of the locale in our
+vector. We use this index to create a two character language code (you'll see
+why later) and a reference to the message catalogue our client prefers.
+\snippet examples/gnu.cpp pickLocale
+
+Now we decide whether or not the client has an up-to-date version of the HTML
+data. Notice this time around we use more than just the ifModifiedSince value.
+In this case we use the HTTP Etag value to represent our locale. This ensures
+that cached versions of the HTML data do not prevent people from getting the
+localized version they prefer.
+\snippet examples/gnu.cpp Cached HTML
+
+If the client doesn't have a valid cached version we'll need to send them
+something. Notice the HTTP header has a few new things in it. We set the Etag to
+our locale index value and we set the content language.
+\snippet examples/gnu.cpp Uncached HTML
+
+Now we set the locale of the output stream. We do this to ensure things like
+numbers, dates, times, money, etc. show up the way the client wants them. Make
+sure not to do this before the HTTP header is outputted as it'll mess stuff up.
+\snippet examples/gnu.cpp setLocale
+
+Alright, let's output the actual HTML now. Notice how all language specific text
+come from the message catalogue. This greatly simplifies the
+internationalization process.
+\snippet examples/gnu.cpp Body output
+
+And now our response() function. We use the path info to decide whether or not
+to output image or HTML data.
+\snippet examples/gnu.cpp Response
+
+We, of course, need to actually define all that static stuff we declared in the
+class. I won't explain any of this but look it over as it should be fairly
+self-explanatory.
+\snippet examples/gnu.cpp Definitions
+
+And the rest is all familiar
+\snippet examples/gnu.cpp Finish
+
+### Full Source Code ###
+
+\include examples/gnu.cpp
+
+*/

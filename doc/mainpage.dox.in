@@ -78,4 +78,11 @@ It covers the following topics:
  - Accessing all your environment data in Fastcgipp::Http::Environment
  - Using the Fastcgipp::Request::dump() functions
 
+\subpage gnu : A FastCGI application that shows the GNU logo
+It covers the following topics:
+ - Outputting non-HTML data.
+ - Using fastcgi++'s localization functionality to provide content to an
+   international audience.
+ - Implementing caching to provide dramatic performance increases to clients.
+
 */

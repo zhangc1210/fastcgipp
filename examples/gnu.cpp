@@ -1,19 +1,34 @@
+//! [Request definition]
 #include <fastcgi++/request.hpp>
 #include <iomanip>
 
 class Gnu: public Fastcgipp::Request<wchar_t>
 {
+    //! [Request definition]
+    //! [Locales declaration]
     static const std::vector<std::string> locales;
+    //! [Locales declaration]
+    //! [Catalogues declaration]
     static const std::vector<std::vector<std::wstring>> catalogues;
+    //! [Catalogues declaration]
+    //! [Image declaration]
     static const unsigned char gnuPng[];
     static const size_t gnuPngSize = 58587;
+    //! [Image declaration]
+    //! [startTime declaration]
     static const std::time_t startTimestamp;
     static const std::tm startTime;
+    //! [startTime declaration]
 
+    //! [Image output]
     inline void image()
     {
+        //! [Image output]
+        //! [Cached image]
 		if(startTimestamp <= environment().ifModifiedSince)
 			out << "Status: 304 Not Modified\r\n\r\n";
+        //! [Cached image]
+        //! [Uncached image]
         else
         {
             out << "Last-Modified: "
@@ -23,30 +38,44 @@ class Gnu: public Fastcgipp::Request<wchar_t>
             dump(gnuPng, gnuPngSize);
         }
     }
+    //! [Uncached image]
 
+    //! [HTML output]
     inline void html()
     {
+        //! [HTML output]
+        //! [pickLocale]
         const unsigned locale = pickLocale(locales);
-        const std::string language = locales[locale].substr(0,2);
+        const std::wstring language(
+                locales[locale].cbegin(),
+                locales[locale].cbegin()+2);
         const std::vector<std::wstring>& catalogue(catalogues[locale]);
+        //! [pickLocale]
 
+        //! [Cached HTML]
         if(
                 locale==environment().etag
                 && startTimestamp<=environment().ifModifiedSince)
 			out << "Status: 304 Not Modified\r\n\r\n";
+        //! [Cached HTML]
+        //! [Uncached HTML]
         else
         {
             out << "Last-Modified: "
                 << std::put_time(&startTime, L"%a, %d %b %Y %H:%M:%S GMT\n");
             out << L"Etag: " << locale << '\n';
             out << L"Content-Type: text/html; charset=utf-8\n";
-            out << L"Content-Language: " << language.c_str() << L"\r\n\r\n";
+            out << L"Content-Language: " << language << L"\r\n\r\n";
+            //! [Uncached HTML]
 
+            //! [setLocale]
             setLocale(locales[locale]);
+            //! [setLocale]
 
+            //! [Body output]
             out <<
 L"<!DOCTYPE html>\n"
-L"<html lang='" << language.c_str() << L"'>"
+L"<html lang='" << language << L"'>"
     L"<head>"
         L"<meta charset='utf-8' />"
         L"<title>fastcgi++: " << catalogue[0] << L"</title>"
@@ -64,7 +93,9 @@ L"<html lang='" << language.c_str() << L"'>"
 L"</html>";
         }
     }
+    //! [Body output]
 
+    //! [Response]
 	bool response()
 	{
         if(
@@ -77,7 +108,9 @@ L"</html>";
 		return true;
 	}
 };
+//! [Response]
 
+//! [Definitions]
 const std::vector<std::string> Gnu::locales
 {
     "en_CA",
@@ -139,7 +172,9 @@ const unsigned char Gnu::gnuPng[] =
 
 const std::time_t Gnu::startTimestamp = std::time(nullptr);
 const std::tm Gnu::startTime = *std::gmtime(&startTimestamp);
+//! [Definitions]
 
+//! [Finish]
 #include <fastcgi++/manager.hpp>
 
 int main()
@@ -152,3 +187,4 @@ int main()
 
     return 0;
 }
+//! [Finish]
