@@ -1,95 +1,50 @@
-/***************************************************************************
-* Copyright (C) 2007 Eddie Carle [eddie@erctech.org]                       *
-*                                                                          *
-* This file is part of fastcgi++.                                          *
-*                                                                          *
-* fastcgi++ is free software: you can redistribute it and/or modify it     *
-* under the terms of the GNU Lesser General Public License as  published   *
-* by the Free Software Foundation, either version 3 of the License, or (at *
-* your option) any later version.                                          *
-*                                                                          *
-* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
-* ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
-* FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
-* License for more details.                                                *
-*                                                                          *
-* You should have received a copy of the GNU Lesser General Public License *
-* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
-****************************************************************************/
-
-
-#include <fstream>
-#include <string>
-
 #include <fastcgi++/request.hpp>
-#include <fastcgi++/manager.hpp>
-
-// I like to have an independent error log file to keep track of exceptions while debugging.
-// You might want a different filename. I just picked this because everything has access there.
-void error_log(const char* msg)
-{
-	using namespace std;
-	using namespace boost;
-	static ofstream error;
-	if(!error.is_open())
-	{
-		error.open("/tmp/errlog", ios_base::out | ios_base::app);
-		error.imbue(locale(error.getloc(), new posix_time::time_facet()));
-	}
-
-	error << '[' << posix_time::second_clock::local_time() << "] " << msg << endl;
-}
-
-// Let's make our request handling class. It must do the following:
-// 1) Be derived from Fastcgipp::Request
-// 2) Define the virtual response() member function from Fastcgipp::Request()
-
-// First things first let's decide on what kind of character set we will use. Let's just
-// use good old ISO-8859-1 this time. No wide characters
 
 class Session: public Fastcgipp::Request<char>
 {
-	typedef Fastcgipp::Http::Sessions<std::string> Sessions;
+	static Fastcgipp::Http::Sessions<std::string> s_sessions;
+
+    std::pair<std::time_t, std::shared_ptr<const std::string>> m_session;
+
 	bool response()
 	{
-		using namespace Fastcgipp;
-		sessions.cleanup();
+		const auto command = environment().gets.find("cmd");
+        const auto it = environment().cookies.find("sid");
+        if(it != environment().cookies.cend())
+        {
+            const Fastcgipp::Http::SessionId sid(it->second);
+            m_session = s_sessions.get(sid);
+            if(m_session.second)
+            {
+                if(command!=environment().gets.cend()
+                        && command->second=="logout")
+                {
+                    out << "Set-Cookie: sid=deleted; expires=Thu, "
+                        "01-Jan-1970 00:00:00 GMT;\n";
+                    s_sessions.erase(sid);
+                    m_session.second.reset();
+                    handleNoSession();
+                }
+                else
+                {
+                    out << "Set-Cookie: sid=" << Encoding::URL << it->second
+                        << Encoding::NONE << "; expires="
+                        << s_session.expiration() << '\n';
+                    handleSession();
+                }
 
-		session=sessions.find(environment().findCookie("SESSIONID").data());
-		
-		const std::string& command=environment().findGet("command");
-		
-		// We need to call this to set a facet in our requests locale regarding how
-		// to format the date upon insertion. It needs to conform to the http standard.
-		setloc(std::locale(getloc(), new boost::posix_time::time_facet("%a, %d-%b-%Y %H:%M:%S GMT")));
+                return true;
+            }
+        }
 
-		if(session!=sessions.end())
-		{
-			if(command=="logout")
-			{
-				out << "Set-Cookie: SESSIONID=deleted; expires=Thu, 01-Jan-1970 00:00:00 GMT;\n";
-				sessions.erase(session);
-				session=sessions.end();
-				handleNoSession();
-			}
-			else
-			{
-				session->first.refresh();
-				out << "Set-Cookie: SESSIONID=" << encoding(URL) << session->first << encoding(NONE) << "; expires=" << sessions.getExpiry(session) << '\n';
-				handleSession();
-			}
-		}
-		else
-		{
-			if(command=="login")
-			{
-				session=sessions.generate(environment().findPost("data").value);
-				out << "Set-Cookie: SESSIONID=" << encoding(URL) << session->first << encoding(NONE) << "; expires=" << sessions.getExpiry(session) << '\n';
-				handleSession();
-			}
-			else
-				handleNoSession();
-		}
+        if(command!=environment().gets.cend() && command->second=="login")
+        {
+            session=sessions.generate(environment().findPost("data").value);
+            out << "Set-Cookie: SESSIONID=" << encoding(URL) << session->first << encoding(NONE) << "; expires=" << sessions.expiration() << '\n';
+            handleSession();
+        }
+        else
+            handleNoSession();
 
 		out << "<p>There are " << sessions.size() << " sessions open</p>\n\
 	</body>\n\
@@ -138,8 +93,6 @@ Content-Type: text/html; charset=ISO-8859-1\r\n\r\n\
 			</div>\n\
 		</form>\n";
 	}
-
-	static Sessions sessions;
 	Sessions::iterator session;
 };
 

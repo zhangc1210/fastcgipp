@@ -2,7 +2,7 @@
  * @file       http.hpp
  * @brief      Declares elements of the HTTP protocol
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 25, 2016
+ * @date       May 26, 2016
  * @copyright  Copyright &copy; 2016 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -627,7 +627,7 @@ namespace Fastcgipp
          *
          * @tparam T Class containing session data.
          *
-         * @date    May 20, 2016
+         * @date    May 26, 2016
          * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
          */
         template<class T> class Sessions
@@ -645,6 +645,12 @@ namespace Fastcgipp
             //! Thread safe all operations
             mutable std::mutex m_mutex;
 
+            //! Internal string for cookie expirations
+            char m_expiration[30];
+
+            //! Internal helper for building the m_expiration string
+            void setExpiration();
+
         public:
             //! Constructor takes session keep alive times
             /*!
@@ -654,7 +660,9 @@ namespace Fastcgipp
             Sessions(unsigned int keepAlive):
                 m_keepAlive(keepAlive),
                 m_cleanupTime(std::time(nullptr)+keepAlive)
-            {}
+            {
+                setExpiration();
+            }
 
             //! Get session data from session ID
             /*!
@@ -687,6 +695,17 @@ namespace Fastcgipp
             {
                 std::lock_guard<std::mutex> lock(m_mutex);
                 m_sessions.erase(id);
+            }
+
+            //! Expiration string for setting cookies
+            /*!
+             * Note that this /a isn't thread safe. This should rarely ever be a 
+             * problem but it isn't guaranteed to not be a problem. This should
+             * eventually be figured out.
+             */
+            const char* expiration() const
+            {
+                return m_expiration;
             }
         };
     }
@@ -802,6 +821,7 @@ Fastcgipp::Http::Sessions<T>::get(const SessionId& id)
                 ++session;
         }
         m_cleanupTime = std::time(nullptr)+m_keepAlive;
+        setExpiration();
     }
 
     const auto session = m_sessions.find(id);
@@ -817,6 +837,17 @@ Fastcgipp::Http::Sessions<T>::get(const SessionId& id)
     }
 
     return std::shared_ptr<const T>();
+}
+
+template<class T> void Fastcgipp::Http::Sessions<T>::setExpiration()
+{
+    const std::time_t expirationTime = m_cleanupTime + m_keepAlive;
+    const auto count = std::strftime(
+            m_expiration,
+            sizeof(m_expiration),
+            "%a, %d-%b-%Y %H:%M:%S GMT",
+            std::gmtime(&expirationTime));
+    std::fill(m_expiration+count, m_expiration+sizeof(m_expiration), 0);
 }
 
 #endif

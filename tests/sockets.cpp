@@ -311,7 +311,7 @@ void server()
         FAIL_LOG("Server has active sockets when it shouldn't")
 }
 
-#include "fastcgi++/config.h"
+#include "fastcgi++/config.hpp"
 #if defined FASTCGIPP_UNIX || defined FASTCGIPP_LINUX
 #include <sys/types.h>
 #include <unistd.h>
