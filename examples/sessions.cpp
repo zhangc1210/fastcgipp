@@ -123,8 +123,7 @@ int main()
 {
     Fastcgipp::Manager<Sessions> manager;
     manager.setupSignals();
-    //manager.listen();
-    manager.listen("127.0.0.1", "23456");
+    manager.listen();
     manager.start();
     manager.join();
 
