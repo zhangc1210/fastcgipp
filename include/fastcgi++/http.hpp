@@ -41,6 +41,7 @@
 #include <array>
 #include <ctime>
 #include <cstring>
+#include <atomic>
 
 #include <fastcgi++/protocol.hpp>
 
@@ -457,7 +458,7 @@ namespace Fastcgipp
          * @param[in] data Data to decode
          * @param[in] dataEnd +1 last byte to decode
          * @param[out] output Container to output data into
-         * @param[in] fieldSeparator Character that signifies field separation
+         * @param[in] fieldSeparator String that signifies field separation
          */
         template<class charT> void decodeUrlEncoded(
                 std::vector<char>::const_iterator data,
@@ -465,7 +466,7 @@ namespace Fastcgipp
                 std::multimap<
                     std::basic_string<charT>,
                     std::basic_string<charT>>& output,
-                const char fieldSeparator='&');
+                const char* const fieldSeparator="&");
 
         //! Convert a string with percent escaped byte values to their values
         /*!
@@ -645,8 +646,14 @@ namespace Fastcgipp
             //! Thread safe all operations
             mutable std::mutex m_mutex;
 
+            //! Length of expiration string (with null terminator)
+            static const size_t expirationLength = 30;
+
             //! Internal string for cookie expirations
-            char m_expiration[30];
+            char m_expiration[2][expirationLength];
+
+            //! Point for the current expiration string
+            std::atomic<const char*> m_expirationPtr;
 
             //! Internal helper for building the m_expiration string
             void setExpiration();
@@ -683,9 +690,10 @@ namespace Fastcgipp
             /*!
              * @param[in] data Data to store in the session.
              *
-             * @return Constant reference to the newly created session ID.
+             * @return A session ID for the session. This is not a reference for
+             * thread safety purposes.
              */
-            const SessionId& generate(const std::shared_ptr<const T>& data);
+            SessionId generate(const std::shared_ptr<const T>& data);
 
             //! Erase a session
             /*!
@@ -698,14 +706,9 @@ namespace Fastcgipp
             }
 
             //! Expiration string for setting cookies
-            /*!
-             * Note that this /a isn't thread safe. This should rarely ever be a 
-             * problem but it isn't guaranteed to not be a problem. This should
-             * eventually be figured out.
-             */
             const char* expiration() const
             {
-                return m_expiration;
+                return m_expirationPtr;
             }
         };
     }
@@ -787,7 +790,7 @@ Out Fastcgipp::Http::base64Encode(In start, In end, Out destination)
     return destination;
 }
 
-template<class T> const Fastcgipp::Http::SessionId&
+template<class T> Fastcgipp::Http::SessionId
 Fastcgipp::Http::Sessions<T>::generate(const std::shared_ptr<const T>& data)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
@@ -841,13 +844,16 @@ Fastcgipp::Http::Sessions<T>::get(const SessionId& id)
 
 template<class T> void Fastcgipp::Http::Sessions<T>::setExpiration()
 {
+    char* const newExpiration(
+        m_expirationPtr==m_expiration[0]?m_expiration[1]:m_expiration[0]);
     const std::time_t expirationTime = m_cleanupTime + m_keepAlive;
     const auto count = std::strftime(
-            m_expiration,
-            sizeof(m_expiration),
-            "%a, %d-%b-%Y %H:%M:%S GMT",
+            newExpiration,
+            expirationLength,
+            "%a, %d %b %Y %H:%M:%S GMT",
             std::gmtime(&expirationTime));
-    std::fill(m_expiration+count, m_expiration+sizeof(m_expiration), 0);
+    std::fill(newExpiration+count, newExpiration+expirationLength, 0);
+    m_expirationPtr = newExpiration;
 }
 
 #endif

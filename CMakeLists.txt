@@ -124,10 +124,15 @@ add_executable(gnu.fcgi EXCLUDE_FROM_ALL examples/gnu.cpp)
 add_dependencies(gnu.fcgi fastcgipp)
 target_link_libraries(gnu.fcgi PRIVATE fastcgipp)
 
+add_executable(sessions.fcgi EXCLUDE_FROM_ALL examples/sessions.cpp)
+add_dependencies(sessions.fcgi fastcgipp)
+target_link_libraries(sessions.fcgi PRIVATE fastcgipp)
+
 add_custom_target(
     examples DEPENDS
     echo.fcgi
     gnu.fcgi
+    sessions.fcgi
     helloworld.fcgi)
 
 # And finally the documentation

@@ -10,6 +10,7 @@
 #include <thread>
 #include <chrono>
 #include <random>
+#include <cstring>
 
 int main()
 {
@@ -698,9 +699,30 @@ int main()
 
     // Testing Fastcgipp::Http::Sessions
     {
+        char properExpiration[30];
+        std::time_t expiration;
+
         std::random_device device;
         std::uniform_int_distribution<unsigned short> alphanumeric(0, 61);
+
+        expiration = std::time(nullptr)+6;
         Fastcgipp::Http::Sessions<std::wstring> sessions(3);
+        std::fill(
+                properExpiration,
+                properExpiration+sizeof(properExpiration),
+                0);
+        std::strftime(
+                properExpiration,
+                sizeof(properExpiration),
+                "%a, %d %b %Y %H:%M:%S GMT",
+                std::gmtime(&expiration));
+        if(!std::equal(
+                    properExpiration,
+                    properExpiration+sizeof(properExpiration),
+                    sessions.expiration()))
+            FAIL_LOG("Fastcgipp::Http::Sessions expiration string error 1")
+
+
         std::wstringstream ss;
         const Fastcgipp::Http::SessionId badId;
 
@@ -722,6 +744,12 @@ int main()
             FAIL_LOG("Fastcgipp::Http::Sessions cleanup happened when it "\
                     "shouldn't have");
 
+        if(!std::equal(
+                    properExpiration,
+                    properExpiration+sizeof(properExpiration),
+                    sessions.expiration()))
+            FAIL_LOG("Fastcgipp::Http::Sessions expiration string error 2")
+
         for(int i=0; i<100; ++i)
         {
             std::shared_ptr<std::wstring> data(new std::wstring);
@@ -736,9 +764,25 @@ int main()
         if(sessions.size() != 200)
             FAIL_LOG("Fastcgipp::Http::Sessions error inserting more sessions");
         std::this_thread::sleep_for(std::chrono::seconds(2));
+        expiration = std::time(nullptr)+6;
         sessions.get(badId);
         if(sessions.size() != 100)
             FAIL_LOG("Fastcgipp::Http::Sessions cleanup didn't work");
+
+        std::fill(
+                properExpiration,
+                properExpiration+sizeof(properExpiration),
+                0);
+        std::strftime(
+                properExpiration,
+                sizeof(properExpiration),
+                "%a, %d %b %Y %H:%M:%S GMT",
+                std::gmtime(&expiration));
+        if(!std::equal(
+                    properExpiration,
+                    properExpiration+sizeof(properExpiration),
+                    sessions.expiration()))
+            FAIL_LOG("Fastcgipp::Http::Sessions expiration string error 3")
 
         std::wstring sessionId;
         for(int i=0; i<100; ++i)

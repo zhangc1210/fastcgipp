@@ -221,7 +221,7 @@ template<class charT> void Fastcgipp::Http::Environment<charT>::fill(
             if(std::equal(name, value, "HTTP_ACCEPT"))
                 vecToString(value, end, acceptContentTypes);
             else if(std::equal(name, value, "HTTP_COOKIE"))
-                decodeUrlEncoded(value, end, cookies, ';');
+                decodeUrlEncoded(value, end, cookies, "; ");
             else if(std::equal(name, value, "SERVER_ADDR"))
                 serverAddress.assign(&*value, &*end);
             else if(std::equal(name, value, "REMOTE_ADDR"))
@@ -651,42 +651,62 @@ template void Fastcgipp::Http::decodeUrlEncoded<char>(
         std::multimap<
             std::basic_string<char>,
             std::basic_string<char>>& output,
-        const char fieldSeperator);
+        const char* const fieldSeparator);
 template void Fastcgipp::Http::decodeUrlEncoded<wchar_t>(
         std::vector<char>::const_iterator data,
         const std::vector<char>::const_iterator dataEnd,
         std::multimap<
             std::basic_string<wchar_t>,
             std::basic_string<wchar_t>>& output,
-        const char fieldSeperator);
+        const char* const fieldSeparator);
 template<class charT> void Fastcgipp::Http::decodeUrlEncoded(
         std::vector<char>::const_iterator data,
         const std::vector<char>::const_iterator dataEnd,
         std::multimap<
             std::basic_string<charT>,
             std::basic_string<charT>>& output,
-        const char fieldSeperator)
+        const char* const fieldSeparator)
 {
     std::vector<char> buffer(dataEnd-data);
     std::basic_string<charT> name;
     std::basic_string<charT> value;
+
+    const size_t fieldSeparatorSize = std::strlen(fieldSeparator);
+    const char* const fieldSeparatorEnd = fieldSeparator+fieldSeparatorSize;
+
+    enum EndState
+    {
+        NONE,
+        END,
+        SEPARATOR
+    };
+    EndState endState;
 
     auto nameStart(data);
     auto nameEnd(dataEnd);
     auto valueStart(dataEnd);
     auto valueEnd(dataEnd);
 
-    while(data != dataEnd)
+    while(data < dataEnd)
     {
         if(nameEnd != dataEnd)
         {
-            if(data+1==dataEnd || *data==fieldSeperator)
+            if(data+1 == dataEnd)
             {
-                if(*data == fieldSeperator)
-                    valueEnd = data;
-                else
-                    valueEnd = data+1;
+                endState = END;
+                valueEnd = data+1;
+            }
+            else if(data+fieldSeparatorSize<=dataEnd
+                        && std::equal(fieldSeparator, fieldSeparatorEnd, data))
+            {
+                endState = SEPARATOR;
+                valueEnd = data;
+            }
+            else
+                endState = NONE;
 
+            if(endState != NONE)
+            {
                 valueEnd=percentEscapedToRealBytes(
                         valueStart,
                         valueEnd,
@@ -697,17 +717,18 @@ template<class charT> void Fastcgipp::Http::decodeUrlEncoded(
                             std::move(name),
                             std::move(value)));
 
-                nameStart=data+1;
-                nameEnd=dataEnd;
-                valueStart=dataEnd;
-                valueEnd=dataEnd;
+                nameStart = data+fieldSeparatorSize;
+                data += fieldSeparatorSize-1;
+                nameEnd = dataEnd;
+                valueStart = dataEnd;
+                valueEnd = dataEnd;
             }
         }
         else
         {
             if(*data == '=')
             {
-                nameEnd=percentEscapedToRealBytes(
+                nameEnd = percentEscapedToRealBytes(
                         nameStart,
                         data,
                         buffer.begin());
