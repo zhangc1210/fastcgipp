@@ -59,6 +59,19 @@ add_library(fastcgipp SHARED
     src/manager.cpp)
 install(TARGETS fastcgipp LIBRARY DESTINATION lib)
 
+# A static version of the library
+add_library(fastcgipp-static STATIC
+    src/log.cpp
+    src/http.cpp
+    src/protocol.cpp
+    src/sockets.cpp
+    src/transceiver.cpp
+    src/fcgistreambuf.cpp
+    src/webstreambuf.cpp
+    src/request.cpp
+    src/manager.cpp)
+install(TARGETS fastcgipp-static ARCHIVE DESTINATION lib)
+
 # Install the header file
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/include/fastcgi++/config.hpp"
