@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(fastcgi++ LANGUAGES CXX)
 
-set(VERSION "3.0alpha")
+set(VERSION "3.0beta")
 string(TIMESTAMP BUILD_TIME UTC)
 
 # Set up our log level for fastcgi++/log.hpp
@@ -128,11 +128,16 @@ add_executable(sessions.fcgi EXCLUDE_FROM_ALL examples/sessions.cpp)
 add_dependencies(sessions.fcgi fastcgipp)
 target_link_libraries(sessions.fcgi PRIVATE fastcgipp)
 
+add_executable(timer.fcgi EXCLUDE_FROM_ALL examples/timer.cpp)
+add_dependencies(timer.fcgi fastcgipp)
+target_link_libraries(timer.fcgi PRIVATE fastcgipp)
+
 add_custom_target(
     examples DEPENDS
     echo.fcgi
     gnu.fcgi
     sessions.fcgi
+    timer.fcgi
     helloworld.fcgi)
 
 # And finally the documentation
@@ -141,9 +146,6 @@ if(DOXYGEN_FOUND)
     configure_file(
         "${CMAKE_CURRENT_SOURCE_DIR}/doc/Doxyfile.in"
         "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile" @ONLY)
-    configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/doc/mainpage.dox.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/mainpage.dox" @ONLY)
     add_custom_target(
         doc
         "${DOXYGEN_EXECUTABLE}" "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile"

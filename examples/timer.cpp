@@ -1,165 +1,196 @@
-/***************************************************************************
-* Copyright (C) 2007 Eddie Carle [eddie@erctech.org]                       *
-*                                                                          *
-* This file is part of fastcgi++.                                          *
-*                                                                          *
-* fastcgi++ is free software: you can redistribute it and/or modify it     *
-* under the terms of the GNU Lesser General Public License as  published   *
-* by the Free Software Foundation, either version 3 of the License, or (at *
-* your option) any later version.                                          *
-*                                                                          *
-* fastcgi++ is distributed in the hope that it will be useful, but WITHOUT *
-* ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or    *
-* FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public     *
-* License for more details.                                                *
-*                                                                          *
-* You should have received a copy of the GNU Lesser General Public License *
-* along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.       *
-****************************************************************************/
-
-
-#include <fstream>
-#include <boost/date_time/posix_time/posix_time.hpp>
-
+//! [Request definition]
+#include <thread>
+#include <condition_variable>
 #include <fastcgi++/request.hpp>
-#include <fastcgi++/manager.hpp>
-
-// In this example we are going to use boost::asio to handle our timers and callback.
-// Unfortunately because fastcgi buffers the output before sending it to the client by
-// default, we will only get to see the true effects of the timer if you put the following
-// directive in your apache configuration: FastCgiConfig -flush
-#include <cstring>
-#include <boost/asio.hpp>
-#include <boost/bind.hpp>
-#include <boost/thread.hpp>
-#include <boost/scoped_ptr.hpp>
-boost::asio::io_service io;
-
-// I like to have an independent error log file to keep track of exceptions while debugging.
-// You might want a different filename. I just picked this because everything has access there.
-void error_log(const char* msg)
-{
-	using namespace std;
-	using namespace boost;
-	static ofstream error;
-	if(!error.is_open())
-	{
-		error.open("/tmp/errlog", ios_base::out | ios_base::app);
-		error.imbue(locale(error.getloc(), new posix_time::time_facet()));
-	}
-
-	error << '[' << posix_time::second_clock::local_time() << "] " << msg << endl;
-}
-
-// Let's make our request handling class. It must do the following:
-// 1) Be derived from Fastcgipp::Request
-// 2) Define the virtual response() member function from Fastcgipp::Request()
-
-// First things first let's decide on what kind of character set we will use. Let's just
-// use good old ISO-8859-1 this time. No wide characters
 
 class Timer: public Fastcgipp::Request<char>
 {
 public:
-	Timer(): state(START) {}
+	Timer():
+        m_time(0),
+        m_startTime(std::chrono::steady_clock::now())
+    {}
+    //! [Request definition]
+
+    //! [Stopwatch]
+    static void startStopwatch()
+    {
+        s_stopwatch.start();
+    }
+
+    static void stopStopwatch()
+    {
+        s_stopwatch.start();
+    }
+
 private:
-	// We need to define a state variable so we know where we are when response() is called a second time.
-	enum State { START, FINISH } state;
+    class Stopwatch
+    {
+    private:
+        std::thread m_thread;
+        std::mutex m_mutex;
+        std::condition_variable m_cv;
+        bool m_kill;
 
-	boost::scoped_ptr<boost::asio::deadline_timer> t;
+        struct Item
+        {
+            std::function<void(Fastcgipp::Message)> callback;
+            mutable Fastcgipp::Message message;
+            std::chrono::time_point<std::chrono::steady_clock> wakeup;
 
+            Item(
+                    const std::function<void(Fastcgipp::Message)>& callback_,
+                    Fastcgipp::Message&& message_,
+                    const std::chrono::time_point<std::chrono::steady_clock>&
+                        wakeup_):
+                callback(callback_),
+                message(std::move(message_)),
+                wakeup(wakeup_)
+            {}
+
+            bool operator<(const Item& item) const
+            {
+                return wakeup < item.wakeup;
+            }
+
+            bool operator==(const Item& item) const
+            {
+                return wakeup == item.wakeup;
+            }
+        };
+        std::set<Item> m_queue;
+
+        void handler()
+        {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            while(!m_kill)
+            {
+                if(m_queue.empty())
+                    m_cv.wait(lock);
+                else
+                {
+                    const Item& item = *m_queue.begin();
+
+                    if(item.wakeup <= std::chrono::steady_clock::now())
+                    {
+                        item.callback(std::move(item.message));
+                        m_queue.erase(m_queue.begin());
+                    }
+                    else
+                        m_cv.wait_until(lock, item.wakeup);
+                }
+            }
+        }
+
+    public:
+        void push(
+                const std::function<void(Fastcgipp::Message)>& callback,
+                Fastcgipp::Message&& message,
+                std::chrono::time_point<std::chrono::steady_clock> wakeup)
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_queue.emplace_hint(
+                    m_queue.end(),
+                    callback,
+                    std::move(message),
+                    wakeup);
+            m_cv.notify_one();
+        }
+
+        void start()
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            if(!m_thread.joinable())
+            {
+                m_kill = false;
+                std::thread thread(std::bind(&Stopwatch::handler, this));
+                m_thread.swap(thread);
+            }
+        }
+
+        void stop()
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            if(m_thread.joinable())
+            {
+                m_kill = true;
+                m_cv.notify_one();
+                m_thread.join();
+            }
+        }
+    };
+
+    static Stopwatch s_stopwatch;
+    //! [Stopwatch]
+
+    //! [Variables]
+    unsigned m_time;
+
+    const std::chrono::time_point<std::chrono::steady_clock> m_startTime;
+    //! [Variables]
+
+    //! [Response]
 	bool response()
 	{
-		switch(state)
-		{
-			case START:
-			{
-				// Let's make our header, note the charset=ISO-8859-1. Remember that HTTP headers
-				// must be terminated with \r\n\r\n. NOT just \n\n.
-				out << "Content-Type: text/html; charset=ISO-8859-1\r\n\r\n";
+        if(m_time < 5)
+        {
+            if(m_time == 0)
+                out <<
+"Content-Type: text/html; charset=iso-8859-1\r\n\r\n"
+"<!DOCTYPE html>\n"
+"<html lang='en'>"
+    "<head>"
+        "<meta charset='iso-8859-1' />"
+        "<title>fastcgi++: Timer</title>"
+    "</head>"
+    "<body>"
+        "<p>";
+            out << m_time++ << "...";
+            out.flush();
 
-				// Here it's all stuff you should be familiar with
-				out << "<html><head><meta http-equiv='Content-Type' content='text/html; charset=ISO-8859-1' />";
-				out << "<title>fastcgi++: Threaded Timer</title></head><body>";
-				
-				// Output a message saying we are starting the timer
-				out << "Starting Timer...<br />";
+            Fastcgipp::Message message;
+            message.type = 1;
 
-				// Let's flush the buffer just to get it out there.
-				out.flush();
+            static const char messageText[]
+                = "I was passed between threads!!";
+            message.data.assign(messageText, messageText+sizeof(messageText)-1);
 
-				// Make a five second timer
-				t.reset(new boost::asio::deadline_timer(io, boost::posix_time::seconds(5)));
+            s_stopwatch.push(
+                    callback(),
+                    std::move(message),
+                    m_startTime + std::chrono::seconds(m_time));
 
-				// Now we work with our callback. Defined in the Fastcgipp::Request is a boost::function
-				// that takes a Fastcgipp::Message (defined in fastcgi++/protocol.hpp) as a single argument.
-				// This callback function will pass the message on to this request therebye calling the response()
-				// function again. The callback function is thread safe. That means you can pass messages back to
-				// requests from other threads.
-
-				// Let's build the message we want sent back to here.
-				Fastcgipp::Message msg;
-				// The first part of the message we have to define is the type. A type of 0 means a fastcgi message
-				// and is used internally. All other values we can use ourselves to define different message types (sql queries,
-				// file grabs, etc...). We will use type=1 for timer stuff.
-				msg.type=1;
-
-				// Now let's put a character string into the message as well. Just for fun.
-				{
-					char cString[] = "I was passed between two threads!!";
-					msg.size=sizeof(cString);
-					msg.data.reset(new char[sizeof(cString)]);
-					std::strncpy(msg.data.get(), cString, sizeof(cString));
-				}
-
-				// Now we will give our callback data to boost::asio
-				t->async_wait(boost::bind(callback(), msg));
-
-				// We need to set our state to FINISH so that when this response is called a second time, we don't repeat this.
-				state=FINISH;
-
-				// Now we will return and allow the task manager to do other things (or sleep if there is nothing to do).
-				// We must return false if the request is not yet complete.
-				return false;
-			}
-			case FINISH:
-			{
-				// Although we don't need the message we were sent, it is stored in the Request class as member data named
-				// "message".
-				out << "Timer Finished! Our message data was \"" << message().data.get() << "\"";
-				out << "</body></html>";
-
-				// Always return true if you are done. This will let apache know we are done
-				// and the manager will destroy the request and free it's resources.
-				// Return false if you are not finished but want to relinquish control and
-				// allow other requests to operate.
-				return true;
-			}
-		}
-		return true;
+            return false;
+        }
+        else
+        {
+            out << "5</p>"
+    "</body>"
+"</html>";
+            return true;
+        }
 	}
 };
 
-// The main function is easy to set up
+Timer::Stopwatch Timer::s_stopwatch;
+
+#include <fastcgi++/manager.hpp>
+
 int main()
 {
-	try
-	{
-		// Let's first setup a thread for our timers. We assign a work object
-		// to it so that boost::asio::io_service::run does not return until
-		// the work object goes out of scope.
-		boost::asio::io_service::work w(io);
-		boost::thread t(boost::bind(&boost::asio::io_service::run, &io));
+    Timer::startStopwatch();
+    //! [Response]
 
-		// Now we make a Fastcgipp::Manager object, with our request handling class
-		// as a template parameter.
-		Fastcgipp::Manager<Timer> fcgi;
-		// Now just call the object handler function. It will sleep quietly when there
-		// are no requests and efficiently manage them when there are many.
-		fcgi.handler();
-	}
-	catch(std::exception& e)
-	{
-		error_log(e.what());
-	}
+    //! [Finish]
+    Fastcgipp::Manager<Timer> manager(
+            std::max(1u, unsigned(std::thread::hardware_concurrency()/2)));
+    manager.setupSignals();
+    manager.listen();
+    manager.start();
+    manager.join();
+
+    Timer::stopStopwatch();
+
+    return 0;
 }
+//! [Finish]

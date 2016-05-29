@@ -2,7 +2,7 @@
  * @file       manager.cpp
  * @brief      Defines the Manager class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 14, 2016
+ * @date       May 28, 2016
  * @copyright  Copyright &copy; 2016 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -130,7 +130,7 @@ void Fastcgipp::Manager_base::signalHandler(int signum)
             if(instance)
             {
                 DIAG_LOG("Received SIGTERM. Terminating fastcgi++ manager.")
-                instance->stop();
+                instance->terminate();
             }
             else
                 WARNING_LOG("Received SIGTERM but fastcgi++ manager isn't "\

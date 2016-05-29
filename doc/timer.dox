@@ -1,0 +1,62 @@
+/*!
+
+\page timer Timer
+
+Here we'll make a FastCGI application that counts out five seconds in the
+clients web browser. To do this properly we'll need to use the asynchronous
+nature of fastcgi++'s request handling. This example can act as a good starting
+point to how a request might give up processing time while waiting for a
+database query to complete. Concepts covered include:
+ - Pausing requests while waiting for callbacks.
+ - Flushing the output stream buffer to force a partial HTTP response.
+ - Defining the number of concurrent request handling threads.
+
+You can build it with
+
+    make timer.fcgi
+
+In order for this example to work properly you'll need to tell your web server
+to *not* buffer FastCGI data before sending if off to the client. Ultimately
+fastcgi++ does a good job buffering data itself so I tend to keep web server
+side buffering disabled at all times. If you're using mod_fastcgi with apache
+this means adding
+
+    FastCgiConfig -flush
+
+to your server's configuration.
+
+### Walkthrough ###
+
+First we'll define our request class.
+\snippet examples/timer.cpp Request definition
+
+Now we'll make a simple stopwatch. I won't go into detail explaining how this
+works since it's not relevant to fastcgi++. Really it just runs in it's own
+thread doing callbacks at set times.
+\snippet examples/timer.cpp Stopwatch
+
+Since our response function will be called multiple times per request we'll need
+some members to keep track of our count.
+\snippet examples/timer.cpp Variables
+
+And here we have our response function. For each request this function should be
+called 6 times. On the first call m_time is 0 and we output our header stuff.
+This time, and 4 subsequent times we will return false indicating that the
+request is not yet complete and we are waiting on a callback. Notice that each
+time we return false we first call out.flush() forcing the request to empty it's
+buffer and send to the web server. On the final call (m_time==5) we output our
+footer and return true indicating that the request is now complete.
+\snippet examples/timer.cpp Response
+
+Notice this time around we're calling our manager constructor with an argument.
+This is how we define how many concurrent request handling threads we want. The
+default for this is the maximum hardware concurrency level but this time we'll
+bring it down by half since our requests aren't exactly doing much heavy
+lifting.
+\snippet examples/timer.cpp Finish
+
+### Full Source Code ###
+
+\include examples/timer.cpp
+
+*/

@@ -1,10 +1,13 @@
 # fastcgi++ #
 
-**3.0alpha**
+**Author:** Eddie Carle
 
-**Eddie Carle**
+**Version:** 3.0beta
 
 ## News ##
+
+**May 28, 2016** - Some good examples are now done and in the documentation.
+I've got said documentation hosted online now so [check it out][13].
 
 **May 18, 2016** - The re-write is now effectively complete. What I mean by this
 is that the library now builds and passes some basic benchmarking tests. I'm
@@ -16,8 +19,8 @@ helloworld one.
 **April 10, 2016** - Fastcgi++ is going through a dramatic rewrite now and the
 master branch does not work at all. If you're here hoping for a functional
 version scroll down to the releases section. If you'd like to read a bit more
-about the rewrite and fastcgi++ in general, check out "[Ten years of
-fastcgi++][1]".
+about the rewrite and fastcgi++ in general, check out [[Ten years of
+fastcgi++][1]].
 
 [1]: http://eddie.isatec.ca/2016/04/10/ten-years-of-fastcgi++.html
 
@@ -28,7 +31,7 @@ allows your applications to communicate with web servers through the FastCGI
 protocol, tabulates all your environment data, manages character encoding, and
 allows requests to effectively share CPU time. If you want any further
 information check the Doxygen documentation associated with the respective
-release, or build it yourself.
+release, or build it yourself. Be sure to read through the examples.
 
 ## Releases ##
 
@@ -36,9 +39,9 @@ Your best bet for releases and documentation is to clone the Git repository,
 checkout the tag you want and see the building section of either this file or
 the Doxygen documentation. If you're too lazy for that, however, you can take
 the risk and try the following links.
-
- - [[fastcgi++-2.1.tar.bz2][2]] [[Documentation][3]] [[Tag][10]]
- - [[fastcgi++-2.0.tar.bz2][4]] [[Documentation][5]] [[Tag][11]]
+ - [[fastcgipp-master.zip][12]] [[Documentation][13]] [[Tree][14]]
+ - [[fastcgi++-2.1.tar.bz2][2]] [[Documentation][3]] [[Tree][10]]
+ - [[fastcgi++-2.0.tar.bz2][4]] [[Documentation][5]] [[Tree][11]]
  - [[fastcgi++-1.2.tar.bz2][6]] [[Documentation][7]]
  - [[fastcgi++-1.1.tar.bz2][8]]
  - [[fastcgi++-1.0.tar.bz2][9]]
@@ -53,6 +56,9 @@ the risk and try the following links.
 [9]: http://download.savannah.nongnu.org/releases/fastcgipp/fastcgi++-1.0.tar.bz2 
 [10]: https://github.com/eddic/fastcgipp/tree/2.1
 [11]: https://github.com/eddic/fastcgipp/tree/2.0
+[12]: https://github.com/eddic/fastcgipp/archive/master.zip
+[13]: http://isatec.ca/fastcgipp
+[14]: https://github.com/eddic/fastcgipp
 
 ## Building ##
 
@@ -106,5 +112,3 @@ And of course we should run them as well.
 And hey, let's build the examples to!
 
     make examples
-
-And that, as they say, is that.
