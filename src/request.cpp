@@ -2,7 +2,7 @@
  * @file       request.cpp
  * @brief      Defines the Request class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 21, 2016
+ * @date       July 21, 2016
  * @copyright  Copyright &copy; 2016 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -102,8 +102,7 @@ std::unique_lock<std::mutex>Fastcgipp::Request<charT>::handler()
 
                     if(header.contentLength == 0)
                     {
-                        if(m_maxPostSize >= 0
-                                && environment().contentLength > m_maxPostSize)
+                        if(environment().contentLength > m_maxPostSize)
                         {
                             bigPostErrorHandler();
                             goto exit;

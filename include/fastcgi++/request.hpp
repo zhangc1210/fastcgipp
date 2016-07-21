@@ -2,7 +2,7 @@
  * @file       request.hpp
  * @brief      Declares the Request class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 25, 2016
+ * @date       July 21, 2016
  * @copyright  Copyright &copy; 2016 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -94,7 +94,7 @@ namespace Fastcgipp
      *
      * @tparam charT Character type for internal processing (wchar_t or char)
      *
-     * @date    May 25, 2016
+     * @date    July 21, 2016
      * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
      */
     template<class charT> class Request: public Request_base
@@ -104,12 +104,14 @@ namespace Fastcgipp
         /*!
          * @param maxPostSize This would be the maximum size, in bytes, you want
          *                    to allow for post data. Any data beyond this size
-         *                    would result in a call to bigPostErrorHandler(). A
-         *                    value of -1 represents unlimited. With the default
-         *                    being 0, POST uploading is by \a default
-         *                    prohibited.
+         *                    would result in a call to bigPostErrorHandler().
+         *                    With the default being 0, POST uploading is by
+         *                    *default* prohibited. Should you wish to have the
+         *                    limit as large as possible, pass either
+         *                    (size_t)-1, std::string::npos or
+         *                    std::numeric_limits<size_t>::max().
          */
-        Request(const ssize_t maxPostSize=0):
+        Request(const size_t maxPostSize=0):
             out(&m_outStreamBuffer),
             err(&m_errStreamBuffer),
             m_maxPostSize(maxPostSize),
@@ -335,7 +337,7 @@ namespace Fastcgipp
         Http::Environment<charT> m_environment;
 
         //! The maximum amount of post data, in bytes, that can be recieved
-        const ssize_t m_maxPostSize;
+        const size_t m_maxPostSize;
 
         //! The role that the other side expects this request to play
         Protocol::Role m_role;
