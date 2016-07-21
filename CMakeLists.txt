@@ -1,8 +1,11 @@
 cmake_minimum_required(VERSION 2.8)
 project(fastcgi++ LANGUAGES CXX)
 
-set(VERSION "3.0beta")
+set(VERSION      "3.0beta")
+set(VERSION_MAJOR 3)
 string(TIMESTAMP BUILD_TIME UTC)
+
+option(BUILD_STATIC_LIBS "Set to on to build and install static library" OFF)
 
 # Set up our log level for fastcgi++/log.hpp
 if(NOT LOG_LEVEL)
@@ -57,20 +60,25 @@ add_library(fastcgipp SHARED
     src/webstreambuf.cpp
     src/request.cpp
     src/manager.cpp)
-install(TARGETS fastcgipp LIBRARY DESTINATION lib)
+set_target_properties(fastcgipp PROPERTIES VERSION ${VERSION}
+                                           SOVERSION ${VERSION_MAJOR})
+install(TARGETS fastcgipp LIBRARY DESTINATION lib${LIB_SUFFIX})
+
 
 # A static version of the library
-add_library(fastcgipp-static STATIC
-    src/log.cpp
-    src/http.cpp
-    src/protocol.cpp
-    src/sockets.cpp
-    src/transceiver.cpp
-    src/fcgistreambuf.cpp
-    src/webstreambuf.cpp
-    src/request.cpp
-    src/manager.cpp)
-install(TARGETS fastcgipp-static ARCHIVE DESTINATION lib)
+if (BUILD_STATIC_LIBS)
+    add_library(fastcgipp-static STATIC
+        src/log.cpp
+        src/http.cpp
+        src/protocol.cpp
+        src/sockets.cpp
+        src/transceiver.cpp
+        src/fcgistreambuf.cpp
+        src/webstreambuf.cpp
+        src/request.cpp
+        src/manager.cpp)
+    install(TARGETS fastcgipp-static ARCHIVE DESTINATION lib${LIB_SUFFIX})
+endif (BUILD_STATIC_LIBS)
 
 # Install the header file
 install(FILES
