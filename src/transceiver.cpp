@@ -2,7 +2,7 @@
  * @file       transceiver.cpp
  * @brief      Defines the Fastcgipp::Transceiver class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 18, 2016
+ * @date       August 20, 2016
  * @copyright  Copyright &copy; 2016 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -160,11 +160,12 @@ void Fastcgipp::Transceiver::receive(Socket& socket)
         }
 
         const size_t recordSize = sizeof(Protocol::Header)
-            +((Protocol::Header*)buffer.data())->contentLength
-            +((Protocol::Header*)buffer.data())->paddingLength;
+            +reinterpret_cast<Protocol::Header*>(buffer.data())->contentLength
+            +reinterpret_cast<Protocol::Header*>(buffer.data())->paddingLength;
         buffer.resize(recordSize);
 
-        Protocol::Header& header = *(Protocol::Header*)buffer.data();
+        Protocol::Header& header
+            = *reinterpret_cast<Protocol::Header*>(buffer.data());
 
         const ssize_t read = socket.read(
                 buffer.data()+received,

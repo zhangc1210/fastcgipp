@@ -583,8 +583,9 @@ int main()
                                 != L"image/png" ||
                             environment.files.begin()->second.data.size() != 58587 ||
                             !std::equal(
-                                (const char*)gnu_png,
-                                (const char*)gnu_png+sizeof(gnu_png),
+                                reinterpret_cast<const char*>(gnu_png),
+                                reinterpret_cast<const char*>(gnu_png)
+                                    +sizeof(gnu_png),
                                 environment.files.begin()->second.data.cbegin(),
                                 environment.files.begin()->second.data.cend()))
                         FAIL_LOG("Fastcgipp::Http::Environment multipart "\

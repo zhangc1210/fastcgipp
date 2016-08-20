@@ -2,7 +2,7 @@
  * @file       http.cpp
  * @brief      Defines elements of the HTTP protocol
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 21, 2016
+ * @date       August 20, 2016
  * @copyright  Copyright &copy; 2016 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -271,50 +271,58 @@ template<class charT> void Fastcgipp::Http::Environment<charT>::fill(
                     if(std::equal(
                                 value,
                                 end,
-                                requestMethodLabels[(int)RequestMethod::GET]))
+                                requestMethodLabels[static_cast<int>(
+                                    RequestMethod::GET)]))
                         requestMethod = RequestMethod::GET;
                     else if(std::equal(
                                 value,
                                 end,
-                                requestMethodLabels[(int)RequestMethod::PUT]))
+                                requestMethodLabels[static_cast<int>(
+                                    RequestMethod::PUT)]))
                         requestMethod = RequestMethod::PUT;
                     break;
                 case 4:
                     if(std::equal(
                                 value,
                                 end,
-                                requestMethodLabels[(int)RequestMethod::HEAD]))
+                                requestMethodLabels[static_cast<int>(
+                                    RequestMethod::HEAD)]))
                         requestMethod = RequestMethod::HEAD;
                     else if(std::equal(
                                 value,
                                 end,
-                                requestMethodLabels[(int)RequestMethod::POST]))
+                                requestMethodLabels[static_cast<int>(
+                                    RequestMethod::POST)]))
                         requestMethod = RequestMethod::POST;
                     break;
                 case 5:
                     if(std::equal(
                                 value,
                                 end,
-                                requestMethodLabels[(int)RequestMethod::TRACE]))
+                                requestMethodLabels[static_cast<int>(
+                                    RequestMethod::TRACE)]))
                         requestMethod = RequestMethod::TRACE;
                     break;
                 case 6:
                     if(std::equal(
                                 value,
                                 end,
-                                requestMethodLabels[(int)RequestMethod::DELETE]))
+                                requestMethodLabels[static_cast<int>(
+                                    RequestMethod::DELETE)]))
                         requestMethod = RequestMethod::DELETE;
                     break;
                 case 7:
                     if(std::equal(
                                 value,
                                 end,
-                                requestMethodLabels[(int)RequestMethod::OPTIONS]))
+                                requestMethodLabels[static_cast<int>(
+                                    RequestMethod::OPTIONS)]))
                         requestMethod = RequestMethod::OPTIONS;
                     else if(std::equal(
                                 value,
                                 end,
-                                requestMethodLabels[(int)RequestMethod::OPTIONS]))
+                                requestMethodLabels[static_cast<int>(
+                                    RequestMethod::OPTIONS)]))
                         requestMethod = RequestMethod::CONNECT;
                     break;
                 }
@@ -372,7 +380,10 @@ template<class charT> void Fastcgipp::Http::Environment<charT>::fill(
             if(std::equal(name, value, "HTTP_IF_MODIFIED_SINCE"))
             {
                 std::tm time;
-                std::fill((char*)&time, (char*)&time+sizeof(time), 0);
+                std::fill(
+                        reinterpret_cast<char*>(&time),
+                        reinterpret_cast<char*>(&time)+sizeof(time),
+                        0);
                 std::stringstream dateStream;
                 dateStream.write(&*value, end-value);
                 dateStream >> std::get_time(
@@ -624,7 +635,7 @@ Fastcgipp::Http::SessionId::SessionId()
     std::uniform_int_distribution<unsigned short> distribution(0, 255);
 
     for(unsigned char& byte: m_data)
-        byte = (unsigned char)distribution(device);
+        byte = static_cast<unsigned char>(distribution(device));
     m_timestamp = std::time(nullptr);
 }
 
@@ -764,8 +775,10 @@ const std::array<const char* const, 9> Fastcgipp::Http::requestMethodLabels =
 Fastcgipp::Http::Address& Fastcgipp::Http::Address::operator&=(
         const Address& x)
 {
-    *(uint64_t*)m_data.data() &= *(const uint64_t*)x.m_data.data();
-    *(uint64_t*)(m_data.data()+8) &= *(const uint64_t*)(x.m_data.data()+8);
+    *reinterpret_cast<uint64_t*>(m_data.data())
+        &= *reinterpret_cast<const uint64_t*>(x.m_data.data());
+    *reinterpret_cast<uint64_t*>(m_data.data()+8)
+        &= *reinterpret_cast<const uint64_t*>(x.m_data.data()+8);
 
     return *this;
 }
@@ -838,7 +851,7 @@ template<class charT> void Fastcgipp::Http::Address::assign(
             {
                 // We must be getting a pure ipv4 formatted address. Not an
                 // ::ffff:xxx.xxx.xxx.xxx style ipv4 address.
-                *(uint16_t*)write = 0xffff;
+                *reinterpret_cast<uint16_t*>(write) = 0xffff;
                 pad = m_data.begin();
                 write += 2;
             }
@@ -935,8 +948,11 @@ Fastcgipp::Http::operator<<(
                 const uint16_t* subEndCandidate;
                 bool inZero = false;
 
-                for(const uint16_t* it = (const uint16_t*)address.m_data.data();
-                        it < (const uint16_t*)(address.m_data.data()+Address::size);
+                for(
+                        const uint16_t* it = reinterpret_cast<const uint16_t*>(
+                            address.m_data.data());
+                        it < reinterpret_cast<const uint16_t*>(
+                            address.m_data.data()+Address::size);
                         ++it)
                 {
                     if(*it == 0)
@@ -974,9 +990,12 @@ Fastcgipp::Http::operator<<(
             os.setf(ios::hex, ios::basefield);
 
             if(
-                    subStart==(const uint16_t*)address.m_data.data()
-                    && subEnd==(const uint16_t*)address.m_data.data()+4
-                    && *((const uint16_t*)address.m_data.data()+5) == 0xffff)
+                    subStart==reinterpret_cast<const uint16_t*>(
+                        address.m_data.data())
+                    && subEnd==reinterpret_cast<const uint16_t*>(
+                        address.m_data.data())+4
+                    && *(reinterpret_cast<const uint16_t*>(
+                            address.m_data.data())+5) == 0xffff)
             {
                 // It is an ipv4 address
                 *bufPtr++=os.widen(':');
@@ -1006,8 +1025,9 @@ Fastcgipp::Http::operator<<(
             else
             {
                 // It is an ipv6 address
-                for(const uint16_t* it = (const uint16_t*)address.m_data.data();
-                        it < (const uint16_t*)(
+                for(const uint16_t* it= reinterpret_cast<const uint16_t*>(
+                            address.m_data.data());
+                        it < reinterpret_cast<const uint16_t*>(
                             address.m_data.data()+Address::size);
                         ++it)
                 {
@@ -1015,7 +1035,8 @@ Fastcgipp::Http::operator<<(
                     {
                         if(
                                 it == subStart
-                                && it == (const uint16_t*)address.m_data.data())
+                                && it == reinterpret_cast<const uint16_t*>(
+                                    address.m_data.data()))
                             *bufPtr++=os.widen(':');
                         if(it == subEnd)
                             *bufPtr++=os.widen(':');
@@ -1027,9 +1048,11 @@ Fastcgipp::Http::operator<<(
                                 os,
                                 os.fill(),
                                 static_cast<unsigned long int>(
-                                    *(const Protocol::BigEndian<uint16_t>*)it));
+                                    *reinterpret_cast<
+                                    const Protocol::BigEndian<uint16_t>*>(it)));
 
-                        if(it < (const uint16_t*)(address.m_data.data()+Address::size)-1)
+                        if(it < reinterpret_cast<const uint16_t*>(
+                                    address.m_data.data()+Address::size)-1)
                             *bufPtr++=os.widen(':');
                     }
                 }
@@ -1123,7 +1146,7 @@ Fastcgipp::Http::operator>>(
                     if(write == buffer)
                     {
                         // We must be getting a pure ipv4 formatted address. Not an ::ffff:xxx.xxx.xxx.xxx style ipv4 address.
-                        *(uint16_t*)write = 0xffff;
+                        *reinterpret_cast<uint16_t*>(write) = 0xffff;
                         pad = buffer;
                         write+=2;
                     }

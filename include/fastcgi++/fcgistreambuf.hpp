@@ -46,7 +46,7 @@ namespace Fastcgipp
      * @tparam charT Character type (char or wchar_t)
      * @tparam traits Character traits
      *
-     * @date    May 6, 2016
+     * @date    August 20, 2016
      * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
      */
     template <class charT, class traits = std::char_traits<charT>>

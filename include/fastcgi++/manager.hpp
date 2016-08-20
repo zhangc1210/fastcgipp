@@ -57,7 +57,7 @@ namespace Fastcgipp
      *  - Call start()
      *  - Call stop() or terminate() when you are done.
      *
-     * @date    May 18, 2016
+     * @date    August 20, 2016
      * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
      */
     class Manager_base

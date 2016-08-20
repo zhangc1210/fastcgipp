@@ -2,7 +2,7 @@
  * @file       request.hpp
  * @brief      Declares the Request class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       July 21, 2016
+ * @date       August 20, 2016
  * @copyright  Copyright &copy; 2016 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -94,7 +94,7 @@ namespace Fastcgipp
      *
      * @tparam charT Character type for internal processing (wchar_t or char)
      *
-     * @date    July 21, 2016
+     * @date    August 20, 2016
      * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
      */
     template<class charT> class Request: public Request_base
@@ -287,7 +287,7 @@ namespace Fastcgipp
          */
         void dump(const unsigned char* data, size_t size)
         {
-            m_outStreamBuffer.dump((const char*)data, size);
+            m_outStreamBuffer.dump(reinterpret_cast<const char*>(data), size);
         }
 
         //! Dumps an input stream directly into the FastCGI protocol

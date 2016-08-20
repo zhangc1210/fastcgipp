@@ -94,8 +94,10 @@ void client()
                         buffer.send = buffer.data.cbegin();
                         buffer.receive = buffer.buffer.begin();
                         for(
-                                auto i = (uint64_t*)(&*buffer.data.begin());
-                                i < (uint64_t*)(&*buffer.data.end());
+                                auto i = reinterpret_cast<uint64_t*>(
+                                    &*buffer.data.begin());
+                                i < reinterpret_cast<uint64_t*>(
+                                    &*buffer.data.end());
                                 ++i)
                             *i = rd_64();
                     }
@@ -140,8 +142,10 @@ void client()
                     buffer.buffer.resize(chunkSize);
                     buffer.data.resize(chunkSize);
                     for(
-                            auto i = (uint64_t*)(&*buffer.data.begin());
-                            i < (uint64_t*)(&*buffer.data.end());
+                            auto i = reinterpret_cast<uint64_t*>(
+                                &*buffer.data.begin());
+                            i < reinterpret_cast<uint64_t*>(
+                                &*buffer.data.end());
                             ++i)
                         *i = rd_64();
 

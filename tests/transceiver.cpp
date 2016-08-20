@@ -79,7 +79,7 @@ void echo()
             echoQueue.pop();
             lock.unlock();
 
-            const Kill& killer=*(Kill*)(echo.data.data()
+            const Kill& killer = *reinterpret_cast<Kill*>(echo.data.data()
                     +sizeof(Fastcgipp::Protocol::Header));
             transceiver.send(
                     echo.id.m_socket,
@@ -150,7 +150,7 @@ void client()
                     if(request->second.empty())
                         break;
 
-                    const Kill& kill=*(Kill*)(request->second.data()
+                    const Kill& kill = *reinterpret_cast<Kill*>(request->second.data()
                             +sizeof(Fastcgipp::Protocol::Header));
                     if(requestCount<maxRequests && kill == Kill::DONT)
                         break;
@@ -204,16 +204,17 @@ void client()
             }
             request->second.resize(sizeof(FullMessage));
             Fastcgipp::Protocol::Header& header =
-                *(Fastcgipp::Protocol::Header*)request->second.data();
+                *reinterpret_cast<Fastcgipp::Protocol::Header*>(
+                        request->second.data());
             header.fcgiId = request->first.m_id;
             header.contentLength = messageSize-51;
             header.paddingLength = 51;
 
-            Kill& kill=*(Kill*)(request->second.data()
+            Kill& kill = *reinterpret_cast<Kill*>(request->second.data()
                     +sizeof(Fastcgipp::Protocol::Header));
 
 
-            kill = (Kill)killDist(rd);
+            kill = static_cast<Kill>(killDist(rd));
 
             if(kill == Kill::SERVER)
             {
@@ -286,12 +287,15 @@ RECEIVE:
                 }
 
                 const size_t recordSize = sizeof(Fastcgipp::Protocol::Header)
-                    +((Fastcgipp::Protocol::Header*)buffer.data())->contentLength
-                    +((Fastcgipp::Protocol::Header*)buffer.data())->paddingLength;
+                    +reinterpret_cast<Fastcgipp::Protocol::Header*>(
+                            buffer.data())->contentLength
+                    +reinterpret_cast<Fastcgipp::Protocol::Header*>(
+                            buffer.data())->paddingLength;
                 buffer.resize(recordSize);
 
                 Fastcgipp::Protocol::Header& header =
-                    *(Fastcgipp::Protocol::Header*)buffer.data();
+                    *reinterpret_cast<Fastcgipp::Protocol::Header*>(
+                            buffer.data());
                 const ssize_t read = socket.read(
                         buffer.data()+received,
                         buffer.size()-received);
@@ -324,7 +328,7 @@ RECEIVE:
                         }
                 }
 
-                Kill kill=*(Kill*)(request->second.data()
+                Kill kill = *reinterpret_cast<Kill*>(request->second.data()
                         +sizeof(Fastcgipp::Protocol::Header));
                 switch(kill)
                 {

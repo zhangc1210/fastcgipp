@@ -279,7 +279,7 @@ namespace Fastcgipp
      * <em>The only part of this class that is safe to call from multiple
      * threads is the wake() function.</em>
      *
-     * @date    May 18, 2016
+     * @date    August 20, 2016
      * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
      */
     class SocketGroup

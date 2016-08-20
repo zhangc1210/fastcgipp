@@ -17,7 +17,7 @@ void checker(const Fastcgipp::Socket& socket, std::vector<char>&& record)
         FAIL_LOG("Our record is not sized properly");
 
     const Fastcgipp::Protocol::Header& header
-        = *(Fastcgipp::Protocol::Header*)record.data();
+        = *reinterpret_cast<Fastcgipp::Protocol::Header*>(record.data());
 
     if(header.fcgiId != FCGIID)
         FAIL_LOG("Our FcgiId doesn't match")
@@ -211,8 +211,8 @@ void checker(const Fastcgipp::Socket& socket, std::vector<char>&& record)
             };
 
             if(!std::equal(
-                        (char*)&*body.cbegin(),
-                        (char*)&*body.cend(),
+                        reinterpret_cast<const char*>(&*body.cbegin()),
+                        reinterpret_cast<const char*>(&*body.cend()),
                         record.begin()+sizeof(header),
                         record.begin()+sizeof(header)+header.contentLength))
                 FAIL_LOG("Our body isn't right on try " << called);

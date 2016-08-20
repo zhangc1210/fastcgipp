@@ -2,7 +2,7 @@
  * @file       manager.cpp
  * @brief      Defines the Manager class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 28, 2016
+ * @date       August 20, 2016
  * @copyright  Copyright &copy; 2016 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -153,7 +153,8 @@ void Fastcgipp::Manager_base::localHandler()
 
     if(message.type == 0)
     {
-        const Protocol::Header& header=*(Protocol::Header*)message.data.data();
+        const Protocol::Header& header
+            = *reinterpret_cast<Protocol::Header*>(message.data.data());
         switch(header.type)
         {
             case Protocol::RecordType::GET_VALUES:
@@ -178,7 +179,8 @@ void Fastcgipp::Manager_base::localHandler()
                                 std::vector<char> record(
                                         sizeof(Protocol::maxConnsReply));
                                 const char* const start
-                                    = (const char*)&Protocol::maxConnsReply;
+                                    = reinterpret_cast<const char*>(
+                                            &Protocol::maxConnsReply);
                                 const char* end = start
                                     +sizeof(Protocol::maxConnsReply);
                                 std::copy(start, end, record.begin());
@@ -196,7 +198,8 @@ void Fastcgipp::Manager_base::localHandler()
                                 std::vector<char> record(
                                         sizeof(Protocol::maxReqsReply));
                                 const char* const start
-                                    = (const char*)&Protocol::maxReqsReply;
+                                    = reinterpret_cast<const char*>(
+                                            &Protocol::maxReqsReply);
                                 const char* end = start
                                     + sizeof(Protocol::maxReqsReply);
                                 std::copy(start, end, record.begin());
@@ -214,7 +217,8 @@ void Fastcgipp::Manager_base::localHandler()
                                 std::vector<char> record(
                                         sizeof(Protocol::mpxsConnsReply));
                                 const char* const start
-                                    = (const char*)&Protocol::mpxsConnsReply;
+                                    = reinterpret_cast<const char*>(
+                                            &Protocol::mpxsConnsReply);
                                 const char* end = start
                                     + sizeof(Protocol::mpxsConnsReply);
                                 std::copy(start, end, record.begin());
@@ -236,7 +240,8 @@ void Fastcgipp::Manager_base::localHandler()
                         sizeof(Protocol::Header)
                         +sizeof(Protocol::UnknownType));
 
-                Protocol::Header& sendHeader=*(Protocol::Header*)record.data();
+                Protocol::Header& sendHeader
+                    = *reinterpret_cast<Protocol::Header*>(record.data());
                 sendHeader.version = Protocol::version;
                 sendHeader.type = Protocol::RecordType::UNKNOWN_TYPE;
                 sendHeader.fcgiId = 0;
@@ -244,7 +249,8 @@ void Fastcgipp::Manager_base::localHandler()
                 sendHeader.paddingLength = 0;
 
                 Protocol::UnknownType& sendBody
-                    = *(Protocol::UnknownType*)(record.data()+sizeof(header));
+                    = *reinterpret_cast<Protocol::UnknownType*>(
+                            record.data()+sizeof(header));
                 sendBody.type = header.type;
 
                 m_transceiver.send(socket, std::move(record), false);
@@ -381,11 +387,11 @@ void Fastcgipp::Manager_base::push(Protocol::RequestId id, Message&& message)
         if(request == m_requests.end())
         {
             const Protocol::Header& header=
-                *(Protocol::Header*)message.data.data();
+                *reinterpret_cast<Protocol::Header*>(message.data.data());
             if(header.type == Protocol::RecordType::BEGIN_REQUEST)
             {
                 const Protocol::BeginRequest& body
-                    =*(Protocol::BeginRequest*)(
+                    = *reinterpret_cast<Protocol::BeginRequest*>(
                             message.data.data()
                             +sizeof(header));
 

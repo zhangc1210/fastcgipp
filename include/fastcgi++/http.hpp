@@ -2,7 +2,7 @@
  * @file       http.hpp
  * @brief      Declares elements of the HTTP protocol
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 26, 2016
+ * @date       August 20, 2016
  * @copyright  Copyright &copy; 2016 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -59,7 +59,7 @@ namespace Fastcgipp
          * @tparam charT Type of character to use in the value string (char or
          *               wchar_t)
          *
-         * @date    April 25, 2016
+         * @date    August 20, 2016
          * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
          */
         template<class charT> struct File
@@ -105,7 +105,7 @@ namespace Fastcgipp
                 std::basic_ostream<charT, Traits>& os,
                 const RequestMethod requestMethod)
         {
-            return os << requestMethodLabels[(int)requestMethod];
+            return os << requestMethodLabels[static_cast<int>(requestMethod)];
         }
 
         //! Efficiently stores IPv6 addresses
@@ -117,7 +117,7 @@ namespace Fastcgipp
          * for netmask calculation. It detects when an IPv4 address is stored
          * outputs it accordingly.
          *
-         * @date    March 26, 2016
+         * @date    August 20, 2016
          * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
          */
         class Address
@@ -241,7 +241,7 @@ namespace Fastcgipp
          *
          * @tparam charT Character type to use for strings
          *
-         * @date    May 25, 2016
+         * @date    August 20, 2016
          * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
          */
         template<class charT> struct Environment
@@ -771,7 +771,9 @@ Out Fastcgipp::Http::base64Encode(In start, In end, Out destination)
             while(bitPos!=-8)
             {
                 if(start!=end)
-                    buffer |= (int)*(unsigned char*)start++ << bitPos;
+                    buffer |= static_cast<int>(
+                            *reinterpret_cast<const unsigned char*>(
+                                start++)) << bitPos;
                 else padded+=6;
                 bitPos-=8;
             }

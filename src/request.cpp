@@ -2,7 +2,7 @@
  * @file       request.cpp
  * @brief      Defines the Request class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       July 21, 2016
+ * @date       August 20, 2016
  * @copyright  Copyright &copy; 2016 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -39,7 +39,8 @@ template<class charT> void Fastcgipp::Request<charT>::complete()
     std::vector<char> record(
             sizeof(Protocol::Header)+sizeof(Protocol::EndRequest));
 
-    Protocol::Header& header=*(Protocol::Header*)record.data();
+    Protocol::Header& header
+        = *reinterpret_cast<Protocol::Header*>(record.data());
     header.version = Protocol::version;
     header.type = Protocol::RecordType::END_REQUEST;
     header.fcgiId = m_id.m_id;
@@ -47,7 +48,7 @@ template<class charT> void Fastcgipp::Request<charT>::complete()
     header.paddingLength = 0;
 
     Protocol::EndRequest& body =
-        *(Protocol::EndRequest*)(record.data()+sizeof(header));
+        *reinterpret_cast<Protocol::EndRequest*>(record.data()+sizeof(header));
     body.appStatus = 0;
     body.protocolStatus = m_status;
 
@@ -69,7 +70,7 @@ std::unique_lock<std::mutex>Fastcgipp::Request<charT>::handler()
         if(message.type == 0)
         {
             const Protocol::Header& header =
-                *(Protocol::Header*)message.data.data();
+                *reinterpret_cast<Protocol::Header*>(message.data.data());
             const auto body = message.data.cbegin()+sizeof(header);
             const auto bodyEnd = body+header.contentLength;
 

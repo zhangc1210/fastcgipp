@@ -12,7 +12,8 @@ int main()
     {
         const int64_t actual = -0x62c74ce376736dd0;
         const Fastcgipp::Protocol::BigEndian<int64_t> reversed(actual);
-        const unsigned char* data = (const unsigned char*)&reversed;
+        const unsigned char* data = reinterpret_cast<const unsigned char*>(
+                &reversed);
 
         if(!(
                     reversed == actual &&
@@ -43,8 +44,8 @@ int main()
         const std::vector<char>::const_iterator name = body.cbegin()+2;
         const std::vector<char>::const_iterator value = name+nameSize;
         const std::vector<char>::const_iterator end = value+valueSize;
-        body[0] = (char)nameSize;
-        body[1] = (char)valueSize;
+        body[0] = static_cast<char>(nameSize);
+        body[1] = static_cast<char>(valueSize);
 
         std::vector<char>::const_iterator nameResult;
         std::vector<char>::const_iterator valueResult;
@@ -79,9 +80,9 @@ int main()
         const std::vector<char>::const_iterator name = body.cbegin()+5;
         const std::vector<char>::const_iterator value = name+nameSize;
         const std::vector<char>::const_iterator end = value+valueSize;
-        body[0] = (char)nameSize;
-        *(Fastcgipp::Protocol::BigEndian<int32_t>*)&body[1]
-            = (uint32_t)valueSize;
+        body[0] = static_cast<char>(nameSize);
+        *reinterpret_cast<Fastcgipp::Protocol::BigEndian<int32_t>*>(&body[1])
+            = static_cast<uint32_t>(valueSize);
         body[1] |= 0x80;
 
         std::vector<char>::const_iterator nameResult;
@@ -117,10 +118,10 @@ int main()
         const std::vector<char>::const_iterator name = body.cbegin()+5;
         const std::vector<char>::const_iterator value = name+nameSize;
         const std::vector<char>::const_iterator end = value+valueSize;
-        *(Fastcgipp::Protocol::BigEndian<int32_t>*)body.data()
-            = (uint32_t)nameSize;
+        *reinterpret_cast<Fastcgipp::Protocol::BigEndian<int32_t>*>(body.data())
+            = static_cast<uint32_t>(nameSize);
         body[0] |= 0x80;
-        body[4] = (char)valueSize;
+        body[4] = static_cast<char>(valueSize);
 
         std::vector<char>::const_iterator nameResult;
         std::vector<char>::const_iterator valueResult;
@@ -155,11 +156,11 @@ int main()
         const std::vector<char>::const_iterator name = body.cbegin()+8;
         const std::vector<char>::const_iterator value = name+nameSize;
         const std::vector<char>::const_iterator end = value+valueSize;
-        *(Fastcgipp::Protocol::BigEndian<int32_t>*)body.data()
-            = (uint32_t)nameSize;
+        *reinterpret_cast<Fastcgipp::Protocol::BigEndian<int32_t>*>(body.data())
+            = static_cast<uint32_t>(nameSize);
         body[0] |= 0x80;
-        *(Fastcgipp::Protocol::BigEndian<int32_t>*)&body[4]
-            = (uint32_t)valueSize;
+        *reinterpret_cast<Fastcgipp::Protocol::BigEndian<int32_t>*>(&body[4])
+            = static_cast<uint32_t>(valueSize);
         body[4] |= 0x80;
 
         std::vector<char>::const_iterator nameResult;

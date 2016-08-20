@@ -51,7 +51,7 @@ namespace Fastcgipp
      * level sockets and also the creation/destruction of the sockets
      * themselves.
      *
-     * @date    May 18, 2016
+     * @date    August 20, 2016
      * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
      */
     class Transceiver

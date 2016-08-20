@@ -2,7 +2,7 @@
  * @file       sockets.cpp
  * @brief      Defines everything for interfaces with OS level sockets.
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 18, 2016
+ * @date       August 20, 2016
  * @copyright  Copyright &copy; 2016 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  *
@@ -242,7 +242,10 @@ bool Fastcgipp::SocketGroup::listen(
     address.sun_family = AF_UNIX;
     std::strncpy(address.sun_path, name, sizeof(address.sun_path) - 1);
 
-    if(bind(fd, (struct sockaddr*)&address, sizeof(address)) < 0)
+    if(bind(
+                fd,
+                reinterpret_cast<struct sockaddr*>(&address),
+                sizeof(address)) < 0)
     {
         ERROR_LOG("Unable to bind to unix socket \"" << name << "\": " \
                 << std::strerror(errno));
@@ -364,7 +367,10 @@ Fastcgipp::Socket Fastcgipp::SocketGroup::connect(const char* name)
     address.sun_family = AF_UNIX;
     std::strncpy(address.sun_path, name, sizeof(address.sun_path) - 1);
 
-    if(::connect(fd, (struct sockaddr*)&address, sizeof(address))==-1)
+    if(::connect(
+                fd,
+                reinterpret_cast<struct sockaddr*>(&address),
+                sizeof(address))==-1)
     {
         ERROR_LOG("Unable to connect to unix socket \"" << name << "\": " \
                 << std::strerror(errno));
@@ -599,7 +605,7 @@ void Fastcgipp::SocketGroup::createSocket(const socket_t listener)
     socklen_t addrlen=sizeof(sockaddr_un);
     const socket_t socket=::accept(
             listener,
-            (sockaddr*)&addr,
+            reinterpret_cast<sockaddr*>(&addr),
             &addrlen);
     if(socket<0)
         FAIL_LOG("Unable to accept() with fd " \
@@ -631,7 +637,7 @@ void Fastcgipp::SocketGroup::createSocket(const socket_t listener)
 }
 
 Fastcgipp::Socket::Socket():
-    m_data(new Data(-1, false, *(SocketGroup*)(nullptr))),
+    m_data(new Data(-1, false, *static_cast<SocketGroup*>(nullptr))),
     m_original(false)
 {}
 
