@@ -639,9 +639,9 @@ Fastcgipp::Http::SessionId::SessionId()
     m_timestamp = std::time(nullptr);
 }
 
-template Fastcgipp::Http::SessionId::SessionId<char>(
+template Fastcgipp::Http::SessionId::SessionId(
         const std::basic_string<char>& string);
-template Fastcgipp::Http::SessionId::SessionId<wchar_t>(
+template Fastcgipp::Http::SessionId::SessionId(
         const std::basic_string<wchar_t>& string);
 template<class charT> Fastcgipp::Http::SessionId::SessionId(
         const std::basic_string<charT>& string)
@@ -760,7 +760,7 @@ extern const std::array<const char, 64> Fastcgipp::Http::base64Characters =
 }};
 
 const std::array<const char* const, 9> Fastcgipp::Http::requestMethodLabels =
-{
+{{
     "ERROR",
     "HEAD",
     "GET",
@@ -770,7 +770,7 @@ const std::array<const char* const, 9> Fastcgipp::Http::requestMethodLabels =
     "TRACE",
     "OPTIONS",
     "CONNECT"
-};
+}};
 
 Fastcgipp::Http::Address& Fastcgipp::Http::Address::operator&=(
         const Address& x)
@@ -1258,7 +1258,7 @@ Fastcgipp::Http::operator>>(
 Fastcgipp::Http::Address::operator bool() const
 {
     static const std::array<const unsigned char, 16> nullString =
-        {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+        {{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
     if(std::equal(m_data.begin(), m_data.end(), nullString.begin()))
         return false;
     return true;

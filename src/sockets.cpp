@@ -384,7 +384,7 @@ Fastcgipp::Socket Fastcgipp::SocketGroup::connect(const char* name)
 
     return m_sockets.emplace(
             fd,
-            std::move(Socket(fd, *this))).first->second;
+            Socket(fd, *this)).first->second;
 }
 
 Fastcgipp::Socket Fastcgipp::SocketGroup::connect(
@@ -447,7 +447,7 @@ Fastcgipp::Socket Fastcgipp::SocketGroup::connect(
 
     return m_sockets.emplace(
             fd,
-            std::move(Socket(fd, *this))).first->second;
+            Socket(fd, *this)).first->second;
 }
 
 Fastcgipp::Socket Fastcgipp::SocketGroup::poll(bool block)
@@ -627,7 +627,7 @@ void Fastcgipp::SocketGroup::createSocket(const socket_t listener)
     {
         m_sockets.emplace(
                 socket,
-                std::move(Socket(socket, *this)));
+                Socket(socket, *this));
 #if FASTCGIPP_LOG_LEVEL > 3
         ++m_incomingConnectionCount;
 #endif

@@ -169,6 +169,9 @@ namespace Fastcgipp
             return m_transceiver.listen(interface, service);
         }
 
+        //! Pass a message to a request
+        void push(Protocol::RequestId id, Message&& message);
+
     protected:
         //! Make a request object
         virtual std::unique_ptr<Request_base> makeRequest(
@@ -178,9 +181,6 @@ namespace Fastcgipp
 
         //! Handles low level communication with the other side
         Transceiver m_transceiver;
-
-        //! Pass a message to a request
-        void push(Protocol::RequestId id, Message&& message);
 
     private:
         //! Queue for pending tasks
