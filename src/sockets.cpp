@@ -2,7 +2,7 @@
  * @file       sockets.cpp
  * @brief      Defines everything for interfaces with OS level sockets.
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       August 20, 2016
+ * @date       November 13, 2016
  * @copyright  Copyright &copy; 2016 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  *
@@ -195,7 +195,7 @@ bool Fastcgipp::SocketGroup::listen()
 {
     const int listen=0;
 
-    fcntl(listen, F_SETFL, (fcntl(listen, F_GETFL)|O_NONBLOCK)^O_NONBLOCK);
+    fcntl(listen, F_SETFL, fcntl(listen, F_GETFL)|O_NONBLOCK);
 
     if(m_listeners.find(listen) == m_listeners.end())
     {
@@ -614,7 +614,7 @@ void Fastcgipp::SocketGroup::createSocket(const socket_t listener)
     if(fcntl(
             socket,
             F_SETFL,
-            (fcntl(socket, F_GETFL)|O_NONBLOCK)^O_NONBLOCK)
+            fcntl(socket, F_GETFL)|O_NONBLOCK)
             < 0)
     {
         ERROR_LOG("Unable to set NONBLOCK on fd " << socket \
