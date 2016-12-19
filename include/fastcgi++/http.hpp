@@ -260,7 +260,10 @@ namespace Fastcgipp
 
             //! Character sets the clients accepts
             std::basic_string<charT> acceptCharsets;
-
+	  
+            //! Http authorization string
+            std::basic_string<charT> authorization;
+	  
             //! Referral URL
             std::basic_string<charT> referer;
 

@@ -339,6 +339,8 @@ template<class charT> void Fastcgipp::Http::Environment<charT>::fill(
         case 18:
             if(std::equal(name, value, "HTTP_IF_NONE_MATCH"))
                 etag=atoi(&*value, &*end);
+            else if(std::equal(name, value, "HTTP_AUTHORIZATION"))
+                vecToString(value, end, authorization);
             break;
         case 19:
             if(std::equal(name, value, "HTTP_ACCEPT_CHARSET"))
