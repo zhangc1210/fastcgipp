@@ -2,7 +2,7 @@
  * @file       sockets.cpp
  * @brief      Defines everything for interfaces with OS level sockets.
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       November 13, 2016
+ * @date       April 27, 2017
  * @copyright  Copyright &copy; 2016 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  *
@@ -176,6 +176,9 @@ Fastcgipp::SocketGroup::~SocketGroup()
         ::shutdown(listener, SHUT_RDWR);
         ::close(listener);
     }
+    for(const auto& filename: m_filenames)
+        std::remove(filename.c_str());
+
     DIAG_LOG("SocketGroup::~SocketGroup(): Incoming sockets ======== " \
             << m_incomingConnectionCount)
     DIAG_LOG("SocketGroup::~SocketGroup(): Outgoing sockets ======== " \
@@ -253,7 +256,6 @@ bool Fastcgipp::SocketGroup::listen(
         std::remove(name);
         return false;
     }
-    unlink(name);
 
     // Set the user and group of the socket
     if(owner!=nullptr && group!=nullptr)
@@ -291,6 +293,7 @@ bool Fastcgipp::SocketGroup::listen(
         return false;
     }
 
+    m_filenames.emplace_back(name);
     m_listeners.insert(fd);
     m_refreshListeners = true;
     return true;
