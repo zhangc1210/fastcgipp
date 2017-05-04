@@ -2,13 +2,13 @@
  * @file       protocol.hpp
  * @brief      Declares everything for relating to the FastCGI protocol itself.
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       August 20, 2016
+ * @date       May 3, 2017
  * @copyright  Copyright &copy; 2016 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
 
 /*******************************************************************************
-* Copyright (C) 2016 Eddie Carle [eddie@isatec.ca]                             *
+* Copyright (C) 2017 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
 * This file is part of fastcgi++.                                              *
 *                                                                              *
@@ -398,11 +398,11 @@ namespace Fastcgipp
          * @return False if out of bounds. True otherwise.
          */
         bool processParamHeader(
-                std::vector<char>::const_iterator data,
-                const std::vector<char>::const_iterator dataEnd,
-                std::vector<char>::const_iterator& name,
-                std::vector<char>::const_iterator& value,
-                std::vector<char>::const_iterator& end);
+                const char* data,
+                const char* const dataEnd,
+                const char*& name,
+                const char*& value,
+                const char*& end);
 
         //! For the reply of FastCGI management records
         /*!

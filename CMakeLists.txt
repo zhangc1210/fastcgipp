@@ -52,6 +52,7 @@ configure_file(
 # The shared library itself
 add_library(fastcgipp SHARED
     src/log.cpp
+    src/block.cpp
     src/http.cpp
     src/protocol.cpp
     src/sockets.cpp
@@ -69,6 +70,7 @@ install(TARGETS fastcgipp LIBRARY DESTINATION lib${LIB_SUFFIX})
 if (BUILD_STATIC_LIBS)
     add_library(fastcgipp-static STATIC
         src/log.cpp
+        src/block.cpp
         src/http.cpp
         src/protocol.cpp
         src/sockets.cpp
@@ -83,6 +85,7 @@ endif (BUILD_STATIC_LIBS)
 # Install the header file
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/include/fastcgi++/config.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/block.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/fcgistreambuf.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/http.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/log.hpp"

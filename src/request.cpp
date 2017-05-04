@@ -2,13 +2,13 @@
  * @file       request.cpp
  * @brief      Defines the Request class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       August 20, 2016
+ * @date       May 3, 2017
  * @copyright  Copyright &copy; 2016 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
 
 /*******************************************************************************
-* Copyright (C) 2016 Eddie Carle [eddie@isatec.ca]                             *
+* Copyright (C) 2017 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
 * This file is part of fastcgi++.                                              *
 *                                                                              *
@@ -36,11 +36,10 @@ template<class charT> void Fastcgipp::Request<charT>::complete()
     out.flush();
     err.flush();
 
-    std::vector<char> record(
-            sizeof(Protocol::Header)+sizeof(Protocol::EndRequest));
+    Block record(sizeof(Protocol::Header)+sizeof(Protocol::EndRequest));
 
     Protocol::Header& header
-        = *reinterpret_cast<Protocol::Header*>(record.data());
+        = *reinterpret_cast<Protocol::Header*>(record.begin());
     header.version = Protocol::version;
     header.type = Protocol::RecordType::END_REQUEST;
     header.fcgiId = m_id.m_id;
@@ -48,7 +47,7 @@ template<class charT> void Fastcgipp::Request<charT>::complete()
     header.paddingLength = 0;
 
     Protocol::EndRequest& body =
-        *reinterpret_cast<Protocol::EndRequest*>(record.data()+sizeof(header));
+        *reinterpret_cast<Protocol::EndRequest*>(record.begin()+sizeof(header));
     body.appStatus = 0;
     body.protocolStatus = m_status;
 
@@ -70,8 +69,8 @@ std::unique_lock<std::mutex>Fastcgipp::Request<charT>::handler()
         if(message.type == 0)
         {
             const Protocol::Header& header =
-                *reinterpret_cast<Protocol::Header*>(message.data.data());
-            const auto body = message.data.cbegin()+sizeof(header);
+                *reinterpret_cast<Protocol::Header*>(message.data.begin());
+            const auto body = message.data.begin()+sizeof(header);
             const auto bodyEnd = body+header.contentLength;
 
             if(header.type == Protocol::RecordType::ABORT_REQUEST)
@@ -211,19 +210,19 @@ template void Fastcgipp::Request<wchar_t>::configure(
         const Protocol::RequestId& id,
         const Protocol::Role& role,
         bool kill,
-        const std::function<void(const Socket&, std::vector<char>&&, bool)> send,
+        const std::function<void(const Socket&, Block&&, bool)> send,
         const std::function<void(Message)> callback);
 template void Fastcgipp::Request<char>::configure(
         const Protocol::RequestId& id,
         const Protocol::Role& role,
         bool kill,
-        const std::function<void(const Socket&, std::vector<char>&&, bool)> send,
+        const std::function<void(const Socket&, Block&&, bool)> send,
         const std::function<void(Message)> callback);
 template<class charT> void Fastcgipp::Request<charT>::configure(
         const Protocol::RequestId& id,
         const Protocol::Role& role,
         bool kill,
-        const std::function<void(const Socket&, std::vector<char>&&, bool)> send,
+        const std::function<void(const Socket&, Block&&, bool)> send,
         const std::function<void(Message)> callback)
 {
     using namespace std::placeholders;
