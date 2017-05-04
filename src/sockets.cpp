@@ -2,7 +2,7 @@
  * @file       sockets.cpp
  * @brief      Defines everything for interfaces with OS level sockets.
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       April 27, 2017
+ * @date       May 3, 2017
  * @copyright  Copyright &copy; 2016 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  *
@@ -75,6 +75,8 @@ ssize_t Fastcgipp::Socket::read(char* buffer, size_t size) const
     {
         WARNING_LOG("Socket read() error on fd " \
                 << m_data->m_socket << ": " << std::strerror(errno))
+        if(errno == EAGAIN)
+            return 0;
         close();
         return -1;
     }
@@ -104,6 +106,8 @@ ssize_t Fastcgipp::Socket::write(const char* buffer, size_t size) const
     {
         WARNING_LOG("Socket write() error on fd " \
                 << m_data->m_socket << ": " << strerror(errno))
+        if(errno == EAGAIN)
+            return 0;
         close();
         return -1;
     }
