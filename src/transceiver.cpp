@@ -3,7 +3,7 @@
  * @brief      Defines the Fastcgipp::Transceiver class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
  * @date       May 3, 2017
- * @copyright  Copyright &copy; 2016 Eddie Carle. This project is released under
+ * @copyright  Copyright &copy; 2017 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
 
