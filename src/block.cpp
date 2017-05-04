@@ -101,3 +101,14 @@ void Fastcgipp::Block::clear()
     m_size = 0;
     m_data.reset();
 }
+
+void Fastcgipp::Block::assign(const char* const data, const size_t size_)
+{
+    if(size_ > m_reserve)
+    {
+        m_data.reset(new char[size_]);
+        m_reserve = size_;
+    }
+    m_size = size_;
+    std::copy(data, data+size_, m_data.get());
+}

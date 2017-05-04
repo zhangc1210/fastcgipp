@@ -2,7 +2,7 @@
  * @file       block.hpp
  * @brief      Declares the Block data structure.
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 3, 2017
+ * @date       May 4, 2017
  * @copyright  Copyright &copy; 2017 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -62,6 +62,13 @@ namespace Fastcgipp
 
         //! Initialize a block with equal size and reserve from source data
         Block(const char* const data, const size_t size_);
+
+        //! Assign a sequence a data to the block
+        /*!
+         * If the reserve if smaller the requested size then reallocation
+         * occurs. Otherwise the allocation is unchanged.
+         */
+        void assign(const char* const data, const size_t size_);
 
         //! Steal the data from another block
         Block(Block&& x);

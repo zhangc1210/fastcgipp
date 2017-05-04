@@ -153,11 +153,7 @@ private:
             message.type = 1;
 
             static const char messageText[] = "I was passed between threads!!";
-            message.data.size(sizeof(messageText)-1);
-            std::copy(
-                    messageText,
-                    messageText+sizeof(messageText)-1,
-                    message.data.begin());
+            message.data.assign(messageText, sizeof(messageText)-1);
 
             s_stopwatch.push(
                     callback(),
