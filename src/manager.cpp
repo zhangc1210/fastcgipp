@@ -374,33 +374,36 @@ void Fastcgipp::Manager_base::push(Protocol::RequestId id, Message&& message)
         auto request = m_requests.find(id);
         if(request == m_requests.end())
         {
-            const Protocol::Header& header=
-                *reinterpret_cast<Protocol::Header*>(message.data.begin());
-            if(header.type == Protocol::RecordType::BEGIN_REQUEST)
+            if(message.type == 0)
             {
-                const Protocol::BeginRequest& body
-                    = *reinterpret_cast<Protocol::BeginRequest*>(
-                            message.data.begin()
-                            +sizeof(header));
+                const Protocol::Header& header=
+                    *reinterpret_cast<Protocol::Header*>(message.data.begin());
+                if(header.type == Protocol::RecordType::BEGIN_REQUEST)
+                {
+                    const Protocol::BeginRequest& body
+                        = *reinterpret_cast<Protocol::BeginRequest*>(
+                                message.data.begin()
+                                +sizeof(header));
 
-                request = m_requests.emplace(
-                        std::piecewise_construct,
-                        std::forward_as_tuple(id),
-                        std::forward_as_tuple()).first;
+                    request = m_requests.emplace(
+                            std::piecewise_construct,
+                            std::forward_as_tuple(id),
+                            std::forward_as_tuple()).first;
 
-                request->second = makeRequest(
-                        id,
-                        body.role,
-                        body.kill());
-                lock.unlock();
+                    request->second = makeRequest(
+                            id,
+                            body.role,
+                            body.kill());
+                    lock.unlock();
 #if FASTCGIPP_LOG_LEVEL > 3
-                ++m_requestCount;
-                m_maxRequests = std::max(m_maxRequests, m_requests.size());
+                    ++m_requestCount;
+                    m_maxRequests = std::max(m_maxRequests, m_requests.size());
 #endif
+                }
+                else
+                    WARNING_LOG("Got a non BEGIN_REQUEST record for a request"\
+                            " that doesn't exist")
             }
-            else
-                WARNING_LOG("Got a non BEGIN_REQUEST record for a request that"\
-                        " doesn't exist")
             return;
         }
         else
