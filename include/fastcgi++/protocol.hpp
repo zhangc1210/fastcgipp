@@ -2,7 +2,7 @@
  * @file       protocol.hpp
  * @brief      Declares everything for relating to the FastCGI protocol itself.
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 3, 2017
+ * @date       May 9, 2017
  * @copyright  Copyright &copy; 2017 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -185,7 +185,7 @@ namespace Fastcgipp
          *
          * @tparam T Type to emulate. Must be either an integral type or an
          *           enumeration who's underlying type is integral.
-         * @date    August 20, 2016
+         * @date    May 9, 2017
          * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
          */
         template<typename T> class BigEndian
@@ -223,7 +223,7 @@ namespace Fastcgipp
                 set(x);
             }
 
-            BigEndian()
+            constexpr BigEndian()
             {}
 
             operator T() const
