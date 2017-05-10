@@ -27,6 +27,56 @@ int main()
             FAIL_LOG("Fastcgipp::Protocol::BigEndian with a 64 bit signed int")
     }
 
+    // Testing Fastcgipp::Protocol::BigEndian with a 16 bit unsigned integer
+    {
+        const uint16_t actual = 57261;
+        const Fastcgipp::Protocol::BigEndian<uint16_t> reversed(actual);
+        const unsigned char* data = reinterpret_cast<const unsigned char*>(
+                &reversed);
+
+        if(!(
+                    reversed == actual &&
+                    data[0] == 0xdf &&
+                    data[1] == 0xad))
+            FAIL_LOG("Fastcgipp::Protocol::BigEndian with a 16 bit unsigned int")
+    }
+
+    // Testing Fastcgipp::Protocol::BigEndian with a 32 bit float
+    {
+        const float actual = -3.21748e-05;
+        const Fastcgipp::Protocol::BigEndian<float> reversed(actual);
+        const unsigned char* data = reinterpret_cast<const unsigned char*>(
+                &reversed);
+
+        if(!(
+                    reversed == actual &&
+                    data[0] == 0xb8 &&
+                    data[1] == 0x06 &&
+                    data[2] == 0xf3 &&
+                    data[3] == 0x6e))
+            FAIL_LOG("Fastcgipp::Protocol::BigEndian with a 32 bit float")
+    }
+
+    // Testing Fastcgipp::Protocol::BigEndian with a 64 bit float
+    {
+        const double actual = 8.854187817e-12;
+        const Fastcgipp::Protocol::BigEndian<double> reversed(actual);
+        const unsigned char* data = reinterpret_cast<const unsigned char*>(
+                &reversed);
+
+        if(!(
+                    reversed == actual &&
+                    data[0] == 0x3d &&
+                    data[1] == 0xa3 &&
+                    data[2] == 0x78 &&
+                    data[3] == 0x76 &&
+                    data[4] == 0xf1 &&
+                    data[5] == 0x48 &&
+                    data[6] == 0x11 &&
+                    data[7] == 0x2e))
+            FAIL_LOG("Fastcgipp::Protocol::BigEndian with a 64 bit float")
+    }
+
     std::random_device device;
     std::default_random_engine engine(device());
     std::uniform_int_distribution<size_t> randomShortSize(1, 127);
