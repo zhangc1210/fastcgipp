@@ -17,19 +17,6 @@ set(SRC_FILES
     "src/webstreambuf.cpp"
     "src/request.cpp"
     "src/manager.cpp")
-set(HEADER_FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/include/fastcgi++/config.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/block.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/fcgistreambuf.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/http.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/log.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/manager.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/message.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/protocol.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/request.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/sockets.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/transceiver.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/webstreambuf.hpp")
 set(TESTS
     "protocol"
     "http"
@@ -84,21 +71,48 @@ configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/include/config.hpp.in"
     "${CMAKE_CURRENT_BINARY_DIR}/include/fastcgi++/config.hpp" @ONLY)
 
-# The shared library itself
-add_library(fastcgipp SHARED ${SRC_FILES})
+# Install the header file
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/include/fastcgi++/config.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/block.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/fcgistreambuf.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/http.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/log.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/manager.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/message.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/protocol.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/request.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/sockets.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/transceiver.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/webstreambuf.hpp"
+    DESTINATION "include/fastcgi++")
+
+# Are we worrying about SQL?
+option(BUILD_SQL "Set to ON to build and install the SQL components" OFF)
+if(BUILD_SQL)
+    find_package(PostgreSQL REQUIRED)
+    install(FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/sql/parameters.hpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/sql/results.hpp"
+        DESTINATION "include/fastcgi++/sql")
+    link_libraries(${PostgreSQL_LIBRARIES})
+    include_directories(${PostgreSQL_INCLUDE_DIRS})
+    list(APPEND TESTS "sql")
+    list(APPEND SRC_FILES "src/parameters.cpp")
+    list(APPEND SRC_FILES "src/results.cpp")
+endif(BUILD_SQL)
+
+# Build the library itself
+option(BUILD_STATIC_LIBS "Set to ON to build and install only the static library" OFF)
+if(BUILD_STATIC_LIBS)
+    add_library(fastcgipp STATIC ${SRC_FILES})
+    install(TARGETS fastcgipp ARCHIVE DESTINATION lib${LIB_SUFFIX})
+else(BUILD_STATIC_LIBS)
+    add_library(fastcgipp SHARED ${SRC_FILES})
+    install(TARGETS fastcgipp LIBRARY DESTINATION lib${LIB_SUFFIX})
+endif(BUILD_STATIC_LIBS)
 set_target_properties(fastcgipp PROPERTIES VERSION ${VERSION}
                                            SOVERSION ${VERSION_MAJOR})
-install(TARGETS fastcgipp LIBRARY DESTINATION lib${LIB_SUFFIX})
-
-# A static version of the library
-option(BUILD_STATIC_LIBS "Set to on to build and install static library" OFF)
-if (BUILD_STATIC_LIBS)
-    add_library(fastcgipp-static STATIC ${SRC_FILES})
-    install(TARGETS fastcgipp-static ARCHIVE DESTINATION lib${LIB_SUFFIX})
-endif (BUILD_STATIC_LIBS)
-
-# Install the header file
-install(FILES ${HEADER_FILES} DESTINATION "include/fastcgi++")
 
 # All the test stuff
 enable_testing()
