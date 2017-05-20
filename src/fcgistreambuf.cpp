@@ -2,7 +2,7 @@
  * @file       fcgistreambuf.cpp
  * @brief      Defines the FcgiStreambuf class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 3, 2017
+ * @date       May 20, 2017
  * @copyright  Copyright &copy; 2017 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -128,10 +128,6 @@ namespace Fastcgipp
     }
 }
 
-template Fastcgipp::FcgiStreambuf<char, std::char_traits<char>>::int_type
-Fastcgipp::FcgiStreambuf<char, std::char_traits<char>>::overflow(int_type c);
-template Fastcgipp::FcgiStreambuf<wchar_t, std::char_traits<wchar_t>>::int_type
-Fastcgipp::FcgiStreambuf<wchar_t, std::char_traits<wchar_t>>::overflow(int_type c);
 template <class charT, class traits>
 typename Fastcgipp::FcgiStreambuf<charT, traits>::int_type
 Fastcgipp::FcgiStreambuf<charT, traits>::overflow(int_type c)
@@ -144,14 +140,6 @@ Fastcgipp::FcgiStreambuf<charT, traits>::overflow(int_type c)
         return traits_type::not_eof(c);
 }
 
-template
-void Fastcgipp::FcgiStreambuf<char, std::char_traits<char>>::dump(
-        const char* data,
-        size_t size);
-template
-void Fastcgipp::FcgiStreambuf<wchar_t, std::char_traits<wchar_t>>::dump(
-        const char* data,
-        size_t size);
 template <class charT, class traits>
 void Fastcgipp::FcgiStreambuf<charT, traits>::dump(
         const char* data,
@@ -191,12 +179,6 @@ void Fastcgipp::FcgiStreambuf<charT, traits>::dump(
     }
 }
 
-template
-void Fastcgipp::FcgiStreambuf<char, std::char_traits<char>>::dump(
-        std::basic_istream<char>& stream);
-template
-void Fastcgipp::FcgiStreambuf<wchar_t, std::char_traits<wchar_t>>::dump(
-        std::basic_istream<char>& stream);
 template <class charT, class traits>
 void Fastcgipp::FcgiStreambuf<charT, traits>::dump(
         std::basic_istream<char>& stream)
@@ -229,3 +211,6 @@ void Fastcgipp::FcgiStreambuf<charT, traits>::dump(
         send(m_id.m_socket, std::move(record));
     } while(stream.gcount() < maxContentLength);
 }
+
+template class Fastcgipp::FcgiStreambuf<wchar_t, std::char_traits<wchar_t>>;
+template class Fastcgipp::FcgiStreambuf<char, std::char_traits<char>>;

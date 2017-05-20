@@ -2,7 +2,7 @@
  * @file       request.cpp
  * @brief      Defines the Request class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 3, 2017
+ * @date       May 20, 2017
  * @copyright  Copyright &copy; 2017 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -29,8 +29,6 @@
 #include "fastcgi++/request.hpp"
 #include "fastcgi++/log.hpp"
 
-template void Fastcgipp::Request<char>::complete();
-template void Fastcgipp::Request<wchar_t>::complete();
 template<class charT> void Fastcgipp::Request<charT>::complete()
 {
     out.flush();
@@ -54,8 +52,6 @@ template<class charT> void Fastcgipp::Request<charT>::complete()
     m_send(m_id.m_socket, std::move(record), m_kill);
 }
 
-template std::unique_lock<std::mutex> Fastcgipp::Request<char>::handler();
-template std::unique_lock<std::mutex> Fastcgipp::Request<wchar_t>::handler();
 template<class charT>
 std::unique_lock<std::mutex>Fastcgipp::Request<charT>::handler()
 {
@@ -166,8 +162,6 @@ exit:
     return lock;
 }
 
-template void Fastcgipp::Request<char>::errorHandler();
-template void Fastcgipp::Request<wchar_t>::errorHandler();
 template<class charT> void Fastcgipp::Request<charT>::errorHandler()
 {
     out << \
@@ -186,8 +180,6 @@ template<class charT> void Fastcgipp::Request<charT>::errorHandler()
     complete();
 }
 
-template void Fastcgipp::Request<char>::bigPostErrorHandler();
-template void Fastcgipp::Request<wchar_t>::bigPostErrorHandler();
 template<class charT> void Fastcgipp::Request<charT>::bigPostErrorHandler()
 {
         out << \
@@ -206,18 +198,6 @@ template<class charT> void Fastcgipp::Request<charT>::bigPostErrorHandler()
     complete();
 }
 
-template void Fastcgipp::Request<wchar_t>::configure(
-        const Protocol::RequestId& id,
-        const Protocol::Role& role,
-        bool kill,
-        const std::function<void(const Socket&, Block&&, bool)> send,
-        const std::function<void(Message)> callback);
-template void Fastcgipp::Request<char>::configure(
-        const Protocol::RequestId& id,
-        const Protocol::Role& role,
-        bool kill,
-        const std::function<void(const Socket&, Block&&, bool)> send,
-        const std::function<void(Message)> callback);
 template<class charT> void Fastcgipp::Request<charT>::configure(
         const Protocol::RequestId& id,
         const Protocol::Role& role,
@@ -243,10 +223,6 @@ template<class charT> void Fastcgipp::Request<charT>::configure(
             std::bind(send, _1, _2, false));
 }
 
-template unsigned Fastcgipp::Request<char>::pickLocale(
-        const std::vector<std::string>& locales);
-template unsigned Fastcgipp::Request<wchar_t>::pickLocale(
-        const std::vector<std::string>& locales);
 template<class charT> unsigned Fastcgipp::Request<charT>::pickLocale(
         const std::vector<std::string>& locales)
 {
@@ -278,10 +254,6 @@ template<class charT> unsigned Fastcgipp::Request<charT>::pickLocale(
     return index;
 }
 
-template void Fastcgipp::Request<char>::setLocale(
-        const std::string& locale);
-template void Fastcgipp::Request<wchar_t>::setLocale(
-        const std::string& locale);
 template<class charT> void Fastcgipp::Request<charT>::setLocale(
         const std::string& locale)
 {
@@ -308,3 +280,6 @@ namespace Fastcgipp
         return "";
     }
 }
+
+template class Fastcgipp::Request<char>;
+template class Fastcgipp::Request<wchar_t>;

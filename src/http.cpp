@@ -2,7 +2,7 @@
  * @file       http.cpp
  * @brief      Defines elements of the HTTP protocol
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 3, 2017
+ * @date       May 20, 2017
  * @copyright  Copyright &copy; 2017 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -163,12 +163,6 @@ char* Fastcgipp::Http::percentEscapedToRealBytes(
     return destination;
 }
 
-template void Fastcgipp::Http::Environment<char>::fill(
-        const char* data,
-        const char* const dataEnd);
-template void Fastcgipp::Http::Environment<wchar_t>::fill(
-        const char* data,
-        const char* const dataEnd);
 template<class charT> void Fastcgipp::Http::Environment<charT>::fill(
         const char* data,
         const char* const dataEnd)
@@ -400,12 +394,6 @@ template<class charT> void Fastcgipp::Http::Environment<charT>::fill(
     }
 }
 
-template void Fastcgipp::Http::Environment<char>::fillPostBuffer(
-        const char* const start,
-        const char* const end);
-template void Fastcgipp::Http::Environment<wchar_t>::fillPostBuffer(
-        const char* const start,
-        const char* const end);
 template<class charT>
 void Fastcgipp::Http::Environment<charT>::fillPostBuffer(
         const char* const start,
@@ -416,9 +404,8 @@ void Fastcgipp::Http::Environment<charT>::fillPostBuffer(
     m_postBuffer.insert(m_postBuffer.end(), start, end);
 }
 
-template bool Fastcgipp::Http::Environment<char>::parsePostBuffer();
-template bool Fastcgipp::Http::Environment<wchar_t>::parsePostBuffer();
-template<class charT> bool Fastcgipp::Http::Environment<charT>::parsePostBuffer()
+template<class charT>
+bool Fastcgipp::Http::Environment<charT>::parsePostBuffer()
 {
     static const std::string multipartStr("multipart/form-data");
     static const std::string urlEncodedStr("application/x-www-form-urlencoded");
@@ -450,8 +437,6 @@ template<class charT> bool Fastcgipp::Http::Environment<charT>::parsePostBuffer(
     return parsed;
 }
 
-template void Fastcgipp::Http::Environment<char>::parsePostsMultipart();
-template void Fastcgipp::Http::Environment<wchar_t>::parsePostsMultipart();
 template<class charT>
 void Fastcgipp::Http::Environment<charT>::parsePostsMultipart()
 {
@@ -629,8 +614,6 @@ void Fastcgipp::Http::Environment<charT>::parsePostsMultipart()
     }
 }
 
-template void Fastcgipp::Http::Environment<char>::parsePostsUrlEncoded();
-template void Fastcgipp::Http::Environment<wchar_t>::parsePostsUrlEncoded();
 template<class charT>
 void Fastcgipp::Http::Environment<charT>::parsePostsUrlEncoded()
 {
@@ -639,6 +622,9 @@ void Fastcgipp::Http::Environment<charT>::parsePostsUrlEncoded()
             m_postBuffer.data()+m_postBuffer.size(),
             posts);
 }
+
+template class Fastcgipp::Http::Environment<char>;
+template class Fastcgipp::Http::Environment<wchar_t>;
 
 Fastcgipp::Http::SessionId::SessionId()
 {
