@@ -2,7 +2,7 @@
  * @file       fcgistreambuf.hpp
  * @brief      Declares the FcgiStreambuf class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 3, 2017
+ * @date       June 3, 2017
  * @copyright  Copyright &copy; 2017 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -34,6 +34,7 @@
 #include "fastcgi++/block.hpp"
 
 #include <istream>
+#include <functional>
 
 //! Topmost namespace for the fastcgi++ library
 namespace Fastcgipp
