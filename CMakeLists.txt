@@ -56,11 +56,11 @@ endif()
 # Set compile flags for gcc and clang
 if(UNIX)
     set(CMAKE_CXX_FLAGS
-        "$ENV{CXXFLAGS} -std=c++14 -Wall -Werror -Wold-style-cast -pthread")
+        "${CMAKE_CXX_FLAGS} $ENV{CXXFLAGS} -std=c++14 -Wall -Werror -Wold-style-cast -pthread")
     set(CMAKE_CXX_FLAGS_RELEASE
-        "$ENV{CXXFLAGS} -O3 -fomit-frame-pointer -std=c++14 -Wall -Werror -Wold-style-cast -pthread")
+        "${CMAKE_CXX_FLAGS_RELEASE} $ENV{CXXFLAGS} -O3 -fomit-frame-pointer -std=c++14 -Wall -Werror -Wold-style-cast -pthread")
     set(CMAKE_CXX_FLAGS_DEBUG
-        "$ENV{CXXFLAGS} -Og -fno-omit-frame-pointer -g -ggdb -std=c++14 -Wall -Werror -Wold-style-cast -pthread")
+        "${CMAKE_CXX_FLAGS_DEBUG} $ENV{CXXFLAGS} -Og -fno-omit-frame-pointer -g -ggdb -std=c++14 -Wall -Werror -Wold-style-cast -pthread")
 endif()
 
 # Our configuration
