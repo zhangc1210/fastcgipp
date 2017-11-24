@@ -726,7 +726,7 @@ Out Fastcgipp::Http::base64Decode(In start, In end, Out destination)
 {
     Out dest=destination;
 
-    for(int buffer, bitPos=-8, padStart; start!=end || bitPos>-6; ++dest)
+    for(int buffer=0, bitPos=-8, padStart=0; start!=end || bitPos>-6; ++dest)
     {
         if(bitPos==-8)
         {
