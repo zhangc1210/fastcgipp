@@ -6,6 +6,9 @@
 
 ## News ##
 
+**April 5, 2018** - It's been long enough, 3.0 is now official and marked
+stable.
+
 **May 28, 2016** - Some good examples are now done and in the documentation.
 I've got said documentation hosted online now so [check it out][13].
 
