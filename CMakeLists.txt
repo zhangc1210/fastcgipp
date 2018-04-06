@@ -87,21 +87,6 @@ install(FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/webstreambuf.hpp"
     DESTINATION "include/fastcgi++")
 
-# Are we worrying about SQL?
-option(BUILD_SQL "Set to ON to build and install the SQL components" OFF)
-if(BUILD_SQL)
-    find_package(PostgreSQL REQUIRED)
-    install(FILES
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/sql/parameters.hpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/sql/results.hpp"
-        DESTINATION "include/fastcgi++/sql")
-    link_libraries(${PostgreSQL_LIBRARIES})
-    include_directories(${PostgreSQL_INCLUDE_DIRS})
-    list(APPEND TESTS "sql")
-    list(APPEND SRC_FILES "src/parameters.cpp")
-    list(APPEND SRC_FILES "src/results.cpp")
-endif(BUILD_SQL)
-
 # Build the library itself
 option(BUILD_STATIC_LIBS "Set to ON to build and install only the static library" OFF)
 if(BUILD_STATIC_LIBS)
