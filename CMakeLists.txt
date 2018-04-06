@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 project(fastcgi++ LANGUAGES CXX)
 
-set(VERSION      "3.0beta")
+set(VERSION      "3.0")
 set(VERSION_MAJOR 3)
 string(TIMESTAMP BUILD_TIME UTC)
 

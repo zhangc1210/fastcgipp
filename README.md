@@ -2,7 +2,7 @@
 
 **Author:** Eddie Carle
 
-**Version:** 3.0beta
+**Version:** 3.0
 
 ## News ##
 
@@ -39,7 +39,7 @@ Your best bet for releases and documentation is to clone the Git repository,
 checkout the tag you want and see the building section of either this file or
 the Doxygen documentation. If you're too lazy for that, however, you can take
 the risk and try the following links.
- - [[fastcgipp-master.zip][12]] [[Documentation][13]] [[Tree][14]]
+ - [[fastcgipp-3.0.tar.gz][12]] [[Documentation][13]] [[Tree][14]]
  - [[fastcgi++-2.1.tar.bz2][2]] [[Documentation][3]] [[Tree][10]]
  - [[fastcgi++-2.0.tar.bz2][4]] [[Documentation][5]] [[Tree][11]]
  - [[fastcgi++-1.2.tar.bz2][6]] [[Documentation][7]]
@@ -56,9 +56,9 @@ the risk and try the following links.
 [9]: http://download.savannah.nongnu.org/releases/fastcgipp/fastcgi++-1.0.tar.bz2 
 [10]: https://github.com/eddic/fastcgipp/tree/2.1
 [11]: https://github.com/eddic/fastcgipp/tree/2.0
-[12]: https://github.com/eddic/fastcgipp/archive/master.zip
+[12]: https://github.com/eddic/fastcgipp/archive/3.0.tar.gz
 [13]: http://isatec.ca/fastcgipp
-[14]: https://github.com/eddic/fastcgipp
+[14]: https://github.com/eddic/fastcgipp/tree/3.0
 
 ## Building ##
 
