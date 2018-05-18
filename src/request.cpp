@@ -79,6 +79,7 @@ std::unique_lock<std::mutex>Fastcgipp::Request<charT>::handler()
             {
                 WARNING_LOG("Records received out of order from web server")
                 errorHandler();
+                complete();
                 goto exit;
             }
 
@@ -93,6 +94,7 @@ std::unique_lock<std::mutex>Fastcgipp::Request<charT>::handler()
                         m_status = Protocol::ProtocolStatus::UNKNOWN_ROLE;
                         WARNING_LOG("We got asked to do an unknown role")
                         errorHandler();
+                        complete();
                         goto exit;
                     }
 
@@ -101,6 +103,7 @@ std::unique_lock<std::mutex>Fastcgipp::Request<charT>::handler()
                         if(environment().contentLength > m_maxPostSize)
                         {
                             bigPostErrorHandler();
+                            complete();
                             goto exit;
                         }
                         m_state = Protocol::RecordType::IN;
@@ -120,6 +123,7 @@ std::unique_lock<std::mutex>Fastcgipp::Request<charT>::handler()
                         {
                             WARNING_LOG("Unknown content type from client")
                             errorHandler();
+                            complete();
                             goto exit;
                         }
 
@@ -132,6 +136,7 @@ std::unique_lock<std::mutex>Fastcgipp::Request<charT>::handler()
                             > environment().contentLength)
                     {
                         bigPostErrorHandler();
+                        complete();
                         goto exit;
                     }
 
@@ -145,6 +150,7 @@ std::unique_lock<std::mutex>Fastcgipp::Request<charT>::handler()
                 {
                     ERROR_LOG("Our request is in a weird state.")
                     errorHandler();
+                    complete();
                     goto exit;
                 }
             }
@@ -176,8 +182,6 @@ template<class charT> void Fastcgipp::Request<charT>::errorHandler()
         "<h1>500 Internal Server Error</h1>"\
     "</body>"\
 "</html>";
-
-    complete();
 }
 
 template<class charT> void Fastcgipp::Request<charT>::bigPostErrorHandler()
@@ -194,8 +198,6 @@ template<class charT> void Fastcgipp::Request<charT>::bigPostErrorHandler()
         "<h1>413 Request Entity Too Large</h1>"\
     "</body>"\
 "</html>";
-
-    complete();
 }
 
 template<class charT> void Fastcgipp::Request<charT>::configure(
