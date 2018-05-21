@@ -124,9 +124,9 @@ void Fastcgipp::Socket::close() const
     if(valid())
     {
         ::shutdown(m_data->m_socket, SHUT_RDWR);
+        m_data->m_group.pollDel(m_data->m_socket);
         ::close(m_data->m_socket);
         m_data->m_valid = false;
-        m_data->m_group.pollDel(m_data->m_socket);
         m_data->m_group.m_sockets.erase(m_data->m_socket);
 #if FASTCGIPP_LOG_LEVEL > 3
         if(!m_data->m_closing)
@@ -140,9 +140,9 @@ Fastcgipp::Socket::~Socket()
     if(m_original && valid())
     {
         ::shutdown(m_data->m_socket, SHUT_RDWR);
+        m_data->m_group.pollDel(m_data->m_socket);
         ::close(m_data->m_socket);
         m_data->m_valid = false;
-        m_data->m_group.pollDel(m_data->m_socket);
     }
 }
 
