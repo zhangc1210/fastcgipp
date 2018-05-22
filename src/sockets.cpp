@@ -104,10 +104,10 @@ ssize_t Fastcgipp::Socket::write(const char* buffer, size_t size) const
     const ssize_t count = ::send(m_data->m_socket, buffer, size, MSG_NOSIGNAL);
     if(count<0)
     {
+        if(errno == EAGAIN || errno == EWOULDBLOCK)
+            return 0;
         WARNING_LOG("Socket write() error on fd " \
                 << m_data->m_socket << ": " << strerror(errno))
-        if(errno == EAGAIN)
-            return 0;
         close();
         return -1;
     }
