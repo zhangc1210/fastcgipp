@@ -2,13 +2,13 @@
  * @file       fcgistreambuf.cpp
  * @brief      Defines the FcgiStreambuf class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 20, 2017
- * @copyright  Copyright &copy; 2017 Eddie Carle. This project is released under
+ * @date       May 22, 2018
+ * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
 
 /*******************************************************************************
-* Copyright (C) 2017 Eddie Carle [eddie@isatec.ca]                             *
+* Copyright (C) 2018 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
 * This file is part of fastcgi++.                                              *
 *                                                                              *
@@ -187,7 +187,7 @@ void Fastcgipp::FcgiStreambuf<charT, traits>::dump(
     emptyBuffer();
     Block record;
 
-    do
+    while(true)
     {
         record.reserve(sizeof(Protocol::Header) + maxContentLength);
 
@@ -196,6 +196,8 @@ void Fastcgipp::FcgiStreambuf<charT, traits>::dump(
 
         stream.read(record.begin()+sizeof(Protocol::Header), maxContentLength);
         header.contentLength = stream.gcount();
+        if(header.contentLength == 0)
+            break;
 
         record.size((header.contentLength
                     +sizeof(Protocol::Header)
@@ -209,7 +211,7 @@ void Fastcgipp::FcgiStreambuf<charT, traits>::dump(
             record.size()-header.contentLength-sizeof(Protocol::Header);
 
         send(m_id.m_socket, std::move(record));
-    } while(stream.gcount() < maxContentLength);
+    }
 }
 
 template class Fastcgipp::FcgiStreambuf<wchar_t, std::char_traits<wchar_t>>;
