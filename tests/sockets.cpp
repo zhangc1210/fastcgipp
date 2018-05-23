@@ -321,6 +321,9 @@ void server()
 #include <unistd.h>
 #include <dirent.h>
 #include <sstream>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 unsigned int openfds()
 {
     std::ostringstream ss;
@@ -329,9 +332,19 @@ unsigned int openfds()
     DIR* const directory = opendir(ss.str().c_str());
     dirent* file;
     unsigned int count = 0;
+    char path[1024];
 
-    while((file = readdir(directory)) != nullptr)
+    ss << '/';
+    while((file = readdir(directory)) != nullptr) {
         ++count;
+        auto c = readlink((ss.str() + file->d_name).c_str(), path, sizeof(path) - 1);
+        if(c > 0) {
+            path[c] = 0;
+            INFO_LOG("fd " << file->d_name << " -> " << path);
+        } else {
+            INFO_LOG("fd " << file->d_name)
+        }
+    }
 
     closedir(directory);
     return count;
@@ -347,9 +360,11 @@ int main()
 {
     const auto initialFds = openfds();
 
-    std::random_device trueRand;
-    std::uniform_int_distribution<> portDist(2048, 65534);
-    port = std::to_string(portDist(trueRand));
+    {
+        std::random_device trueRand;
+        std::uniform_int_distribution<> portDist(2048, 65534);
+        port = std::to_string(portDist(trueRand));
+    }
 
     done=false;
     std::thread serverThread(server);
