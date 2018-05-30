@@ -57,7 +57,7 @@ namespace Fastcgipp
         typedef uint16_t FcgiId;
 
         //! Constant that defines a bad/special FcgiId
-        const uint16_t badFcgiId = 0xffffUL;
+        constexpr uint16_t badFcgiId = 0xffffUL;
 
         //! A unique identifier for each FastCGI request
         /*!
@@ -113,7 +113,7 @@ namespace Fastcgipp
             {
                 using is_transparent = std::true_type;
 
-                bool operator()(const RequestId& x, const RequestId& y) const
+                inline bool operator()(const RequestId& x, const RequestId& y) const noexcept
                 {
                     if(x.m_socket == y.m_socket)
                         return x.m_id < y.m_id;
@@ -121,12 +121,12 @@ namespace Fastcgipp
                         return x.m_socket < y.m_socket;
                 }
 
-                bool operator()(const RequestId& id, const Socket& socket) const
+                inline bool operator()(const RequestId& id, const Socket& socket) const noexcept
                 {
                     return id.m_socket < socket;
                 }
 
-                bool operator()(const Socket& socket, const RequestId& id) const
+                inline bool operator()(const Socket& socket, const RequestId& id) const noexcept
                 {
                     return socket < id.m_socket;
                 }
@@ -154,10 +154,10 @@ namespace Fastcgipp
         };
 
         //! The version of the FastCGI protocol that this adheres to
-        const int version=1;
+        static constexpr int version=1;
 
         //! All FastCGI records will be a multiple of this many bytes
-        const int chunkSize=8;
+        static constexpr int chunkSize=8;
 
         //! Defines the possible roles a FastCGI application may play
         enum class Role: uint16_t
@@ -191,6 +191,61 @@ namespace Fastcgipp
             typedef uint64_t Type;
         };
 
+        constexpr void fromBigEndian(const unsigned char* arr, std::uint16_t& v) noexcept
+        {
+            v = static_cast<std::uint16_t>(
+                std::uint16_t{arr[0]} << 8 |
+                std::uint16_t{arr[1]} << 0);
+        }
+
+        constexpr void fromBigEndian(const unsigned char* arr, std::uint32_t& v) noexcept
+        {
+            v = static_cast<std::uint32_t>(
+                std::uint32_t{arr[0]} << 24 |
+                std::uint32_t{arr[1]} << 16 |
+                std::uint32_t{arr[2]} << 8 |
+                std::uint32_t{arr[3]} << 0);
+        }
+
+        constexpr void fromBigEndian(const unsigned char* arr, std::uint64_t& v) noexcept
+        {
+            v = static_cast<std::uint64_t>(
+                std::uint64_t{arr[0]} << 56 |
+                std::uint64_t{arr[1]} << 48 |
+                std::uint64_t{arr[2]} << 40 |
+                std::uint64_t{arr[3]} << 32 |
+                std::uint64_t{arr[4]} << 24 |
+                std::uint64_t{arr[5]} << 16 |
+                std::uint64_t{arr[6]} << 8 |
+                std::uint64_t{arr[7]} << 0);
+        }
+        constexpr void toBigEndian(unsigned char* arr, const unsigned char v)
+        {
+            arr[0] = v;
+        }
+        constexpr void toBigEndian(unsigned char* arr, const std::uint16_t v)
+        {
+            arr[0] = static_cast<unsigned char>((v & 0xff00) >> 8);
+            arr[1] = static_cast<unsigned char>((v & 0x00ff) >> 0);
+        }
+        constexpr void toBigEndian(unsigned char* arr, const std::uint32_t v)
+        {
+            arr[0] = static_cast<unsigned char>((v & 0xff000000) >> 24);
+            arr[1] = static_cast<unsigned char>((v & 0x00ff0000) >> 16);
+            arr[2] = static_cast<unsigned char>((v & 0x0000ff00) >> 8);
+            arr[3] = static_cast<unsigned char>((v & 0x000000ff) >> 0);
+        }
+        constexpr void toBigEndian(unsigned char* arr, const std::uint64_t v)
+        {
+            arr[0] = static_cast<unsigned char>((v & 0xff00000000000000) >> 56);
+            arr[1] = static_cast<unsigned char>((v & 0x00ff000000000000) >> 48);
+            arr[2] = static_cast<unsigned char>((v & 0x0000ff0000000000) >> 40);
+            arr[3] = static_cast<unsigned char>((v & 0x000000ff00000000) >> 32);
+            arr[4] = static_cast<unsigned char>((v & 0x00000000ff000000) >> 24);
+            arr[5] = static_cast<unsigned char>((v & 0x0000000000ff0000) >> 16);
+            arr[6] = static_cast<unsigned char>((v & 0x000000000000ff00) >> 8);
+            arr[7] = static_cast<unsigned char>((v & 0x00000000000000ff) >> 0);
+        }
         //! Allows raw storage of types in big endian format
         /*!
          * This templated class allows any integral based (enumerations
@@ -216,35 +271,31 @@ namespace Fastcgipp
             unsigned char m_data[size];
 
             //! Set the internal data to the passed parameter.
-            void set(T x)
+            constexpr void set(T x) noexcept
             {
-                union
-                {
+                union {
                     BaseType base;
                     T actual;
-                };
-                actual = x;
-                for(unsigned int i=0; i<size; ++i)
-                    m_data[i] = static_cast<unsigned char>(
-                            0xff & base>>8*(size-1-i));
+                } u = {.actual = x};
+                toBigEndian(m_data, u.base);
             }
 
         public:
-            BigEndian& operator=(T x)
+            constexpr BigEndian& operator=(T x) noexcept
             {
                 set(x);
                 return *this;
             }
 
-            BigEndian(T x)
+            constexpr BigEndian(T x) noexcept
             {
                 set(x);
             }
 
-            constexpr BigEndian()
+            constexpr BigEndian() noexcept
             {}
 
-            operator T() const
+            constexpr operator T() const noexcept
             {
                 return read(m_data);
             }
@@ -257,24 +308,18 @@ namespace Fastcgipp
              * @param [in] source Pointer to start of data. This data should of
              *                    course be at minimum size.
              */
-            static T read(const unsigned char* source)
+            static constexpr T read(const unsigned char* source) noexcept
             {
-                union
-                {
+                union {
                     BaseType base;
                     T actual;
-                };
-                base = 0;
-
-                for(unsigned int i=0; i<size; ++i)
-                    base |= static_cast<BaseType>(*(source+i))
-                        << 8*(size-1-i);
-
-                return actual;
+                } u = {.base = 0 };
+                fromBigEndian(source, u.base);
+                return u.actual;
             }
 
             //! Simply casts char to unsigned char.
-            static T read(const char* source)
+            static constexpr T read(const char* source) noexcept
             {
                 return read(reinterpret_cast<const unsigned char*>(source));
             }
@@ -323,7 +368,7 @@ namespace Fastcgipp
         struct BeginRequest
         {
             //! Flag bit representing the keep alive value
-            static const int keepConnBit = 1;
+            static constexpr int keepConnBit = 1;
 
             //! Get keep alive value from the record body
             /*!
@@ -335,7 +380,7 @@ namespace Fastcgipp
              * @return Boolean value as to whether or not the connection is kept
              *         alive.
              */
-            bool kill() const
+            constexpr bool kill() const noexcept
             {
                 return !(flags & keepConnBit);
             }
@@ -444,7 +489,7 @@ namespace Fastcgipp
         template<int NAMELENGTH, int VALUELENGTH> struct ManagementReply
         {
         private:
-            static const int paddingLength = (chunkSize-1)-(
+            static constexpr int paddingLength = (chunkSize-1)-(
                     sizeof(Header)
                     +2
                     +NAMELENGTH
@@ -487,8 +532,8 @@ namespace Fastcgipp
                 nameLength(NAMELENGTH),
                 valueLength(VALUELENGTH)
             {
-                std::copy(name_, name_+NAMELENGTH, name);
-                std::copy(value_, value_+VALUELENGTH, value);
+                std::copy_n(name_, NAMELENGTH, name);
+                std::copy_n(value_, VALUELENGTH, value);
                 header.version = version;
                 header.type = RecordType::GET_VALUES_RESULT;
                 header.fcgiId = 0;

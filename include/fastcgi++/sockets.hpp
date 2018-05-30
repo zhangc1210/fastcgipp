@@ -200,13 +200,13 @@ namespace Fastcgipp
         ssize_t write(const char* buffer, size_t size) const;
 
         //! We need this to allow the socket objects to be in sorted containers.
-        bool operator<(const Socket& x) const
+        inline bool operator<(const Socket& x) const noexcept
         {
             return m_data < x.m_data;
         }
 
         //! We need this to allow the socket objects to be in sorted containers.
-        bool operator==(const Socket& x) const
+        inline bool operator==(const Socket& x) const noexcept
         {
             return m_data == x.m_data;
         }
