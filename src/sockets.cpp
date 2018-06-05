@@ -199,18 +199,19 @@ Fastcgipp::SocketGroup::~SocketGroup()
             << m_bytesReceived)
 }
 
-static int set_reuse(int sock)
+static void set_reuse(int sock)
 {
 #if defined(FASTCGIPP_LINUX) || defined(FASTCGIPP_UNIX)
-    return ::setsockopt(
+    if(::setsockopt(
         sock,
         SOL_SOCKET,
         SO_REUSEADDR,
         reinterpret_cast<int*>(1),
-        sizeof(int));
+        sizeof(int)) != 0)
+        WARNING_LOG("Socket setsockopt(SO_REUSEADDR, 1) error on fd " \
+                << sock << ": " << strerror(errno))
 #else
     WARNING_LOG("SocketGroup::set_reuse_address(true) not implemented");
-    return 0;
 #endif
 }
 
