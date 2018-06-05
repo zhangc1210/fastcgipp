@@ -151,6 +151,7 @@ Fastcgipp::SocketGroup::SocketGroup():
     m_poll(epoll_create1(0)),
 #endif
     m_waking(false),
+    m_reuse(false),
     m_accept(true),
     m_refreshListeners(false)
 #if FASTCGIPP_LOG_LEVEL > 3
@@ -196,6 +197,21 @@ Fastcgipp::SocketGroup::~SocketGroup()
     DIAG_LOG("SocketGroup::~SocketGroup(): Bytes sent ===== " << m_bytesSent)
     DIAG_LOG("SocketGroup::~SocketGroup(): Bytes received = " \
             << m_bytesReceived)
+}
+
+static int set_reuse(int sock)
+{
+#if defined(FASTCGIPP_LINUX) || defined(FASTCGIPP_UNIX)
+    return ::setsockopt(
+        sock,
+        SOL_SOCKET,
+        SO_REUSEADDR,
+        reinterpret_cast<int*>(1),
+        sizeof(int));
+#else
+    WARNING_LOG("SocketGroup::set_reuse_address(true) not implemented");
+    return 0;
+#endif
 }
 
 bool Fastcgipp::SocketGroup::listen()
@@ -249,6 +265,8 @@ bool Fastcgipp::SocketGroup::listen(
     address.sun_family = AF_UNIX;
     std::strncpy(address.sun_path, name, sizeof(address.sun_path) - 1);
 
+    if(m_reuse)
+        set_reuse(fd);
     if(bind(
                 fd,
                 reinterpret_cast<struct sockaddr*>(&address),
@@ -339,6 +357,8 @@ bool Fastcgipp::SocketGroup::listen(
         fd = socket(i->ai_family, i->ai_socktype, i->ai_protocol);
         if(fd == -1)
             continue;
+        if(m_reuse)
+            set_reuse(fd);
         if(
                 bind(fd, i->ai_addr, i->ai_addrlen) == 0
                 && ::listen(fd, 100) == 0)

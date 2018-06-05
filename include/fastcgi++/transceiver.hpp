@@ -173,6 +173,16 @@ namespace Fastcgipp
             return m_sockets.listen(interface, service);
         }
 
+        //! Should we set socket option to reuse address
+        /*!
+         * @param [in] status Set to true if you want to reuse address.
+         *                    False otherwise (default).
+         */
+        void set_reuse_address(bool value)
+        {
+            m_sockets.set_reuse_address(value);
+        }
+
     private:
         //! Container associating sockets with their receive buffers
         std::map<Socket, Block> m_receiveBuffers;

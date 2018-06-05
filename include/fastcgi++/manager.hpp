@@ -172,6 +172,16 @@ namespace Fastcgipp
         //! Pass a message to a request
         void push(Protocol::RequestId id, Message&& message);
 
+        //! Should we set socket option to reuse address
+        /*!
+         * @param [in] status Set to true if you want to reuse address.
+         *                    False otherwise (default).
+         */
+        void set_reuse_address(bool value)
+        {
+            m_transceiver.set_reuse_address(value);
+        }
+
     protected:
         //! Make a request object
         virtual std::unique_ptr<Request_base> makeRequest(

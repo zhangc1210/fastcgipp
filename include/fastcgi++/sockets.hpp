@@ -415,6 +415,16 @@ namespace Fastcgipp
          */
         void accept(bool status);
 
+        //! Should we set socket option to reuse address
+        /*!
+         * @param [in] status Set to true if you want to reuse address.
+         *                    False otherwise (default).
+         */
+        void set_reuse_address(bool value)
+        {
+            m_reuse = value;
+        }
+
     private:
         //! Our sockets need access to our private data
         friend class Socket;
@@ -430,6 +440,9 @@ namespace Fastcgipp
 
         //! Set to true while there is a pending wake
         bool m_waking;
+
+        //! Set to true to reuse address
+        bool m_reuse;
 
         //! Set to true if we should be accepting new connections
         std::atomic_bool m_accept;
