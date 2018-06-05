@@ -178,9 +178,9 @@ namespace Fastcgipp
          * @param [in] status Set to true if you want to reuse address.
          *                    False otherwise (default).
          */
-        void set_reuse_address(bool value)
+        void reuseAddress(bool value)
         {
-            m_sockets.set_reuse_address(value);
+            m_sockets.reuseAddress(value);
         }
 
     private:
