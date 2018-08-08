@@ -122,7 +122,7 @@ install(EXPORT FastcgippTargets
     NAMESPACE Fastcgipp::
     DESTINATION ${INSTALL_CONFIGDIR})
 
-set(FASTCGIPP_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}")
+GNUInstallDirs_get_absolute_install_dir(FASTCGIPP_INCLUDE_DIR CMAKE_INSTALL_INCLUDEDIR)
 
 #Create a ConfigVersion.cmake file
 include(CMakePackageConfigHelpers)
