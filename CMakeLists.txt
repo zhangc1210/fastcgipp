@@ -1,8 +1,6 @@
-cmake_minimum_required(VERSION 3.0)
-project(fastcgi++ LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.8)
+project(fastcgi++ VERSION 3.0 LANGUAGES CXX)
 
-set(VERSION      "3.0")
-set(VERSION_MAJOR 3)
 string(TIMESTAMP BUILD_TIME UTC)
 
 # All our starting point lists
@@ -53,68 +51,118 @@ else()
     message(FATAL_ERROR "Unknown operating system")
 endif()
 
+
 # Set compile flags for gcc and clang
 if(UNIX)
-    set(CMAKE_CXX_FLAGS
-        "${CMAKE_CXX_FLAGS} $ENV{CXXFLAGS} -std=c++14 -Wall -Werror -Wold-style-cast -pthread")
-    set(CMAKE_CXX_FLAGS_RELEASE
-        "${CMAKE_CXX_FLAGS_RELEASE} $ENV{CXXFLAGS} -O3 -fomit-frame-pointer -std=c++14 -Wall -Werror -Wold-style-cast -pthread")
-    set(CMAKE_CXX_FLAGS_DEBUG
-        "${CMAKE_CXX_FLAGS_DEBUG} $ENV{CXXFLAGS} -Og -fno-omit-frame-pointer -g -ggdb -std=c++14 -Wall -Werror -Wold-style-cast -pthread")
+    set(CMAKE_THREAD_PREFER_PTHREAD ON)
+endif()
+
+#Set RPATH
+if(APPLE)
+    if(CMAKE_BUILD_TYPE MATCHES "Debug")
+        set(DEFAULT_FASTCGIPP_SKIP_RPATH OFF)
+    else()
+        set(DEFAULT_FASTCGIPP_SKIP_RPATH ON)
+    endif()
+    option(FASTCGIPP_SKIP_RPATH "Skip setting up RPATH to full" ${DEFAULT_FASTCGIPP_SKIP_RPATH})
+    if(NOT FASTCGIPP_SKIP_RPATH)
+        set(CMAKE_SKIP_BUILD_RPATH FALSE)
+        set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+        set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+        set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+        list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
+        if("${isSystemDir}" STREQUAL "-1")
+            set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+        endif()
+    endif()
 endif()
 
 # Our configuration
-include_directories(
-    "${CMAKE_CURRENT_BINARY_DIR}/include"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include")
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/include/config.hpp.in"
     "${CMAKE_CURRENT_BINARY_DIR}/include/fastcgi++/config.hpp" @ONLY)
-
-# Install the header file
-install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/include/fastcgi++/config.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/block.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/fcgistreambuf.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/http.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/log.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/manager.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/message.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/protocol.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/request.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/sockets.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/transceiver.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/webstreambuf.hpp"
-    DESTINATION "include/fastcgi++")
 
 # Build the library itself
 option(BUILD_STATIC_LIBS "Set to ON to build and install only the static library" OFF)
 if(BUILD_STATIC_LIBS)
     add_library(fastcgipp STATIC ${SRC_FILES})
-    install(TARGETS fastcgipp ARCHIVE DESTINATION lib${LIB_SUFFIX})
 else(BUILD_STATIC_LIBS)
     add_library(fastcgipp SHARED ${SRC_FILES})
-    install(TARGETS fastcgipp LIBRARY DESTINATION lib${LIB_SUFFIX})
 endif(BUILD_STATIC_LIBS)
-set_target_properties(fastcgipp PROPERTIES VERSION ${VERSION}
-                                           SOVERSION ${VERSION_MAJOR})
+
+add_library(Fastcgipp::fastcgipp ALIAS fastcgipp)
+
+set_target_properties(fastcgipp PROPERTIES VERSION ${PROJECT_VERSION}
+                                           SOVERSION ${PROJECT_VERSION_MAJOR})
+
+find_package(Threads REQUIRED)
+target_link_libraries(fastcgipp PUBLIC Threads::Threads)
+target_compile_features(fastcgipp PRIVATE cxx_std_14)
+if(UNIX)
+    if(CXX_COMPILER_ID MATCHES "GNU" OR CXX_COMPILER_ID MATCHES "Clang")
+        target_compile_options(fastcgipp PRIVATE -Wall -Werror -Wold-style-cast -fno-omit-frame-pointer)
+    endif()
+endif(UNIX)
+
+include(GNUInstallDirs)
+target_include_directories(fastcgipp PUBLIC
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_LIBDIR}>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+
+set(INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/fastcgi++)
+
+install(TARGETS fastcgipp
+    EXPORT FastcgippTargets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+install(EXPORT FastcgippTargets
+    FILE FastcgippTargets.cmake
+    NAMESPACE Fastcgipp::
+    DESTINATION ${INSTALL_CONFIGDIR})
+
+set(FASTCGIPP_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}")
+
+#Create a ConfigVersion.cmake file
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/FastcgippConfigVersion.cmake
+    COMPATIBILITY SameMajorVersion)
+
+configure_package_config_file(${CMAKE_CURRENT_LIST_DIR}/cmake/FastcgippConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/FastcgippConfig.cmake
+    INSTALL_DESTINATION ${INSTALL_CONFIGDIR}
+    PATH_VARS FASTCGIPP_INCLUDE_DIR)
+
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/FastcgippConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/FastcgippConfigVersion.cmake
+    DESTINATION ${INSTALL_CONFIGDIR})
+
+install(DIRECTORY
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++"
+	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+# Install the header file
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/include/fastcgi++/config.hpp"
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/fastcgi++)
 
 # All the test stuff
 enable_testing()
-foreach(UNITTEST ${TESTS})
+foreach(UNITTEST IN LISTS TESTS)
     add_executable(${UNITTEST}_test EXCLUDE_FROM_ALL tests/${UNITTEST}.cpp)
-    add_dependencies(${UNITTEST}_test fastcgipp)
-    target_link_libraries(${UNITTEST}_test PRIVATE fastcgipp)
+    target_link_libraries(${UNITTEST}_test PRIVATE Fastcgipp::fastcgipp)
     add_test("${UNITTEST}" ${UNITTEST}_test)
     list(APPEND TEST_TARGET ${UNITTEST}_test)
 endforeach()
 add_custom_target(tests DEPENDS ${TEST_TARGET})
 
 # Examples
-foreach(EXAMPLE ${EXAMPLES})
+foreach(EXAMPLE IN LISTS EXAMPLES)
     add_executable(${EXAMPLE}.fcgi EXCLUDE_FROM_ALL examples/${EXAMPLE}.cpp)
-    add_dependencies(${EXAMPLE}.fcgi fastcgipp)
-    target_link_libraries(${EXAMPLE}.fcgi PRIVATE fastcgipp)
+    target_link_libraries(${EXAMPLE}.fcgi PRIVATE Fastcgipp::fastcgipp)
     list(APPEND EXAMPLE_TARGETS ${EXAMPLE}.fcgi)
 endforeach()
 add_custom_target(examples DEPENDS ${EXAMPLE_TARGETS})
@@ -131,7 +179,7 @@ if(DOXYGEN_FOUND)
         WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
         COMMENT "Generating API documentation with Doxygen" VERBATIM)
     install(
-        DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc"
-        DESTINATION "share/fastcgi++"
+        DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/doc/"
+        DESTINATION ${CMAKE_INSTALL_DOCDIR}
         OPTIONAL)
 endif(DOXYGEN_FOUND)

@@ -1,0 +1,13 @@
+set(FASTCGIPP_VERSION @PROJECT_VERSION@)
+
+@PACKAGE_INIT@
+
+get_filename_component(FASTCGIPP_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+
+set_and_check(FASTCGIPP_INCLUDE_DIR "@FASTCGIPP_INCLUDE_DIR@")
+
+if(NOT TARGET Fastcgipp::fastcgipp)
+    include("${FASTCGIPP_CMAKE_DIR}/FastcgippTargets.cmake")
+endif()
+
+set(Fastcgipp_LIBRARIES Fastcgipp::fastcgipp)
