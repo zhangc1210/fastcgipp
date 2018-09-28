@@ -82,6 +82,15 @@ configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/include/config.hpp.in"
     "${CMAKE_CURRENT_BINARY_DIR}/include/fastcgi++/config.hpp" @ONLY)
 
+# Are we worrying about SQL?
+option(BUILD_SQL "Set to ON to build and install the SQL components" OFF)
+if(BUILD_SQL)
+    find_package(PostgreSQL REQUIRED)
+    list(APPEND TESTS "sql")
+    list(APPEND SRC_FILES "src/parameters.cpp")
+    list(APPEND SRC_FILES "src/results.cpp")
+endif(BUILD_SQL)
+
 # Build the library itself
 option(BUILD_STATIC_LIBS "Set to ON to build and install only the static library" OFF)
 if(BUILD_STATIC_LIBS)
@@ -142,7 +151,16 @@ install(FILES
 
 install(DIRECTORY
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++"
-	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    PATTERN "sql" EXCLUDE)
+
+if(BUILD_SQL)
+    target_link_libraries(fastcgipp PUBLIC ${PostgreSQL_LIBRARIES})
+    target_include_directories(fastcgipp PUBLIC ${PostgreSQL_INCLUDE_DIRS})
+    install(DIRECTORY
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/sql"
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/fastcgi++")
+endif(BUILD_SQL)
 
 # Install the header file
 install(FILES
