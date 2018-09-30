@@ -2,18 +2,18 @@
  * @file       sockets.hpp
  * @brief      Declares everything for interfaces with OS level sockets.
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       April 27, 2017
- * @copyright  Copyright &copy; 2017 Eddie Carle. This project is released under
+ * @date       September 30, 2018
+ * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  *
  * It is this file, along with sockets.cpp, that must be modified to make
  * fastcgi++ work on Windows. Although not completely sure, I believe all that
  * needs to be modified in this file is Fastcgipp::socket_t and
- * Fastcgipp::poll_t.
+ * Fastcgipp::Poll.
  */
 
 /*******************************************************************************
-* Copyright (C) 2017 Eddie Carle [eddie@isatec.ca]                             *
+* Copyright (C) 2018 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
 * This file is part of fastcgi++.                                              *
 *                                                                              *
@@ -55,13 +55,125 @@ namespace Fastcgipp
     //! Our socket identifier type in GNU/Linux is simply an int
     typedef int socket_t;
 
+    //! Class for handling OS level socket polling
+    /*!
+     * This class introduces a layer of abstraction to the polling interface
+     * used by the SocketGroup class and other facilities of within fastcgi++.
+     * Cross-platform development will require modification of this class.
+     *
+     * @date    September 30, 2018
+     * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
+     */
+    class Poll
+    {
+    private:
 #ifdef FASTCGIPP_LINUX
-    //! Our polling type using the Linux kernel is simply an int
-    typedef const int poll_t;
+        //! Our polling type using the Linux kernel is simply an int
+        typedef const int poll_t;
 #elif defined FASTCGIPP_UNIX
-    //! Our polling type using generic Unix is an array of pollfds
-    typedef std::vector<pollfd> poll_t;
+        //! Our polling type using generic Unix is an array of pollfds
+        typedef std::vector<pollfd> poll_t;
 #endif
+
+        //! The OS level polling object
+        poll_t m_poll;
+
+    public:
+        //! Add a socket identifier to the poll list
+        bool add(const socket_t socket);
+
+        //! Remove a socket identifier to the poll list
+        bool del(const socket_t socket);
+
+        //! Type returned from a poll request
+        class Result
+        {
+        private:
+            //! Event: there is data to read
+            static const unsigned pollIn;
+
+            //! Event: there is an error in the socket
+            static const unsigned pollErr;
+
+            //! Event: the socket has been "hung up" on this end
+            static const unsigned pollHup;
+
+            //! Event: the socket has been "hung up" on the other end
+            static const unsigned pollRdHup;
+
+            //! Event register
+            unsigned m_events;
+
+            //! Associated socket
+            socket_t m_socket;
+
+            //! True if the poll actually returned a socket with an event
+            bool m_data;
+
+            friend class Poll;
+
+            //! Only Poll should be able to construct these
+            Result():
+                m_events(0),
+                m_data(false)
+            {}
+
+        public:
+            //! Get socket id associated with poll event
+            socket_t socket() const
+            {
+                return m_socket;
+            }
+
+            //! True if the poll actually returned a socket with an event
+            explicit operator bool() const
+            {
+                return m_data;
+            }
+
+            //! Associated event register
+            unsigned events() const
+            {
+                return m_events;
+            }
+
+            //! True if the socket has been "hung up" on this end
+            bool hup() const
+            {
+                return m_events & pollHup;
+            }
+
+            //! True if the socket has been "hung up" on the other end
+            bool rdHup() const
+            {
+                return m_events & pollRdHup;
+            }
+
+            //! True if the socket has an error
+            bool err() const
+            {
+                return m_events & pollErr;
+            }
+
+            //! True if the socket has data to read
+            bool in() const
+            {
+                return m_events & pollIn;
+            }
+
+            //! True if and only if the socket has data to read
+            bool onlyIn() const
+            {
+                return m_events == pollIn;
+            }
+        };
+
+        //! Initiate poll on group
+        Result poll(bool block);
+
+        Poll();
+        ~Poll();
+    };
 
     class SocketGroup;
 
@@ -281,7 +393,7 @@ namespace Fastcgipp
      * <em>The only part of this class that is safe to call from multiple
      * threads is the wake() function.</em>
      *
-     * @date    April 27, 2017
+     * @date    September 30, 2018
      * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
      */
     class SocketGroup
@@ -433,7 +545,7 @@ namespace Fastcgipp
         std::set<socket_t> m_listeners;
 
         //! Our poll object
-        poll_t m_poll;
+        Poll m_poll;
 
         //! A pair of sockets for wakeup purposes
         socket_t m_wakeSockets[2];
@@ -458,12 +570,6 @@ namespace Fastcgipp
 
         //! Accept a new connection and create it's socket
         inline void createSocket(const socket_t listener);
-
-        //! Add a socket identifier to the poll list
-        bool pollAdd(const socket_t socket);
-
-        //! Remove a socket identifier to the poll list
-        bool pollDel(const socket_t socket);
 
         //! Filenames to cleanup when we're done
         std::deque<std::string> m_filenames;

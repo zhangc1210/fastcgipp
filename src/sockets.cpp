@@ -2,8 +2,8 @@
  * @file       sockets.cpp
  * @brief      Defines everything for interfaces with OS level sockets.
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 3, 2017
- * @copyright  Copyright &copy; 2017 Eddie Carle. This project is released under
+ * @date       September 30, 2018
+ * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  *
  * It is this file, along with sockets.hpp, that must be modified to make
@@ -11,7 +11,7 @@
  */
 
 /*******************************************************************************
-* Copyright (C) 2017 Eddie Carle [eddie@isatec.ca]                             *
+* Copyright (C) 2018 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
 * This file is part of fastcgi++.                                              *
 *                                                                              *
@@ -50,6 +50,76 @@
 #include <grp.h>
 #include <cstring>
 
+#ifdef FASTCGIPP_LINUX
+const unsigned Fastcgipp::Poll::Result::pollIn = EPOLLIN;
+const unsigned Fastcgipp::Poll::Result::pollErr = EPOLLERR;
+const unsigned Fastcgipp::Poll::Result::pollHup = EPOLLHUP;
+const unsigned Fastcgipp::Poll::Result::pollRdHup = EPOLLRDHUP;
+#elif defined FASTCGIPP_UNIX
+const unsigned Fastcgipp::Poll::Result::pollIn = POLLIN;
+const unsigned Fastcgipp::Poll::Result::pollErr = POLLERR;
+const unsigned Fastcgipp::Poll::Result::pollHup = POLLHUP;
+const unsigned Fastcgipp::Poll::Result::pollRdHup = POLLRDHUP;
+#endif
+
+Fastcgipp::Poll::Poll()
+#ifdef FASTCGIPP_LINUX
+    :m_poll(epoll_create1(0))
+#endif
+{}
+
+Fastcgipp::Poll::~Poll()
+{
+#ifdef FASTCGIPP_LINUX
+    close(m_poll);
+#endif
+}
+
+Fastcgipp::Poll::Result Fastcgipp::Poll::poll(bool block)
+{
+    int pollResult;
+#ifdef FASTCGIPP_LINUX
+    epoll_event epollEvent;
+    pollResult = epoll_wait(
+            m_poll,
+            &epollEvent,
+            1,
+            block?-1:0);
+#elif defined FASTCGIPP_UNIX
+    pollResult = ::poll(
+            m_poll.data(),
+            m_poll.size(),
+            block?-1:0);
+#endif
+
+    Result result;
+
+    if(pollResult<0 && errno != EINTR)
+        FAIL_LOG("Error on poll: " << std::strerror(errno))
+    else if(pollResult>0)
+    {
+        result.m_data = true;
+#ifdef FASTCGIPP_LINUX
+        result.m_socket = epollEvent.data.fd;
+        result.m_events = epollEvent.events;
+#elif defined FASTCGIPP_UNIX
+        const auto fd = std::find_if(
+                m_poll.begin(),
+                m_poll.end(),
+                [] (const pollfd& x)
+                {
+                    return x.revents != 0;
+                });
+        if(fd == m_poll.end())
+            FAIL_LOG("poll() gave a result >0 but no revents are non-zero")
+        result.m_socket = fd->fd;
+        result.m_events = fd->revents;
+#endif
+    }
+
+    return result;
+}
+
 Fastcgipp::Socket::Socket(
         const socket_t& socket,
         SocketGroup& group,
@@ -57,7 +127,7 @@ Fastcgipp::Socket::Socket(
     m_data(new Data(socket, valid, group)),
     m_original(true)
 {
-    if(!group.pollAdd(socket))
+    if(!group.m_poll.add(socket))
     {
         ERROR_LOG("Unable to add socket " << socket << " to poll list: " \
                 << std::strerror(errno))
@@ -124,7 +194,7 @@ void Fastcgipp::Socket::close() const
     if(valid())
     {
         ::shutdown(m_data->m_socket, SHUT_RDWR);
-        m_data->m_group.pollDel(m_data->m_socket);
+        m_data->m_group.m_poll.del(m_data->m_socket);
         ::close(m_data->m_socket);
         m_data->m_valid = false;
         m_data->m_group.m_sockets.erase(m_data->m_socket);
@@ -140,16 +210,13 @@ Fastcgipp::Socket::~Socket()
     if(m_original && valid())
     {
         ::shutdown(m_data->m_socket, SHUT_RDWR);
-        m_data->m_group.pollDel(m_data->m_socket);
+        m_data->m_group.m_poll.del(m_data->m_socket);
         ::close(m_data->m_socket);
         m_data->m_valid = false;
     }
 }
 
 Fastcgipp::SocketGroup::SocketGroup():
-#ifdef FASTCGIPP_LINUX
-    m_poll(epoll_create1(0)),
-#endif
     m_waking(false),
     m_reuse(false),
     m_accept(true),
@@ -165,15 +232,12 @@ Fastcgipp::SocketGroup::SocketGroup():
 {
     // Add our wakeup socket into the poll list
     socketpair(AF_UNIX, SOCK_STREAM, 0, m_wakeSockets);
-    pollAdd(m_wakeSockets[1]);
+    m_poll.add(m_wakeSockets[1]);
     DIAG_LOG("SocketGroup::SocketGroup(): Initialized ")
 }
 
 Fastcgipp::SocketGroup::~SocketGroup()
 {
-#ifdef FASTCGIPP_LINUX
-    close(m_poll);
-#endif
     close(m_wakeSockets[0]);
     close(m_wakeSockets[1]);
     for(const auto& listener: m_listeners)
@@ -480,90 +544,42 @@ Fastcgipp::Socket Fastcgipp::SocketGroup::connect(
 
 Fastcgipp::Socket Fastcgipp::SocketGroup::poll(bool block)
 {
-    int pollResult;
-
-#ifdef FASTCGIPP_LINUX
-    epoll_event epollEvent;
-    const auto& pollIn = EPOLLIN;
-    const auto& pollErr = EPOLLERR;
-    const auto& pollHup = EPOLLHUP;
-    const auto& pollRdHup = EPOLLRDHUP;
-#elif defined FASTCGIPP_UNIX
-    const auto& pollIn = POLLIN;
-    const auto& pollErr = POLLERR;
-    const auto& pollHup = POLLHUP;
-    const auto& pollRdHup = POLLRDHUP;
-#endif
-
     while(m_listeners.size()+m_sockets.size() > 0)
     {
         if(m_refreshListeners)
         {
             for(auto& listener: m_listeners)
             {
-                pollDel(listener);
-                if(m_accept && !pollAdd(listener))
+                m_poll.del(listener);
+                if(m_accept && !m_poll.add(listener))
                     FAIL_LOG("Unable to add listen socket " << listener \
                             << " to the poll list: " << std::strerror(errno))
             }
             m_refreshListeners=false;
         }
-#ifdef FASTCGIPP_LINUX
-        pollResult = epoll_wait(
-                m_poll,
-                &epollEvent,
-                1,
-                block?-1:0);
-#elif defined FASTCGIPP_UNIX
-        pollResult = ::poll(
-                m_poll.data(),
-                m_poll.size(),
-                block?-1:0);
-#endif
 
-        if(pollResult<0)
-        {
-            if(errno == EINTR)
-                continue;
-            FAIL_LOG("Error on poll: " << std::strerror(errno))
-        }
-        else if(pollResult>0)
-        {
-#ifdef FASTCGIPP_LINUX
-            const auto& socketId = epollEvent.data.fd;
-            const auto& events = epollEvent.events;
-#elif defined FASTCGIPP_UNIX
-            const auto fd = std::find_if(
-                    m_poll.begin(),
-                    m_poll.end(),
-                    [] (const pollfd& x)
-                    {
-                        return x.revents != 0;
-                    });
-            if(fd == m_poll.end())
-                FAIL_LOG("poll() gave a result >0 but no revents are non-zero")
-            const auto& socketId = fd->fd;
-            const auto& events = fd->revents;
-#endif
+        const auto result = m_poll.poll(block);
 
-            if(m_listeners.find(socketId) != m_listeners.end())
+        if(result)
+        {
+            if(m_listeners.find(result.socket()) != m_listeners.end())
             {
-                if(events == pollIn)
+                if(result.onlyIn())
                 {
-                    createSocket(socketId);
+                    createSocket(result.socket());
                     continue;
                 }
-                else if(events & pollErr)
+                else if(result.err())
                     FAIL_LOG("Error in listen socket.")
-                else if(events & (pollHup | pollRdHup))
+                else if(result.hup() || result.rdHup())
                     FAIL_LOG("The listen socket hung up.")
                 else
-                    FAIL_LOG("Got a weird event 0x" << std::hex << events\
-                            << " on listen poll." )
+                    FAIL_LOG("Got a weird event 0x" << std::hex \
+                            << result.events() << " on listen poll." )
             }
-            else if(socketId == m_wakeSockets[1])
+            else if(result.socket() == m_wakeSockets[1])
             {
-                if(events == pollIn)
+                if(result.onlyIn())
                 {
                     std::lock_guard<std::mutex> lock(m_wakingMutex);
                     char x[256];
@@ -574,38 +590,38 @@ Fastcgipp::Socket Fastcgipp::SocketGroup::poll(bool block)
                     block=false;
                     continue;
                 }
-                else if(events & (pollHup | pollRdHup))
+                else if(result.hup() || result.rdHup())
                     FAIL_LOG("The wakeup socket hung up.")
-                else if(events & pollErr)
+                else if(result.err())
                     FAIL_LOG("Error in the wakeup socket.")
             }
             else
             {
-                const auto socket = m_sockets.find(socketId);
+                const auto socket = m_sockets.find(result.socket());
                 if(socket == m_sockets.end())
                 {
-                    ERROR_LOG("Poll gave fd " << socketId \
+                    ERROR_LOG("Poll gave fd " << result.socket() \
                             << " which isn't in m_sockets.")
-                    pollDel(socketId);
-                    close(socketId);
+                    m_poll.del(result.socket());
+                    close(result.socket());
                     continue;
                 }
 
-                if(events & pollRdHup)
+                if(result.rdHup())
                     socket->second.m_data->m_closing=true;
-                else if(events & pollHup)
+                else if(result.hup())
                 {
-                    WARNING_LOG("Socket " << socketId << " hung up")
+                    WARNING_LOG("Socket " << result.socket() << " hung up")
                     socket->second.m_data->m_closing=true;
                 }
-                else if(events & pollErr)
+                else if(result.err())
                 {
-                    ERROR_LOG("Error in socket " << socketId)
+                    ERROR_LOG("Error in socket " << result.socket())
                     socket->second.m_data->m_closing=true;
                 }
-                else if((events & pollIn) == 0)
-                    FAIL_LOG("Got a weird event 0x" << std::hex << events\
-                            << " on socket poll." )
+                else if(!result.in())
+                    FAIL_LOG("Got a weird event 0x" << std::hex \
+                            << result.events() << " on socket poll." )
                 return socket->second;
             }
         }
@@ -669,7 +685,7 @@ Fastcgipp::Socket::Socket():
     m_original(false)
 {}
 
-bool Fastcgipp::SocketGroup::pollAdd(const socket_t socket)
+bool Fastcgipp::Poll::add(const socket_t socket)
 {
 #ifdef FASTCGIPP_LINUX
     epoll_event event;
@@ -694,7 +710,7 @@ bool Fastcgipp::SocketGroup::pollAdd(const socket_t socket)
 #endif
 }
 
-bool Fastcgipp::SocketGroup::pollDel(const socket_t socket)
+bool Fastcgipp::Poll::del(const socket_t socket)
 {
 #ifdef FASTCGIPP_LINUX
     return epoll_ctl(m_poll, EPOLL_CTL_DEL, socket, nullptr) != -1;
