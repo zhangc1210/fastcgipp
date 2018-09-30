@@ -2,13 +2,13 @@
  * @file       parameters.hpp
  * @brief      Declares SQL parameters types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 13, 2017
- * @copyright  Copyright &copy; 2017 Eddie Carle. This project is released under
+ * @date       September 29, 2018
+ * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
 
 /*******************************************************************************
-* Copyright (C) 2017 Eddie Carle [eddie@isatec.ca]                             *
+* Copyright (C) 2018 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
 * This file is part of fastcgi++.                                              *
 *                                                                              *
@@ -78,7 +78,7 @@ namespace Fastcgipp
             }
 
             //! Size in bytes of this contiguous block of data
-            constexpr size_t size() const
+            constexpr int size() const
             {
                 return sizeof(T);
             }
@@ -115,7 +115,7 @@ namespace Fastcgipp
             }
 
             //! Size in bytes of integer (2)
-            constexpr size_t size() const
+            constexpr int size() const
             {
                 return sizeof(int16_t);
             }
@@ -152,7 +152,7 @@ namespace Fastcgipp
             }
 
             //! Size in bytes of integer (4)
-            constexpr size_t size() const
+            constexpr int size() const
             {
                 return sizeof(int32_t);
             }
@@ -189,7 +189,7 @@ namespace Fastcgipp
             }
 
             //! Size in bytes of integer (8)
-            constexpr size_t size() const
+            constexpr int size() const
             {
                 return sizeof(int64_t);
             }
@@ -226,7 +226,7 @@ namespace Fastcgipp
             }
 
             //! Size in bytes of float (4)
-            constexpr size_t size() const
+            constexpr int size() const
             {
                 return sizeof(float);
             }
@@ -263,7 +263,7 @@ namespace Fastcgipp
             }
 
             //! Size in bytes of double (8)
-            constexpr size_t size() const
+            constexpr int size() const
             {
                 return sizeof(double);
             }
@@ -279,10 +279,6 @@ namespace Fastcgipp
         };
 
         //! Parameter specialization for character text strings
-        /*!
-         * This specialization should be used for both wide and narrow character
-         * strings.
-         */
         template<>
         struct Parameter<std::string>
         {
@@ -303,6 +299,36 @@ namespace Fastcgipp
                 return *this;
             }
 
+            //! Associated PostgreSQL Oid
+            static const Oid oid = TEXTOID;
+
+            //! Pointer to start of text string
+            const char* raw() const
+            {
+                return m_data.data();
+            }
+
+            int size() const
+            {
+                return m_data.size();
+            }
+        };
+
+        //! Parameter specialization for wide character text strings
+        /*!
+         * This specialization should be used for both wide and narrow character
+         * strings.
+         */
+        template<>
+        struct Parameter<std::wstring>
+        {
+        private:
+            std::string m_data;
+
+        public:
+            Parameter()
+            {}
+
             Parameter& operator=(const std::wstring& x);
 
             Parameter(const std::wstring& x)
@@ -319,7 +345,7 @@ namespace Fastcgipp
                 return m_data.data();
             }
 
-            size_t size() const
+            int size() const
             {
                 return m_data.size();
             }
@@ -345,7 +371,14 @@ namespace Fastcgipp
             /*!
              * This gets initialized by calling build().
              */
-            std::vector<size_t> m_sizes;
+            std::vector<int> m_sizes;
+
+            //! Array of formats for each parameter
+            /*!
+             * This gets initialized by calling build(). It is really just an
+             * array of 1s.
+             */
+            const std::vector<int>* m_formats;
 
             //! Template side virtual to populate the above arrays
             /*!
@@ -376,13 +409,19 @@ namespace Fastcgipp
             }
 
             //! Constant pointer to array of all parameter sizes
-            const size_t* sizes() const
+            const int* sizes() const
             {
                 return m_sizes.data();
             }
 
+            //! Constant pointer to array of all formats
+            const int* formats() const
+            {
+                return m_formats->data();
+            }
+
             //! How many parameters in this tuple?
-            virtual size_t size() const =0;
+            virtual int size() const =0;
 
             virtual ~Parameters_base() {}
         };
@@ -395,7 +434,7 @@ namespace Fastcgipp
          * ability to format the tuple data in a way PostgreSQL wants to see it.
          *
          * @tparam Types Pack of types to contain in the tuple.
-         * @date    May 13, 2017
+         * @date    September 29, 2018
          * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
          */
         template<typename... Types>
@@ -405,9 +444,10 @@ namespace Fastcgipp
         {
         private:
             static const std::vector<Oid> s_oids;
+            static const std::vector<int> s_formats;
 
             //! How many items in the tuple?
-            constexpr size_t size() const
+            constexpr int size() const
             {
                 return sizeof...(Types);
             }
@@ -435,6 +475,13 @@ namespace Fastcgipp
             using std::tuple<Parameter<Types>...>::tuple;
             using std::tuple<Parameter<Types>...>::operator=;
         };
+
+        template<typename... Types>
+        std::shared_ptr<Parameters<Types...>> make_Parameters(const Types&... args)
+        {
+            return std::shared_ptr<Parameters<Types...>>(
+                    new Parameters<Types...>(args...));
+        }
     }
 }
 
@@ -442,6 +489,7 @@ template<typename... Types>
 void Fastcgipp::SQL::Parameters<Types...>::build_impl()
 {
     m_oids = &s_oids;
+    m_formats = &s_formats;
     build_impl(std::index_sequence_for<Types...>{});
 }
 
@@ -450,5 +498,10 @@ const std::vector<Oid> Fastcgipp::SQL::Parameters<Types...>::s_oids
 {
     Fastcgipp::SQL::Parameter<Types>::oid...
 };
+
+template<typename... Types>
+const std::vector<int> Fastcgipp::SQL::Parameters<Types...>::s_formats(
+        sizeof...(Types),
+        1);
 
 #endif

@@ -2,13 +2,13 @@
  * @file       results.hpp
  * @brief      Declares SQL results types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 13, 2017
- * @copyright  Copyright &copy; 2017 Eddie Carle. This project is released under
+ * @date       September 29, 2018
+ * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
 
 /*******************************************************************************
-* Copyright (C) 2017 Eddie Carle [eddie@isatec.ca]                             *
+* Copyright (C) 2018 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
 * This file is part of fastcgi++.                                              *
 *                                                                              *
@@ -62,6 +62,7 @@ namespace Fastcgipp
         {
         public:
             PGresult *m_res;
+
             virtual ~Results_base()
             {
                 if(m_res != nullptr)
@@ -195,6 +196,17 @@ namespace Fastcgipp
                     PQgetlength(m_res, row, column));
         }
 
+        template<>
+        bool Results_base::verifyColumn<std::wstring>(int column) const
+        {
+            const Oid type = PQftype(m_res, column);
+            return type == TEXTOID || type == VARCHAROID;
+        }
+        template<>
+        std::wstring Results_base::field<std::wstring>(
+                int row,
+                int column) const;
+
         template<typename... Types>
         class Results: public Results_base
         {
@@ -202,7 +214,7 @@ namespace Fastcgipp
             typedef std::tuple<Types...> Row;
 
         private:
-            static const size_t size = sizeof...(Types);
+            static const int size = sizeof...(Types);
 
             template<int column, int... columns>
             int verify_impl(

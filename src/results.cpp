@@ -2,13 +2,13 @@
  * @file       results.cpp
  * @brief      Defines SQL results types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 13, 2017
- * @copyright  Copyright &copy; 2017 Eddie Carle. This project is released under
+ * @date       September 29, 2018
+ * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
 
 /*******************************************************************************
-* Copyright (C) 2017 Eddie Carle [eddie@isatec.ca]                             *
+* Copyright (C) 2018 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
 * This file is part of fastcgi++.                                              *
 *                                                                              *
@@ -27,6 +27,9 @@
 *******************************************************************************/
 
 #include "fastcgi++/sql/results.hpp"
+
+#include <locale>
+#include <codecvt>
 
 Fastcgipp::SQL::Status Fastcgipp::SQL::Results_base::status() const
 {
@@ -56,4 +59,22 @@ Fastcgipp::SQL::Status Fastcgipp::SQL::Results_base::status() const
         default:
             return Status::fatalError;
     };
+}
+
+template<> std::wstring Fastcgipp::SQL::Results_base::field<std::wstring>(
+        int row,
+        int column) const
+{
+    std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
+    const char* const start = PQgetvalue(m_res, row, column);
+    const char* const end = start+PQgetlength(m_res, row, column);
+    try
+    {
+        return converter.from_bytes(start, end);
+    }
+    catch(const std::range_error& e)
+    {
+        WARNING_LOG("Error in code conversion from utf8 in SQL result")
+    }
+    return std::wstring();
 }

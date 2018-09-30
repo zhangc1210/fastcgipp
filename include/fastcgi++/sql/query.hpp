@@ -1,6 +1,6 @@
 /*!
- * @file       parameters.cpp
- * @brief      Defines SQL parameters types
+ * @file       query.hpp
+ * @brief      Declares SQL Query
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
  * @date       September 29, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
@@ -26,32 +26,34 @@
 * along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.           *
 *******************************************************************************/
 
+#ifndef FASTCGIPP_SQL_QUERY_HPP
+#define FASTCGIPP_SQL_QUERY_HPP
+
 #include "fastcgi++/sql/parameters.hpp"
+#include "fastcgi++/sql/results.hpp"
 
-#include <locale>
-#include <codecvt>
-
-void Fastcgipp::SQL::Parameters_base::build()
+//! Topmost namespace for the fastcgi++ library
+namespace Fastcgipp
 {
-    const int columns = size();
-    m_raws.clear();
-    m_raws.reserve(columns);
-    m_sizes.clear();
-    m_sizes.reserve(columns);
-    build_impl();
+    //! Contains all fastcgi++ SQL facilities
+    namespace SQL
+    {
+        //! De-templated base class for Query
+        struct Query
+        {
+            //! Statement
+            const char* statement;
+            
+            //! Parameters
+            std::shared_ptr<Parameters_base> parameters;
+
+            //! Results
+            std::shared_ptr<Results_base> results;
+
+            //! Callback function
+            std::function<void()> callback;
+        };
+    }
 }
 
-Fastcgipp::SQL::Parameter<std::wstring>&
-Fastcgipp::SQL::Parameter<std::wstring>::operator=(const std::wstring& x)
-{
-    std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
-    try
-    {
-        m_data = converter.to_bytes(x);
-    }
-    catch(const std::range_error& e)
-    {
-        WARNING_LOG("Error in code conversion to utf8 in SQL parameter")
-    }
-    return *this;
-}
+#endif

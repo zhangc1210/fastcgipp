@@ -34,17 +34,7 @@ int main()
             0xbc, 0xe3, 0x83, 0x8d, 0xe3, 0x83, 0x83, 0xe3, 0x83, 0x88
         };
 
-        typedef Fastcgipp::SQL::Parameters<
-            int16_t,
-            int32_t,
-            int64_t,
-            std::string,
-            float,
-            double,
-            Six,
-            Seven,
-            std::string> Row;
-        std::shared_ptr<Row> data(new Row(
+        auto data(Fastcgipp::SQL::make_Parameters(
                 zero,
                 one,
                 two,
@@ -118,11 +108,17 @@ int main()
                     *(base->raws()+8),
                     *(base->raws()+8)+*(base->sizes()+8)))
             FAIL_LOG("Fastcgipp::SQL::Parameters failed on column 8")
+        for(
+                const int* value = base->formats();
+                value != base->formats() + base->size();
+                ++value)
+            if(*value != 1)
+                FAIL_LOG("Fastcgipp::SQL::Parameters failed formats array")
     }
 
     // Test the SQL results stuff
     {
-        Fastcgipp::SQL::Results<int16_t, int32_t, int64_t, std::string> results;
+        Fastcgipp::SQL::Results<int16_t, int32_t, int64_t, std::string, std::wstring> results;
         results.doNothing();
     }
 
