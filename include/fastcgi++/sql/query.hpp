@@ -2,7 +2,7 @@
  * @file       query.hpp
  * @brief      Declares SQL Query
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       September 29, 2018
+ * @date       September 30, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -51,7 +51,7 @@ namespace Fastcgipp
             std::shared_ptr<Results_base> results;
 
             //! Callback function
-            std::function<void()> callback;
+            std::function<void(Message)> callback;
         };
     }
 }

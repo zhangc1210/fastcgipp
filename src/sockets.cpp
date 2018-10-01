@@ -584,16 +584,16 @@ Fastcgipp::Socket Fastcgipp::SocketGroup::poll(bool block)
                     std::lock_guard<std::mutex> lock(m_wakingMutex);
                     char x[256];
                     if(read(m_wakeSockets[1], x, 256)<1)
-                        FAIL_LOG("Unable to read out of wakeup socket: " << \
+                        FAIL_LOG("Unable to read out of SocketGroup wakeup socket: " << \
                                 std::strerror(errno))
                     m_waking=false;
                     block=false;
                     continue;
                 }
                 else if(result.hup() || result.rdHup())
-                    FAIL_LOG("The wakeup socket hung up.")
+                    FAIL_LOG("The SocketGroup wakeup socket hung up.")
                 else if(result.err())
-                    FAIL_LOG("Error in the wakeup socket.")
+                    FAIL_LOG("Error in the SocketGroup wakeup socket.")
             }
             else
             {
@@ -636,9 +636,9 @@ void Fastcgipp::SocketGroup::wake()
     if(!m_waking)
     {
         m_waking=true;
-        char x=0;
+        static const char x=0;
         if(write(m_wakeSockets[0], &x, 1) != 1)
-            FAIL_LOG("Unable to write to wakeup socket: " \
+            FAIL_LOG("Unable to write to wakeup socket in SocketGroup: " \
                     << std::strerror(errno))
     }
 }

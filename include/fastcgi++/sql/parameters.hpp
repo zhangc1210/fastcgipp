@@ -2,7 +2,7 @@
  * @file       parameters.hpp
  * @brief      Declares SQL parameters types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       September 29, 2018
+ * @date       September 30, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -32,14 +32,18 @@
 #include "fastcgi++/protocol.hpp"
 #include "fastcgi++/log.hpp"
 
-#include <postgres.h>
-#include <libpq-fe.h>
-#include <catalog/pg_type.h>
 #include <tuple>
 #include <utility>
 #include <string>
 #include <vector>
 #include <type_traits>
+
+#include <postgres.h>
+#include <libpq-fe.h>
+#include <catalog/pg_type.h>
+#undef ERROR
+// I sure would like to know who thought it clever to define the macro ERROR in
+// these postgresql header files
 
 //! Topmost namespace for the fastcgi++ library
 namespace Fastcgipp

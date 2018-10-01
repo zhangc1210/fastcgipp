@@ -89,6 +89,7 @@ if(BUILD_SQL)
     list(APPEND TESTS "sql")
     list(APPEND SRC_FILES "src/parameters.cpp")
     list(APPEND SRC_FILES "src/results.cpp")
+    list(APPEND SRC_FILES "src/connection.cpp")
 endif(BUILD_SQL)
 
 # Build the library itself

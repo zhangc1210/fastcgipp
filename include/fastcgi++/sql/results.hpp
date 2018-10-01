@@ -2,7 +2,7 @@
  * @file       results.hpp
  * @brief      Declares SQL results types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       September 29, 2018
+ * @date       September 30, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -31,11 +31,14 @@
 
 #include "fastcgi++/protocol.hpp"
 #include "fastcgi++/log.hpp"
+#include <tuple>
 
 #include <postgres.h>
 #include <libpq-fe.h>
 #include <catalog/pg_type.h>
-#include <tuple>
+#undef ERROR
+// I sure would like to know who thought it clever to define the macro ERROR in
+// these postgresql header files
 
 //! Topmost namespace for the fastcgi++ library
 namespace Fastcgipp
@@ -118,90 +121,31 @@ namespace Fastcgipp
         }
 
         template<>
-        bool Results_base::verifyColumn<int16_t>(int column) const
-        {
-            return PQftype(m_res, column) == INT2OID
-                && PQfsize(m_res, column) == 2;
-        }
+        bool Results_base::verifyColumn<int16_t>(int column) const;
         template<>
-        int16_t Results_base::field<int16_t>(int row, int column) const
-        {
-            return Protocol::BigEndian<int16_t>::read(
-                    PQgetvalue(m_res, row, column));
-        }
-
+        int16_t Results_base::field<int16_t>(int row, int column) const;
         template<>
-        bool Results_base::verifyColumn<int32_t>(int column) const
-        {
-            return PQftype(m_res, column) == INT4OID
-                && PQfsize(m_res, column) == 4;
-        }
+        bool Results_base::verifyColumn<int32_t>(int column) const;
         template<>
-        int32_t Results_base::field<int32_t>(int row, int column) const
-        {
-            return Protocol::BigEndian<int32_t>::read(
-                    PQgetvalue(m_res, row, column));
-        }
-
+        int32_t Results_base::field<int32_t>(int row, int column) const;
         template<>
-        bool Results_base::verifyColumn<int64_t>(int column) const
-        {
-            return PQftype(m_res, column) == INT8OID
-                && PQfsize(m_res, column) == 8;
-        }
+        bool Results_base::verifyColumn<int64_t>(int column) const;
         template<>
-        int64_t Results_base::field<int64_t>(int row, int column) const
-        {
-            return Protocol::BigEndian<int64_t>::read(
-                    PQgetvalue(m_res, row, column));
-        }
-
+        int64_t Results_base::field<int64_t>(int row, int column) const;
         template<>
-        bool Results_base::verifyColumn<float>(int column) const
-        {
-            return PQftype(m_res, column) == FLOAT4OID
-                && PQfsize(m_res, column) == 4;
-        }
+        bool Results_base::verifyColumn<float>(int column) const;
         template<>
-        float Results_base::field<float>(int row, int column) const
-        {
-            return Protocol::BigEndian<float>::read(
-                    PQgetvalue(m_res, row, column));
-        }
-
+        float Results_base::field<float>(int row, int column) const;
         template<>
-        bool Results_base::verifyColumn<double>(int column) const
-        {
-            return PQftype(m_res, column) == FLOAT8OID
-                && PQfsize(m_res, column) == 8;
-        }
+        bool Results_base::verifyColumn<double>(int column) const;
         template<>
-        double Results_base::field<double>(int row, int column) const
-        {
-            return Protocol::BigEndian<double>::read(
-                    PQgetvalue(m_res, row, column));
-        }
-
+        double Results_base::field<double>(int row, int column) const;
         template<>
-        bool Results_base::verifyColumn<std::string>(int column) const
-        {
-            const Oid type = PQftype(m_res, column);
-            return type == TEXTOID || type == VARCHAROID;
-        }
+        bool Results_base::verifyColumn<std::string>(int column) const;
         template<>
-        std::string Results_base::field<std::string>(int row, int column) const
-        {
-            return std::string(
-                    PQgetvalue(m_res, row, column),
-                    PQgetlength(m_res, row, column));
-        }
-
+        std::string Results_base::field<std::string>(int row, int column) const;
         template<>
-        bool Results_base::verifyColumn<std::wstring>(int column) const
-        {
-            const Oid type = PQftype(m_res, column);
-            return type == TEXTOID || type == VARCHAROID;
-        }
+        bool Results_base::verifyColumn<std::wstring>(int column) const;
         template<>
         std::wstring Results_base::field<std::wstring>(
                 int row,
