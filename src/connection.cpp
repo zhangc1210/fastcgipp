@@ -2,7 +2,7 @@
  * @file       connection.cpp
  * @brief      Defines the Fastcgipp::SQL::SQL::Connection class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       September 30, 2018
+ * @date       October 2, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -75,7 +75,10 @@ void Fastcgipp::SQL::Connection::handler()
                     // HANDLE THE ERROR. RECONNECT?
                 }
                 else
+                {
+                    PQflush(conn);
                     connection.second.idle = false;
+                }
             }
 
         // Let's see if any data is waiting for us from the connections
@@ -112,7 +115,44 @@ void Fastcgipp::SQL::Connection::handler()
 
                 if(pollResult.in())
                 {
-                    // HANDLE QUERY DATA RECIEVED
+                    auto& conn = connId->second.connection;
+                    auto& query = connId->second.query;
+                    auto& idle = connId->second.idle;
+                    if(idle)
+                    {
+                        ERROR_LOG("Recieved input data on SQL connection for "\
+                                "which there is no active query")
+                        // TEAR DOWN CONNECTION AND REBUILD
+                    }
+                    else if(PQconsumeInput(conn) != 1)
+                    {
+                        ERROR_LOG("Error consuming SQL input: " \
+                                << PQerrorMessage(conn))
+                        // TEAR DOWN CONNECTION AND REBUILD
+                    }
+                    else
+                    {
+                        PQflush(conn);
+                        while(PQisBusy(conn) == 0)
+                        {
+                            PGresult* result = PQgetResult(conn);
+                            if(result == nullptr)
+                            {
+                                // Query is complete
+                                idle = true;
+                                query.statement = nullptr;
+                                query.parameters.reset();
+                                query.results.reset();
+                                query.callback(m_messageType);
+                                break;
+                            }
+
+                            if(query.results->m_res == nullptr)
+                                query.results->m_res = result;
+                            else
+                                PQclear(result);
+                        }
+                    }
                     continue;
                 }
 
