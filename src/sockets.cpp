@@ -2,7 +2,7 @@
  * @file       sockets.cpp
  * @brief      Defines everything for interfaces with OS level sockets.
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       September 30, 2018
+ * @date       October 3, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  *
@@ -75,7 +75,7 @@ Fastcgipp::Poll::~Poll()
 #endif
 }
 
-Fastcgipp::Poll::Result Fastcgipp::Poll::poll(bool block)
+Fastcgipp::Poll::Result Fastcgipp::Poll::poll(int timeout)
 {
     int pollResult;
 #ifdef FASTCGIPP_LINUX
@@ -84,12 +84,12 @@ Fastcgipp::Poll::Result Fastcgipp::Poll::poll(bool block)
             m_poll,
             &epollEvent,
             1,
-            block?-1:0);
+            timeout);
 #elif defined FASTCGIPP_UNIX
     pollResult = ::poll(
             m_poll.data(),
             m_poll.size(),
-            block?-1:0);
+            timeout);
 #endif
 
     Result result;
@@ -558,7 +558,7 @@ Fastcgipp::Socket Fastcgipp::SocketGroup::poll(bool block)
             m_refreshListeners=false;
         }
 
-        const auto result = m_poll.poll(block);
+        const auto result = m_poll.poll(block?-1:0);
 
         if(result)
         {

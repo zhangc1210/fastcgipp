@@ -2,7 +2,7 @@
  * @file       connection.hpp
  * @brief      Declares the Fastcgipp::SQL::Connection class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       September 30, 2018
+ * @date       October 3, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -29,7 +29,7 @@
 #ifndef FASTCGIPP_CONNECTION_HPP
 #define FASTCGIPP_CONNECTION_HPP
 
-#include <queue>
+#include <deque>
 #include <map>
 #include <functional>
 #include <atomic>
@@ -52,11 +52,9 @@ namespace Fastcgipp
     {
         //! Handles low level communication with "the other side"
         /*!
-         * This class handles the sending/receiving/buffering of data through the OS
-         * level sockets and also the creation/destruction of the sockets
-         * themselves.
+         * This class handles connection to the database and it's queries.
          *
-         * @date    May 4, 2018
+         * @date    October 3, 2018
          * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
          */
         class Connection
@@ -69,7 +67,7 @@ namespace Fastcgipp
             /*!
              * Calling this thread will signal the handler() thread to
              * gracefully stop itself. This means it waits until all
-             * connections are properly closed.
+             * queued queries are finished
              *
              * @sa join()
              */
@@ -79,7 +77,7 @@ namespace Fastcgipp
             /*!
              * Calling this thread will signal the handler() thread to
              * immediately terminate itself. This means it doesn't wait until
-             * all connections are closed.
+             * the currently queued queries are finished.
              *
              * @sa join()
              */
@@ -95,9 +93,23 @@ namespace Fastcgipp
             void join();
 
             //! Queue up a query
-            void query(const Query& query);
+            bool query(const Query& query);
 
             //! Initialize the connection
+            /*!
+             * Note that this function can only be called _once_.
+             *
+             * @param [in] host Hostname/address/socket of the SQL server.
+             * @param [in] db Database name
+             * @param [in] username Server username
+             * @param [in] username Server password
+             * @param [in] port Server port number
+             * @param [in] concurrency How many connnections/simultaneous
+             *                         queries?
+             * @param [in] port Type value for Message sent via callback.
+             * @param [in] retryInterval How many seconds before retrying a bad
+             *                           connection to the SQL server?
+             */
             void init(
                     const std::string host,
                     const std::string db,
@@ -105,7 +117,8 @@ namespace Fastcgipp
                     const std::string password,
                     const unsigned short port=5432,
                     const unsigned concurrency=1,
-                    int messageType=2);
+                    int messageType=5432,
+                    unsigned retryInterval=30);
 
             ~Connection();
 
@@ -116,6 +129,15 @@ namespace Fastcgipp
         private:
             //! Call this to wakeup the thread if it's sleeping
             void wake();
+
+            //! Call this to initiate all connections with the server
+            void connect();
+
+            //! Are we fully connected?
+            bool connected()
+            {
+                return m_connections.size() == m_concurrency;
+            }
 
             //! True if we're initialized
             bool m_initialized;
@@ -130,8 +152,14 @@ namespace Fastcgipp
             //! Container associating sockets with their receive buffers
             std::map<socket_t, Conn> m_connections;
 
+            //! Kill and destroy this specific connection
+            void kill(std::map<socket_t, Conn>::iterator& conn);
+
+            //! Kill and destroy everything!!
+            void killAll();
+
             //! %Buffer for transmitting data
-            std::queue<Query> m_queries;
+            std::deque<Query> m_queue;
 
             //! True when handler() should be terminating
             std::atomic_bool m_terminate;
@@ -148,7 +176,7 @@ namespace Fastcgipp
             //! A pair of sockets for wakeup purposes
             socket_t m_wakeSockets[2];
 
-            //! Server host identifier
+            //! Hostname/address/socket of server
             std::string m_host;
 
             //! Database name
@@ -161,7 +189,10 @@ namespace Fastcgipp
             std::string m_password;
 
             //! Server port
-            unsigned short m_port;
+            std::string m_port;
+
+            //! Connection retry interval
+            unsigned m_retry;
 
             //! How many concurrent queries shall we allow?
             unsigned m_concurrency;

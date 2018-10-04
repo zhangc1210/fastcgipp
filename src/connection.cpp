@@ -2,7 +2,7 @@
  * @file       connection.cpp
  * @brief      Defines the Fastcgipp::SQL::SQL::Connection class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 2, 2018
+ * @date       October 3, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -33,23 +33,30 @@
 
 void Fastcgipp::SQL::Connection::handler()
 {
-    // DO SERVER CONNECTIONS
-
-    while(!m_terminate && !m_stop)
+    killAll();
+    while(!m_terminate && !(m_stop && m_queue.empty()))
     {
+        // Get connected
+        if(!connected()) connect();
+
         // Do we have a free connection?
-        for(auto& connection: m_connections)
-            if(connection.second.idle)
+        for(
+                auto connection=m_connections.begin();
+                connection != m_connections.end();
+                ++connection)
+        {
+            auto& idle = connection->second.idle;
+            if(idle)
             {
-                auto& conn = connection.second.connection;
-                auto& query = connection.second.query;
+                auto& conn = connection->second.connection;
+                auto& query = connection->second.query;
 
                 {
                     std::lock_guard<std::mutex> lock(m_mutex);
-                    if(m_queries.empty())
+                    if(m_queue.empty())
                         break;
-                    query = m_queries.front();
-                    m_queries.pop();
+                    query = m_queue.front();
+                    m_queue.pop_front();
                 }
 
                 int result;
@@ -72,17 +79,18 @@ void Fastcgipp::SQL::Connection::handler()
                 {
                     ERROR_LOG("Unable to dispatch SQL query: " \
                             << PQerrorMessage(conn))
-                    // HANDLE THE ERROR. RECONNECT?
+                    kill(connection);
                 }
                 else
                 {
                     PQflush(conn);
-                    connection.second.idle = false;
+                    idle = false;
                 }
             }
+        }
 
         // Let's see if any data is waiting for us from the connections
-        const auto pollResult = m_poll.poll(true);
+        const auto pollResult = m_poll.poll(connected()?-1:m_retry);
         if(pollResult)
         {
             if(pollResult.socket() == m_wakeSockets[1])
@@ -90,7 +98,7 @@ void Fastcgipp::SQL::Connection::handler()
                 // Looks like it's time to wake up
                 if(pollResult.onlyIn())
                 {
-                    char x[256];
+                    static char x[256];
                     if(read(m_wakeSockets[1], x, 256)<1)
                         FAIL_LOG("Unable to read out of SQL::Connection wakeup socket: " << \
                                 std::strerror(errno))
@@ -103,8 +111,8 @@ void Fastcgipp::SQL::Connection::handler()
             }
             else
             {
-                auto connId = m_connections.find(pollResult.socket());
-                if(connId == m_connections.end())
+                auto connection = m_connections.find(pollResult.socket());
+                if(connection == m_connections.end())
                 {
                     ERROR_LOG("Poll gave fd " << pollResult.socket() \
                             << " which isn't in m_connections.")
@@ -115,21 +123,15 @@ void Fastcgipp::SQL::Connection::handler()
 
                 if(pollResult.in())
                 {
-                    auto& conn = connId->second.connection;
-                    auto& query = connId->second.query;
-                    auto& idle = connId->second.idle;
+                    auto& conn = connection->second.connection;
+                    auto& query = connection->second.query;
+                    auto& idle = connection->second.idle;
                     if(idle)
-                    {
                         ERROR_LOG("Recieved input data on SQL connection for "\
                                 "which there is no active query")
-                        // TEAR DOWN CONNECTION AND REBUILD
-                    }
                     else if(PQconsumeInput(conn) != 1)
-                    {
                         ERROR_LOG("Error consuming SQL input: " \
                                 << PQerrorMessage(conn))
-                        // TEAR DOWN CONNECTION AND REBUILD
-                    }
                     else
                     {
                         PQflush(conn);
@@ -150,10 +152,14 @@ void Fastcgipp::SQL::Connection::handler()
                             if(query.results->m_res == nullptr)
                                 query.results->m_res = result;
                             else
+                            {
+                                WARNING_LOG("Multiple result sets received on"\
+                                        " query. Discarding extras.")
                                 PQclear(result);
+                            }
                         }
+                        continue;
                     }
-                    continue;
                 }
 
                 if(pollResult.rdHup())
@@ -170,15 +176,11 @@ void Fastcgipp::SQL::Connection::handler()
                     FAIL_LOG("Got a weird event 0x" << std::hex \
                             << pollResult.events() \
                             << " on SQL::Connection poll." )
-                // HANDLE RECONNECTION
+                kill(connection);
             }
         }
     }
-
-    if(!m_terminate)
-    {
-        // CLOSE SERVER CONNECTIONS
-    }
+    killAll();
 }
 
 void Fastcgipp::SQL::Connection::stop()
@@ -195,10 +197,10 @@ void Fastcgipp::SQL::Connection::terminate()
 
 void Fastcgipp::SQL::Connection::start()
 {
-    m_stop=false;
-    m_terminate=false;
     if(!m_thread.joinable())
     {
+        m_stop=false;
+        m_terminate=false;
         std::thread thread(&Fastcgipp::SQL::Connection::handler, this);
         m_thread.swap(thread);
     }
@@ -230,7 +232,8 @@ void Fastcgipp::SQL::Connection::init(
         const std::string password,
         const unsigned short port,
         const unsigned concurrency,
-        int messageType)
+        int messageType,
+        unsigned retryInterval)
 {
     if(!m_initialized)
     {
@@ -240,16 +243,83 @@ void Fastcgipp::SQL::Connection::init(
         m_db = db;
         m_username = username;
         m_password = password;
-        m_port = port;
+        m_port = std::to_string(port);
         m_concurrency = concurrency;
         m_messageType = messageType;
+        m_retry = retryInterval*1000;
         m_initialized = true;
     }
 }
 
-void Fastcgipp::SQL::Connection::query(const Query& query)
+bool Fastcgipp::SQL::Connection::query(const Query& query)
 {
+    if(!m_stop && connected())
+    {
+        if(query.parameters)
+            query.parameters->build();
+
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_queue.push_back(query);
+        wake();
+        return true;
+    }
+    return false;
+}
+
+void Fastcgipp::SQL::Connection::connect()
+{
+    while(!connected())
+    {
+        Conn conn;
+        conn.connection = PQsetdbLogin(
+                m_host.c_str(),
+                m_port.c_str(),
+                nullptr,
+                nullptr,
+                m_db.c_str(),
+                m_username.c_str(),
+                m_password.c_str());
+        if(conn.connection == nullptr)
+        {
+            ERROR_LOG("Error initiating connection to postgresql server.");
+            break;
+        }
+        if(PQstatus(conn.connection) != CONNECTION_OK)
+        {
+            ERROR_LOG("Error connecting to postgresql server.");
+            break;
+        }
+        if(PQsetnonblocking(conn.connection, 1) != 0)
+        {
+            ERROR_LOG("Error setting nonblock on postgresql connection.");
+            break;
+        }
+
+        conn.idle = true;
+        m_connections[PQsocket(conn.connection)] = conn;
+    }
+}
+
+void Fastcgipp::SQL::Connection::kill(std::map<socket_t, Conn>::iterator& conn)
+{
+    PQfinish(conn->second.connection);
+    m_poll.del(conn->first);
+    if(!conn->second.idle)
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_queue.push_front(conn->second.query);
+    }
+    m_connections.erase(conn);
+}
+
+void Fastcgipp::SQL::Connection::killAll()
+{
+    for(auto& connection: m_connections)
+    {
+        PQfinish(connection.second.connection);
+        m_poll.del(connection.first);
+    }
+    m_connections.clear();
     std::lock_guard<std::mutex> lock(m_mutex);
-    m_queries.push(query);
-    wake();
+    m_queue.clear();
 }

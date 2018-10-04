@@ -2,7 +2,7 @@
  * @file       sockets.hpp
  * @brief      Declares everything for interfaces with OS level sockets.
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       September 30, 2018
+ * @date       October 3, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  *
@@ -61,7 +61,7 @@ namespace Fastcgipp
      * used by the SocketGroup class and other facilities of within fastcgi++.
      * Cross-platform development will require modification of this class.
      *
-     * @date    September 30, 2018
+     * @date    October 3, 2018
      * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
      */
     class Poll
@@ -169,7 +169,12 @@ namespace Fastcgipp
         };
 
         //! Initiate poll on group
-        Result poll(bool block);
+        /*!
+         * @param [in] timeout 0 means don't block at all. -1 means block
+         *                     indefinitely. A positive integer is the number of
+         *                     milliseconds before blocking times out.
+         */
+        Result poll(int timeout);
 
         Poll();
         ~Poll();
