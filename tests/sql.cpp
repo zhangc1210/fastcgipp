@@ -19,8 +19,8 @@ int main()
 
         struct Six
         {
-            int one;
-            int two;
+            int32_t one;
+            int32_t two;
         };
         static const Six six{2006, 2017};
 
