@@ -2,7 +2,7 @@
  * @file       protocol.hpp
  * @brief      Declares everything for relating to the FastCGI protocol itself.
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 30, 2018
+ * @date       October 5, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -254,21 +254,21 @@ namespace Fastcgipp
          *
          * @tparam T Type to emulate. Must be either an integral type or an
          *           enumeration who's underlying type is integral.
-         * @date    May 10, 2017
+         * @date    October 5, 2018
          * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
          */
         template<typename T> class BigEndian
         {
         private:
-            static const size_t size = sizeof(T);
-            static_assert(size==2 || size==4 || size==8, "Fastcgipp::Protocol::"
+            static const size_t s_size = sizeof(T);
+            static_assert(s_size==2 || s_size==4 || s_size==8, "Fastcgipp::Protocol::"
                     "BigEndian can only work with types of size 2, 4 or 8.");
 
             //! Underlying unsigned integral type.
-            typedef typename Unsigned<size>::Type BaseType;
+            typedef typename Unsigned<s_size>::Type BaseType;
 
             //! The raw data of the big endian integer
-            unsigned char m_data[size];
+            unsigned char m_data[s_size];
 
             //! Set the internal data to the passed parameter.
             constexpr void set(T x) noexcept
@@ -322,6 +322,18 @@ namespace Fastcgipp
             static constexpr T read(const char* source) noexcept
             {
                 return read(reinterpret_cast<const unsigned char*>(source));
+            }
+
+            //! Pointer to start of big endian integer representation
+            const char* data() const
+            {
+                return reinterpret_cast<const char*>(&m_data);
+            }
+
+            //! Size in bytes of value
+            constexpr int size() const
+            {
+                return s_size;
             }
         };
 

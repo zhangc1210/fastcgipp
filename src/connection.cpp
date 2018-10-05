@@ -281,17 +281,20 @@ void Fastcgipp::SQL::Connection::connect()
                 m_password.c_str());
         if(conn.connection == nullptr)
         {
-            ERROR_LOG("Error initiating connection to postgresql server.");
+            ERROR_LOG("Error initiating connection to postgresql server: " \
+                << PQerrorMessage(conn.connection))
             break;
         }
         if(PQstatus(conn.connection) != CONNECTION_OK)
         {
-            ERROR_LOG("Error connecting to postgresql server.");
+            ERROR_LOG("Error connecting to postgresql server: " \
+                << PQerrorMessage(conn.connection))
             break;
         }
         if(PQsetnonblocking(conn.connection, 1) != 0)
         {
-            ERROR_LOG("Error setting nonblock on postgresql connection.");
+            ERROR_LOG("Error setting nonblock on postgresql connection: " \
+                << PQerrorMessage(conn.connection))
             break;
         }
 

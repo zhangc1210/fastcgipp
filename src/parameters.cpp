@@ -2,7 +2,7 @@
  * @file       parameters.cpp
  * @brief      Defines SQL parameters types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       September 29, 2018
+ * @date       October 5, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -47,7 +47,7 @@ Fastcgipp::SQL::Parameter<std::wstring>::operator=(const std::wstring& x)
     std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
     try
     {
-        m_data = converter.to_bytes(x);
+        *this = converter.to_bytes(x);
     }
     catch(const std::range_error& e)
     {

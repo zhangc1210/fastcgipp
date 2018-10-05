@@ -2,7 +2,7 @@
  * @file       parameters.hpp
  * @brief      Declares SQL parameters types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       September 30, 2018
+ * @date       October 5, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -42,8 +42,9 @@
 #include <libpq-fe.h>
 #include <catalog/pg_type.h>
 #undef ERROR
-// I sure would like to know who thought it clever to define the macro ERROR in
-// these postgresql header files
+#undef WARNING
+// I sure would like to know who thought it clever to define the macros ERROR
+// and WARNING in these postgresql header files
 
 //! Topmost namespace for the fastcgi++ library
 namespace Fastcgipp
@@ -60,26 +61,14 @@ namespace Fastcgipp
          * This generic version is specifically for any trivially copyable type
          * that should be represented database side as a BYTEA.
          */
-        template<typename T> class Parameter
+        template<typename T> class Parameter: public T
         {
             static_assert(std::is_trivially_copyable<T>::value, "Only trivially"
                     " copyable types allowed in the BYTEA Parameter");
-
-        private:
-            T m_data;
-
         public:
-            constexpr Parameter()
-            {}
-
             Parameter(const T& x):
-                m_data(x)
+                T(x)
             {}
-
-            Parameter& operator=(const T& x)
-            {
-                m_data = x;
-            }
 
             //! Size in bytes of this contiguous block of data
             constexpr int size() const
@@ -91,231 +80,68 @@ namespace Fastcgipp
             static const Oid oid = BYTEAOID;
 
             //! Pointer to the data
-            const char* raw() const
+            const char* data() const
             {
-                return reinterpret_cast<const char*>(&m_data);
+                return reinterpret_cast<const char*>(this);
             }
         };
 
         //! Parameter specialization for 16 bit signed integers
         template<>
-        class Parameter<int16_t>
+        struct Parameter<int16_t>: public Protocol::BigEndian<int16_t>
         {
-        private:
-            Protocol::BigEndian<int16_t> m_data;
-
-        public:
-            constexpr Parameter()
-            {}
-
-            Parameter(const int16_t x):
-                m_data(x)
-            {}
-
-            Parameter& operator=(const int16_t x)
-            {
-                m_data = x;
-                return *this;
-            }
-
-            //! Size in bytes of integer (2)
-            constexpr int size() const
-            {
-                return sizeof(int16_t);
-            }
-
-            //! Associated PostgreSQL Oid
+            using Protocol::BigEndian<int16_t>::BigEndian;
+            using Protocol::BigEndian<int16_t>::operator=;
             static const Oid oid = INT2OID;
-
-            //! Pointer to start of big endian integer representation
-            const char* raw() const
-            {
-                return reinterpret_cast<const char*>(&m_data);
-            }
         };
 
         //! Parameter specialization for 32 bit signed integers
         template<>
-        class Parameter<int32_t>
+        struct Parameter<int32_t>: public Protocol::BigEndian<int32_t>
         {
-        private:
-            Protocol::BigEndian<int32_t> m_data;
-
-        public:
-            constexpr Parameter()
-            {}
-
-            Parameter(const int32_t x):
-                m_data(x)
-            {}
-
-            Parameter& operator=(const int32_t x)
-            {
-                m_data = x;
-                return *this;
-            }
-
-            //! Size in bytes of integer (4)
-            constexpr int size() const
-            {
-                return sizeof(int32_t);
-            }
-
-            //! Associated PostgreSQL Oid
+            using Protocol::BigEndian<int32_t>::BigEndian;
+            using Protocol::BigEndian<int32_t>::operator=;
             static const Oid oid = INT4OID;
-
-            //! Pointer to start of big endian integer representation
-            const char* raw() const
-            {
-                return reinterpret_cast<const char*>(&m_data);
-            }
         };
 
         //! Parameter specialization for 64 bit signed integers
         template<>
-        class Parameter<int64_t>
+        struct Parameter<int64_t>: public Protocol::BigEndian<int64_t>
         {
-        private:
-            Protocol::BigEndian<int64_t> m_data;
-
-        public:
-            constexpr Parameter()
-            {}
-
-            Parameter(const int64_t x):
-                m_data(x)
-            {}
-
-            Parameter& operator=(const int64_t x)
-            {
-                m_data = x;
-                return *this;
-            }
-
-            //! Size in bytes of integer (8)
-            constexpr int size() const
-            {
-                return sizeof(int64_t);
-            }
-
-            //! Associated PostgreSQL Oid
+            using Protocol::BigEndian<int64_t>::BigEndian;
+            using Protocol::BigEndian<int64_t>::operator=;
             static const Oid oid = INT8OID;
-
-            //! Pointer to start of big endian integer representation
-            const char* raw() const
-            {
-                return reinterpret_cast<const char*>(&m_data);
-            }
         };
+
 
         //! Parameter specialization for 32 bit floating point values
         template<>
-        class Parameter<float>
+        struct Parameter<float>: public Protocol::BigEndian<float>
         {
-        private:
-            Protocol::BigEndian<float> m_data;
-
-        public:
-            constexpr Parameter()
-            {}
-
-            Parameter(const float x):
-                m_data(x)
-            {}
-
-            Parameter& operator=(const float x)
-            {
-                m_data = x;
-                return *this;
-            }
-
-            //! Size in bytes of float (4)
-            constexpr int size() const
-            {
-                return sizeof(float);
-            }
-
-            //! Associated PostgreSQL Oid
+            using Protocol::BigEndian<float>::BigEndian;
+            using Protocol::BigEndian<float>::operator=;
             static const Oid oid = FLOAT4OID;
-
-            //! Pointer to start of big endian floating point representation
-            const char* raw() const
-            {
-                return reinterpret_cast<const char*>(&m_data);
-            }
         };
 
         //! Parameter specialization for 64 bit floating point values
         template<>
-        class Parameter<double>
+        struct Parameter<double>: public Protocol::BigEndian<double>
         {
-        private:
-            Protocol::BigEndian<double> m_data;
-
-        public:
-            constexpr Parameter()
-            {}
-
-            Parameter(const double x):
-                m_data(x)
-            {}
-
-            Parameter& operator=(const double x)
-            {
-                m_data = x;
-                return *this;
-            }
-
-            //! Size in bytes of double (8)
-            constexpr int size() const
-            {
-                return sizeof(double);
-            }
-
-            //! Associated PostgreSQL Oid
+            using Protocol::BigEndian<double>::BigEndian;
+            using Protocol::BigEndian<double>::operator=;
             static const Oid oid = FLOAT8OID;
-
-            //! Pointer to start of big endian double float representation
-            const char* raw() const
-            {
-                return reinterpret_cast<const char*>(&m_data);
-            }
         };
 
         //! Parameter specialization for character text strings
         template<>
-        struct Parameter<std::string>
+        struct Parameter<std::string>: public std::string
         {
-        private:
-            std::string m_data;
-
-        public:
-            Parameter()
-            {}
-
             Parameter(const std::string& x):
-                m_data(x)
+                std::string(x)
             {}
-
-            Parameter& operator=(const std::string& x)
-            {
-                m_data = x;
-                return *this;
-            }
-
-            //! Associated PostgreSQL Oid
+            using std::string::string;
+            using std::string::operator=;
             static const Oid oid = TEXTOID;
-
-            //! Pointer to start of text string
-            const char* raw() const
-            {
-                return m_data.data();
-            }
-
-            int size() const
-            {
-                return m_data.size();
-            }
         };
 
         //! Parameter specialization for wide character text strings
@@ -324,15 +150,10 @@ namespace Fastcgipp
          * strings.
          */
         template<>
-        struct Parameter<std::wstring>
+        struct Parameter<std::wstring>: public std::string
         {
-        private:
-            std::string m_data;
-
-        public:
-            Parameter()
-            {}
-
+            using std::string::operator=;
+            using std::string::string;
             Parameter& operator=(const std::wstring& x);
 
             Parameter(const std::wstring& x)
@@ -342,17 +163,6 @@ namespace Fastcgipp
 
             //! Associated PostgreSQL Oid
             static const Oid oid = TEXTOID;
-
-            //! Pointer to start of text string
-            const char* raw() const
-            {
-                return m_data.data();
-            }
-
-            int size() const
-            {
-                return m_data.size();
-            }
         };
 
         //! De-templated base class for Parameters
@@ -460,7 +270,7 @@ namespace Fastcgipp
             template<size_t column, size_t... columns>
             inline void build_impl(std::index_sequence<column, columns...>)
             {
-                m_raws.push_back(std::get<column>(*this).raw());
+                m_raws.push_back(std::get<column>(*this).data());
                 m_sizes.push_back(std::get<column>(*this).size());
                 build_impl(std::index_sequence<columns...>{});
             }
@@ -469,7 +279,7 @@ namespace Fastcgipp
             template<size_t column>
             inline void build_impl(std::index_sequence<column>)
             {
-                m_raws.push_back(std::get<column>(*this).raw());
+                m_raws.push_back(std::get<column>(*this).data());
                 m_sizes.push_back(std::get<column>(*this).size());
             }
 

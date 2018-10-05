@@ -37,8 +37,9 @@
 #include <libpq-fe.h>
 #include <catalog/pg_type.h>
 #undef ERROR
-// I sure would like to know who thought it clever to define the macro ERROR in
-// these postgresql header files
+#undef WARNING
+// I sure would like to know who thought it clever to define the macros ERROR
+// and WARNING in these postgresql header files
 
 //! Topmost namespace for the fastcgi++ library
 namespace Fastcgipp

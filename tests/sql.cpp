@@ -4,10 +4,11 @@
 #include <array>
 #include <queue>
 #include <condition_variable>
+#include <random>
 
 #include "fastcgi++/sql/connection.hpp"
 
-const unsigned totalQueries = 30000;
+const unsigned totalQueries = 1;//30000;
 const unsigned maxQueriesSize = 1000;
 
 struct Six
@@ -58,6 +59,16 @@ private:
     static std::mutex mutex;
     static std::condition_variable wake;
 
+    static std::random_device device;
+    static std::uniform_int_distribution<int32_t> int32dist;
+    static std::uniform_int_distribution<int64_t> int64dist;
+    static std::uniform_real_distribution<float> floatdist;
+    static std::uniform_real_distribution<double> doubledist;
+    static std::array<std::wstring, 6> wstrings;
+    static std::array<std::string, 6> strings;
+    static std::array<std::array<char, 6>, 6> arrays;
+    static std::uniform_int_distribution<unsigned> stringdist;
+
     bool handle();
 
 public:
@@ -74,6 +85,7 @@ public:
                 "fastcgipp_test",
                 "fastcgipp_test",
                 8);
+        connection.start();
     }
 
     static void handler();
@@ -84,6 +96,48 @@ std::map<unsigned, TestQuery> TestQuery::queries;
 std::queue<unsigned> TestQuery::queue;
 std::mutex TestQuery::mutex;
 std::condition_variable TestQuery::wake;
+
+std::random_device TestQuery::device;
+std::uniform_int_distribution<int32_t> TestQuery::int32dist(
+        std::numeric_limits<int32_t>::min(),
+        std::numeric_limits<int32_t>::max());
+std::uniform_int_distribution<int64_t> TestQuery::int64dist(
+        std::numeric_limits<int64_t>::min(),
+        std::numeric_limits<int64_t>::max());
+std::uniform_real_distribution<float> TestQuery::floatdist(
+        std::numeric_limits<float>::min(),
+        std::numeric_limits<float>::max());
+std::uniform_real_distribution<double> TestQuery::doubledist(
+        std::numeric_limits<double>::min(),
+        std::numeric_limits<double>::max());
+std::array<std::wstring, 6> TestQuery::wstrings
+{
+    L"Hello World",
+    L"Привет мир",
+    L"Γεια σας κόσμο",
+    L"世界您好",
+    L"今日は世界",
+    L"ᚺᛖᛚᛟ ᚹᛟᛉᛚᛞ"
+};
+std::array<std::string, 6> TestQuery::strings
+{
+    "Leviathan Wakes",
+    "Caliban's War",
+    "Abaddon's Gate",
+    "Cibola Burn",
+    "Nemesis Games",
+    "Babylon's Ashes"
+};
+std::array<std::array<char, 6>, 6> TestQuery::arrays
+{{
+    {'a', 'b', 'c', 'd', 'e', 'f'},
+    {'b', 'c', 'd', 'e', 'f', 'g'},
+    {'c', 'd', 'e', 'f', 'g', 'h'},
+    {'d', 'e', 'f', 'g', 'h', 'i'},
+    {'e', 'f', 'g', 'h', 'i', 'j'},
+    {'f', 'g', 'h', 'i', 'j', 'k'}
+}};
+std::uniform_int_distribution<unsigned> TestQuery::stringdist(0,5);
 
 void TestQuery::callback(unsigned id, Fastcgipp::Message message)
 {
@@ -138,8 +192,27 @@ bool TestQuery::handle()
     {
         case 0:
         {
+            m_parameters = Fastcgipp::SQL::make_Parameters(
+                int32dist(device),
+                int64dist(device),
+                strings[stringdist(device)],
+                floatdist(device),
+                doubledist(device),
+                Six({int32dist(device), int32dist(device)}),
+                arrays[stringdist(device)],
+                wstrings[stringdist(device)]);
+            m_insertResult.reset(new Fastcgipp::SQL::Results<int16_t>);
+
+            Fastcgipp::SQL::Query query;
+            query.statement = "INSERT INTO fastcgipp_test (one, two, three, four, five, six, seven, eight) VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7) RETURNING one;";
+            query.parameters = m_parameters;
+            query.results = m_insertResult;
+            query.callback = m_callback;
+            connection.query(query);
+
             ++m_state;
-            return false;
+            //return false;
+            return true;
         }
 
         case 1:
@@ -266,7 +339,7 @@ int main()
     // Test the SQL Connection
     {
         TestQuery::init();
-        //TestQuery::handler();
+        TestQuery::handler();
     }
 
     return 0;
