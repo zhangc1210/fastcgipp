@@ -2,7 +2,7 @@
  * @file       connection.hpp
  * @brief      Declares the Fastcgipp::SQL::Connection class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 3, 2018
+ * @date       October 5, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -54,7 +54,7 @@ namespace Fastcgipp
         /*!
          * This class handles connection to the database and it's queries.
          *
-         * @date    October 3, 2018
+         * @date    October 5, 2018
          * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
          */
         class Connection
@@ -111,12 +111,12 @@ namespace Fastcgipp
              *                           connection to the SQL server?
              */
             void init(
-                    const std::string host,
-                    const std::string db,
-                    const std::string username,
-                    const std::string password,
-                    const unsigned short port=5432,
+                    const char* host,
+                    const char* db,
+                    const char* username,
+                    const char* password,
                     const unsigned concurrency=1,
+                    const unsigned short port=5432,
                     int messageType=5432,
                     unsigned retryInterval=30);
 

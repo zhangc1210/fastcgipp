@@ -2,9 +2,164 @@
 #include <memory>
 #include <algorithm>
 #include <array>
+#include <queue>
+#include <condition_variable>
 
-#include "fastcgi++/sql/results.hpp"
-#include "fastcgi++/sql/parameters.hpp"
+#include "fastcgi++/sql/connection.hpp"
+
+const unsigned totalQueries = 30000;
+const unsigned maxQueriesSize = 1000;
+
+struct Six
+{
+    int32_t one;
+    int32_t two;
+};
+typedef std::array<char, 6> Seven;
+
+class TestQuery
+{
+private:
+    static Fastcgipp::SQL::Connection connection;
+
+    std::shared_ptr<Fastcgipp::SQL::Parameters<
+        int32_t,
+        int64_t,
+        std::string,
+        float,
+        double,
+        Six,
+        Seven,
+        std::wstring>> m_parameters;
+
+    std::shared_ptr<Fastcgipp::SQL::Results<int16_t>> m_insertResult;
+
+    std::shared_ptr<Fastcgipp::SQL::Results<
+        int32_t,
+        int64_t,
+        std::string,
+        float,
+        double,
+        Six,
+        Seven,
+        std::wstring,
+        std::wstring>> m_selectResults;
+
+    std::shared_ptr<Fastcgipp::SQL::Results<>> m_deleteResult;
+
+    std::function<void(Fastcgipp::Message)> m_callback;
+
+    unsigned m_state;
+
+    static std::map<unsigned, TestQuery> queries;
+
+    static void callback(unsigned id, Fastcgipp::Message message);
+    static std::queue<unsigned> queue;
+    static std::mutex mutex;
+    static std::condition_variable wake;
+
+    bool handle();
+
+public:
+    TestQuery():
+        m_state(0)
+    {
+    }
+
+    static void init()
+    {
+        connection.init(
+                "",
+                "fastcgipp_test",
+                "fastcgipp_test",
+                "fastcgipp_test",
+                8);
+    }
+
+    static void handler();
+};
+
+Fastcgipp::SQL::Connection TestQuery::connection;
+std::map<unsigned, TestQuery> TestQuery::queries;
+std::queue<unsigned> TestQuery::queue;
+std::mutex TestQuery::mutex;
+std::condition_variable TestQuery::wake;
+
+void TestQuery::callback(unsigned id, Fastcgipp::Message message)
+{
+    std::lock_guard<std::mutex> lock(mutex);
+    queue.push(id);
+    wake.notify_one();
+}
+
+void TestQuery::handler()
+{
+    unsigned remaining = totalQueries;
+    unsigned index=0;
+
+    while(remaining)
+    {
+        while(index<totalQueries && queries.size()<maxQueriesSize)
+        {
+            if(queries.find(index) != queries.end())
+                FAIL_LOG("Fastcgipp::SQL::Connection test fail #1")
+            auto& query = queries[index];
+            query.m_callback = std::bind(
+                    &TestQuery::callback,
+                    index,
+                    std::placeholders::_1);
+            query.handle();
+            ++index;
+        }
+
+        unsigned id;
+        {
+            std::unique_lock<std::mutex> lock(mutex);
+            if(queue.empty())
+                wake.wait(lock);
+            id = queue.front();
+            queue.pop();
+        }
+
+        const auto it = queries.find(id);
+        if(it == queries.end())
+            FAIL_LOG("Fastcgipp::SQL::Connection test fail #2")
+        if(it->second.handle())
+        {
+            queries.erase(it);
+            --remaining;
+        }
+    }
+}
+
+bool TestQuery::handle()
+{
+    switch(m_state)
+    {
+        case 0:
+        {
+            ++m_state;
+            return false;
+        }
+
+        case 1:
+        {
+            ++m_state;
+            return false;
+        }
+
+        case 2:
+        {
+            ++m_state;
+            return false;
+        }
+
+        case 3:
+        {
+            return true;
+        }
+    }
+}
 
 int main()
 {
@@ -16,15 +171,7 @@ int main()
         static const std::string three = "This is a test!!34234";
         static const float four = -1656e-8;
         static const double five = 2354e15;
-
-        struct Six
-        {
-            int32_t one;
-            int32_t two;
-        };
         static const Six six{2006, 2017};
-
-        typedef std::array<char, 6> Seven;
         static const Seven seven{'a', 'b', 'c', 'd', 'e', 'f'};
 
         static const std::wstring eight(L"インターネット");
@@ -116,10 +263,10 @@ int main()
                 FAIL_LOG("Fastcgipp::SQL::Parameters failed formats array")
     }
 
-    // Test the SQL results stuff
+    // Test the SQL Connection
     {
-        Fastcgipp::SQL::Results<int16_t, int32_t, int64_t, std::string, std::wstring> results;
-        results.doNothing();
+        TestQuery::init();
+        //TestQuery::handler();
     }
 
     return 0;

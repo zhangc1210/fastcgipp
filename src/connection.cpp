@@ -2,7 +2,7 @@
  * @file       connection.cpp
  * @brief      Defines the Fastcgipp::SQL::SQL::Connection class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 3, 2018
+ * @date       October 5, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -214,7 +214,7 @@ void Fastcgipp::SQL::Connection::join()
 
 Fastcgipp::SQL::Connection::~Connection()
 {
-    terminate();
+    killAll();
 }
 
 void Fastcgipp::SQL::Connection::wake()
@@ -226,12 +226,12 @@ void Fastcgipp::SQL::Connection::wake()
 }
 
 void Fastcgipp::SQL::Connection::init(
-        const std::string host,
-        const std::string db,
-        const std::string username,
-        const std::string password,
-        const unsigned short port,
+        const char* host,
+        const char* db,
+        const char* username,
+        const char* password,
         const unsigned concurrency,
+        const unsigned short port,
         int messageType,
         unsigned retryInterval)
 {
@@ -243,8 +243,8 @@ void Fastcgipp::SQL::Connection::init(
         m_db = db;
         m_username = username;
         m_password = password;
-        m_port = std::to_string(port);
         m_concurrency = concurrency;
+        m_port = std::to_string(port);
         m_messageType = messageType;
         m_retry = retryInterval*1000;
         m_initialized = true;

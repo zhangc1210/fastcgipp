@@ -2,7 +2,7 @@
  * @file       results.hpp
  * @brief      Declares SQL results types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       September 30, 2018
+ * @date       October 5, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -205,11 +205,18 @@ namespace Fastcgipp
                         index,
                         std::make_integer_sequence<int, size>{});
             }
+        };
 
-            void doNothing()
+        template<>
+        class Results<>: public Results_base
+        {
+        public:
+            int verify() const
             {
-                if(1 == 2)
-                    return;
+                if(columns() != 0)
+                    return -1;
+                else
+                    return 0;
             }
         };
     }
