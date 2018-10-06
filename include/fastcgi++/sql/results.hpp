@@ -2,7 +2,7 @@
  * @file       results.hpp
  * @brief      Declares SQL results types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 5, 2018
+ * @date       October 6, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -29,17 +29,9 @@
 #ifndef FASTCGIPP_SQL_RESULTS_HPP
 #define FASTCGIPP_SQL_RESULTS_HPP
 
-#include "fastcgi++/protocol.hpp"
-#include "fastcgi++/log.hpp"
 #include <tuple>
-
-#include <postgres.h>
-#include <libpq-fe.h>
-#include <catalog/pg_type.h>
-#undef ERROR
-#undef WARNING
-// I sure would like to know who thought it clever to define the macros ERROR
-// and WARNING in these postgresql header files
+#include <string>
+#include <vector>
 
 //! Topmost namespace for the fastcgi++ library
 namespace Fastcgipp
@@ -62,64 +54,35 @@ namespace Fastcgipp
             singleTuple
         };
 
+        const char* statusString(const Status status);
+
         class Results_base
         {
         public:
-            PGresult *m_res;
+            void* m_res;
 
-            virtual ~Results_base()
-            {
-                if(m_res != nullptr)
-                    PQclear(m_res);
-            }
+            virtual ~Results_base();
 
             Status status() const;
 
-            const char* errorMessage() const
-            {
-                return PQresultErrorMessage(m_res);
-            }
+            const char* errorMessage() const;
             
-            int rows() const
-            {
-                return PQntuples(m_res);
-            }
+            unsigned rows() const;
 
-            int null(int row, int column) const
-            {
-                return static_cast<bool>(PQgetisnull(m_res, row, column));
-            }
+            unsigned affectedRows() const;
+
+            bool null(int row, int column) const;
 
         protected:
             Results_base():
                 m_res(nullptr)
             {}
 
-            int columns() const
-            {
-                return PQnfields(m_res);
-            }
-
-            int columnLength(int row, int column) const
-            {
-                return PQgetlength(m_res, row, column);
-            }
+            int columns() const;
 
             template<typename T> bool verifyColumn(int column) const;
             template<typename T> T field(int row, int column) const;
         };
-
-        template<typename T>
-        bool Results_base::verifyColumn(int column) const
-        {
-            return PQftype(m_res, column) == BYTEAOID
-                && PQfsize(m_res, column) == sizeof(T);
-        }
-        template<typename T>
-        T Results_base::field(int row, int column) const
-        {
-            return *reinterpret_cast<const T*>(PQgetvalue(m_res, row, column));
-        }
 
         template<>
         bool Results_base::verifyColumn<int16_t>(int column) const;
@@ -151,6 +114,12 @@ namespace Fastcgipp
         std::wstring Results_base::field<std::wstring>(
                 int row,
                 int column) const;
+        template<>
+        bool Results_base::verifyColumn<std::vector<char>>(int column) const;
+        template<>
+        std::vector<char> Results_base::field<std::vector<char>>(
+                int row,
+                int column) const;
 
         template<typename... Types>
         class Results: public Results_base
@@ -165,7 +134,8 @@ namespace Fastcgipp
             int verify_impl(
                     std::integer_sequence<int, column, columns...>) const
             {
-                if(verifyColumn<std::tuple_element<column, Types...>>(column))
+                if(verifyColumn<
+                        typename std::tuple_element<column, Row>::type>(column))
                     return verify_impl(
                             std::integer_sequence<int, columns...>{});
                 else
@@ -175,7 +145,8 @@ namespace Fastcgipp
             template<int column>
             int verify_impl(std::integer_sequence<int, column>) const
             {
-                if(verifyColumn<std::tuple_element<column, Types...>>(column))
+                if(verifyColumn<
+                        typename std::tuple_element<column, Row>::type>(column))
                     return 0;
                 else
                     return column+1;
@@ -185,7 +156,8 @@ namespace Fastcgipp
             Row row_impl(
                     int index, std::integer_sequence<int, columns...>) const
             {
-                return Row(field<std::tuple_element<columns, Types...>>(
+                return Row(field<
+                        typename std::tuple_element<columns, Row>::type>(
                             index,
                             columns)...);
             }

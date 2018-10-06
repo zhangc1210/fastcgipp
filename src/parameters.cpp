@@ -2,7 +2,7 @@
  * @file       parameters.cpp
  * @brief      Defines SQL parameters types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 5, 2018
+ * @date       October 6, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -30,6 +30,14 @@
 
 #include <locale>
 #include <codecvt>
+
+#include <postgres.h>
+#include <libpq-fe.h>
+#include <catalog/pg_type.h>
+#undef ERROR
+#undef WARNING
+// I sure would like to know who thought it clever to define the macros ERROR
+// and WARNING in these postgresql header files
 
 void Fastcgipp::SQL::Parameters_base::build()
 {

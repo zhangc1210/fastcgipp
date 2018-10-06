@@ -2,7 +2,7 @@
  * @file       parameters.hpp
  * @brief      Declares SQL parameters types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 5, 2018
+ * @date       October 6, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -57,34 +57,8 @@ namespace Fastcgipp
          * All these types are assignable from an object of the template
          * parameter type while providing some additional interfacing so they
          * fit in nicely into a Parameters tuple.
-         *
-         * This generic version is specifically for any trivially copyable type
-         * that should be represented database side as a BYTEA.
          */
-        template<typename T> class Parameter: public T
-        {
-            static_assert(std::is_trivially_copyable<T>::value, "Only trivially"
-                    " copyable types allowed in the BYTEA Parameter");
-        public:
-            Parameter(const T& x):
-                T(x)
-            {}
-
-            //! Size in bytes of this contiguous block of data
-            constexpr int size() const
-            {
-                return sizeof(T);
-            }
-
-            //! Associated PostgreSQL Oid
-            static const Oid oid = BYTEAOID;
-
-            //! Pointer to the data
-            const char* data() const
-            {
-                return reinterpret_cast<const char*>(this);
-            }
-        };
+        template<typename T> class Parameter;
 
         //! Parameter specialization for 16 bit signed integers
         template<>
@@ -142,6 +116,18 @@ namespace Fastcgipp
             using std::string::string;
             using std::string::operator=;
             static const Oid oid = TEXTOID;
+        };
+
+        //! Parameter specialization for data arrays
+        template<>
+        struct Parameter<std::vector<char>>: public std::vector<char>
+        {
+            Parameter(const std::vector<char>& x):
+                std::vector<char>(x)
+            {}
+            using std::vector<char>::vector;
+            using std::vector<char>::operator=;
+            static const Oid oid = BYTEAOID;
         };
 
         //! Parameter specialization for wide character text strings
@@ -295,6 +281,13 @@ namespace Fastcgipp
         {
             return std::shared_ptr<Parameters<Types...>>(
                     new Parameters<Types...>(args...));
+        }
+
+        template<typename... Types>
+        std::shared_ptr<Parameters<Types...>> make_Parameters(const std::tuple<Types...>& tuple)
+        {
+            return std::shared_ptr<Parameters<Types...>>(
+                    new Parameters<Types...>(tuple));
         }
     }
 }
