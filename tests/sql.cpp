@@ -88,6 +88,12 @@ public:
         connection.start();
     }
 
+    static void stop()
+    {
+        connection.stop();
+        connection.join();
+    }
+
     static void handler();
 };
 
@@ -204,21 +210,22 @@ bool TestQuery::handle()
             m_insertResult.reset(new Fastcgipp::SQL::Results<int16_t>);
 
             Fastcgipp::SQL::Query query;
-            query.statement = "INSERT INTO fastcgipp_test (one, two, three, four, five, six, seven, eight) VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7) RETURNING one;";
+            query.statement = "INSERT INTO fastcgipp_test (zero, one, two, three, four, five, six, seven, eight) VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8) RETURNING one;";
             query.parameters = m_parameters;
             query.results = m_insertResult;
             query.callback = m_callback;
-            connection.query(query);
+            if(!connection.query(query))
+                FAIL_LOG("Fastcgipp::SQL::Connection test fail #3")
 
             ++m_state;
-            //return false;
-            return true;
+            return false;
         }
 
         case 1:
         {
             ++m_state;
-            return false;
+            //return false;
+            return true;
         }
 
         case 2:
@@ -338,8 +345,11 @@ int main()
 
     // Test the SQL Connection
     {
+        using namespace std::chrono_literals;
         TestQuery::init();
+        std::this_thread::sleep_for(1s);
         TestQuery::handler();
+        TestQuery::stop();
     }
 
     return 0;

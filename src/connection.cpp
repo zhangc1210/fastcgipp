@@ -61,10 +61,6 @@ void Fastcgipp::SQL::Connection::handler()
 
                 int result;
                 if(query.parameters)
-                    result = PQsendQuery(
-                            conn,
-                            query.statement);
-                else
                     result = PQsendQueryParams(
                             conn,
                             query.statement,
@@ -74,6 +70,10 @@ void Fastcgipp::SQL::Connection::handler()
                             query.parameters->sizes(),
                             query.parameters->formats(),
                             1);
+                else
+                    result = PQsendQuery(
+                            conn,
+                            query.statement);
 
                 if(result != 1)
                 {
@@ -299,7 +299,9 @@ void Fastcgipp::SQL::Connection::connect()
         }
 
         conn.idle = true;
-        m_connections[PQsocket(conn.connection)] = conn;
+        const auto socket = PQsocket(conn.connection);
+        m_poll.add(socket);
+        m_connections[socket] = conn;
     }
 }
 

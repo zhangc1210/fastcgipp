@@ -42,8 +42,9 @@
 #include <postgres.h>
 #undef ERROR
 #undef WARNING
-// I sure would like to know who thought it clever to define the macros ERROR
-// and WARNING in these postgresql header files
+#undef INFO
+// I sure would like to know who thought it clever to define the macros ERROR,
+// INFO and WARNING in these postgresql header files
 
 //! Topmost namespace for the fastcgi++ library
 namespace Fastcgipp
