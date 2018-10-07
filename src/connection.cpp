@@ -2,7 +2,7 @@
  * @file       connection.cpp
  * @brief      Defines the Fastcgipp::SQL::SQL::Connection class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 5, 2018
+ * @date       October 7, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -26,10 +26,20 @@
 * along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.           *
 *******************************************************************************/
 
-#include <fastcgi++/sql/connection.hpp>
+#include "fastcgi++/sql/connection.hpp"
+#include "fastcgi++/log.hpp"
 
 #include <unistd.h>
 #include <cstring>
+
+#include <postgres.h>
+#include <libpq-fe.h>
+#include <catalog/pg_type.h>
+#undef ERROR
+#undef WARNING
+#undef INFO
+// I sure would like to know who thought it clever to define the macros ERROR,
+// WARNING in these postgresql header files
 
 void Fastcgipp::SQL::Connection::handler()
 {
@@ -48,7 +58,8 @@ void Fastcgipp::SQL::Connection::handler()
             auto& idle = connection->second.idle;
             if(idle)
             {
-                auto& conn = connection->second.connection;
+                auto& conn = reinterpret_cast<PGconn*&>(
+                        connection->second.connection);
                 auto& query = connection->second.query;
 
                 {
@@ -89,6 +100,7 @@ void Fastcgipp::SQL::Connection::handler()
             }
         }
 
+
         // Let's see if any data is waiting for us from the connections
         const auto pollResult = m_poll.poll(connected()?-1:m_retry);
         if(pollResult)
@@ -123,7 +135,8 @@ void Fastcgipp::SQL::Connection::handler()
 
                 if(pollResult.in())
                 {
-                    auto& conn = connection->second.connection;
+                    auto& conn = reinterpret_cast<PGconn*&>(
+                            connection->second.connection);
                     auto& query = connection->second.query;
                     auto& idle = connection->second.idle;
                     if(idle)
@@ -251,7 +264,7 @@ void Fastcgipp::SQL::Connection::init(
     }
 }
 
-bool Fastcgipp::SQL::Connection::query(const Query& query)
+bool Fastcgipp::SQL::Connection::queue(const Query& query)
 {
     if(!m_stop && connected())
     {
@@ -279,27 +292,28 @@ void Fastcgipp::SQL::Connection::connect()
                 m_db.c_str(),
                 m_username.c_str(),
                 m_password.c_str());
-        if(conn.connection == nullptr)
+        auto& connection = reinterpret_cast<PGconn*&>(conn.connection);
+        if(connection == nullptr)
         {
             ERROR_LOG("Error initiating connection to postgresql server: " \
-                << PQerrorMessage(conn.connection))
+                    << PQerrorMessage(connection))
             break;
         }
-        if(PQstatus(conn.connection) != CONNECTION_OK)
+        if(PQstatus(connection) != CONNECTION_OK)
         {
             ERROR_LOG("Error connecting to postgresql server: " \
-                << PQerrorMessage(conn.connection))
+                    << PQerrorMessage(connection))
             break;
         }
-        if(PQsetnonblocking(conn.connection, 1) != 0)
+        if(PQsetnonblocking(connection, 1) != 0)
         {
             ERROR_LOG("Error setting nonblock on postgresql connection: " \
-                << PQerrorMessage(conn.connection))
+                    << PQerrorMessage(connection))
             break;
         }
 
         conn.idle = true;
-        const auto socket = PQsocket(conn.connection);
+        const auto socket = PQsocket(connection);
         m_poll.add(socket);
         m_connections[socket] = conn;
     }
@@ -307,7 +321,7 @@ void Fastcgipp::SQL::Connection::connect()
 
 void Fastcgipp::SQL::Connection::kill(std::map<socket_t, Conn>::iterator& conn)
 {
-    PQfinish(conn->second.connection);
+    PQfinish(reinterpret_cast<PGconn*>(conn->second.connection));
     m_poll.del(conn->first);
     if(!conn->second.idle)
     {
@@ -321,7 +335,7 @@ void Fastcgipp::SQL::Connection::killAll()
 {
     for(auto& connection: m_connections)
     {
-        PQfinish(connection.second.connection);
+        PQfinish(reinterpret_cast<PGconn*>(connection.second.connection));
         m_poll.del(connection.first);
     }
     m_connections.clear();

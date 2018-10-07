@@ -2,7 +2,7 @@
  * @file       results.cpp
  * @brief      Defines SQL results types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 6, 2018
+ * @date       October 7, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -37,11 +37,9 @@
 #include <postgres.h>
 #include <libpq-fe.h>
 #include <catalog/pg_type.h>
-#undef ERROR
 #undef WARNING
-#undef INFO
-// I sure would like to know who thought it clever to define the macros ERROR,
-// INFO and WARNING in these postgresql header files
+// I sure would like to know who thought it clever to define the macro WARNING
+// in these postgresql header files
 
 template<>
 bool Fastcgipp::SQL::Results_base::verifyColumn<int16_t>(int column) const
@@ -136,7 +134,8 @@ std::wstring Fastcgipp::SQL::Results_base::field<std::wstring>(
         int column) const;
 
 template<>
-bool Fastcgipp::SQL::Results_base::verifyColumn<std::vector<char>>(int column) const
+bool Fastcgipp::SQL::Results_base::verifyColumn<std::vector<char>>(
+        int column) const
 {
     const Oid type = PQftype(reinterpret_cast<const PGresult*>(m_res), column);
     return type == BYTEAOID;

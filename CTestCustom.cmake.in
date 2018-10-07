@@ -1,0 +1,2 @@
+set(CTEST_CUSTOM_PRE_TEST "@CMAKE_CURRENT_SOURCE_DIR@/tests/sql-start.sh")
+set(CTEST_CUSTOM_POST_TEST "@CMAKE_CURRENT_SOURCE_DIR@/tests/sql-finish.sh")

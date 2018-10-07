@@ -9,8 +9,16 @@
 #include <iomanip>
 
 #include "fastcgi++/sql/connection.hpp"
+#include "fastcgi++/log.hpp"
 
-const unsigned totalQueries = 1;//30000;
+#include <postgres.h>
+#include <libpq-fe.h>
+#include <catalog/pg_type.h>
+#undef ERROR
+#undef WARNING
+#undef INFO
+
+const unsigned totalQueries = 10000;
 const unsigned maxQueriesSize = 1000;
 
 class TestQuery
@@ -206,7 +214,7 @@ bool TestQuery::handle()
             query.parameters = Fastcgipp::SQL::make_Parameters(m_parameters);
             query.results = m_insertResult;
             query.callback = m_callback;
-            if(!connection.query(query))
+            if(!connection.queue(query))
                 FAIL_LOG("Fastcgipp::SQL::Connection test fail #3")
 
             ++m_state;
@@ -240,7 +248,7 @@ bool TestQuery::handle()
             query.parameters = parameters;
             query.results = m_selectResults;
             query.callback = m_callback;
-            if(!connection.query(query))
+            if(!connection.queue(query))
                 FAIL_LOG("Fastcgipp::SQL::Connection test fail #7")
 
             ++m_state;
@@ -298,7 +306,7 @@ bool TestQuery::handle()
             query.parameters = parameters;
             query.results = m_deleteResult;
             query.callback = m_callback;
-            if(!connection.query(query))
+            if(!connection.queue(query))
                 FAIL_LOG("Fastcgipp::SQL::Connection test fail #20")
 
             ++m_state;

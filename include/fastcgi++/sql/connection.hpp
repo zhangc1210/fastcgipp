@@ -2,7 +2,7 @@
  * @file       connection.hpp
  * @brief      Declares the Fastcgipp::SQL::Connection class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 5, 2018
+ * @date       October 7, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -36,35 +36,48 @@
 #include <mutex>
 #include <thread>
 
-#include <fastcgi++/sockets.hpp>
-#include <fastcgi++/sql/query.hpp>
-
-#include <postgres.h>
-#undef ERROR
-#undef WARNING
-#undef INFO
-// I sure would like to know who thought it clever to define the macros ERROR,
-// INFO and WARNING in these postgresql header files
+#include "fastcgi++/sockets.hpp"
+#include "fastcgi++/sql/parameters.hpp"
+#include "fastcgi++/sql/results.hpp"
 
 //! Topmost namespace for the fastcgi++ library
 namespace Fastcgipp
 {
-    //! Contains all fastcgi++ SQL facilities
+    //! Contains all fastcgi++ %SQL facilities
     namespace SQL
     {
+        //! Structure to hold %SQL query data
+        struct Query
+        {
+            //! Statement
+            const char* statement;
+            
+            //! %Parameters
+            std::shared_ptr<Parameters_base> parameters;
+
+            //! %Results
+            std::shared_ptr<Results_base> results;
+
+            //! Callback function to call when query is complete
+            std::function<void(Message)> callback;
+        };
+
         //! Handles low level communication with "the other side"
         /*!
-         * This class handles connection to the database and it's queries.
+         * This class handles connections to the database and its queries. It
+         * can safely be constructed in the global space. Once constructed call
+         * init() to initialize it. Call start() to start the handling thread.
+         * Once you're done, call stop() or terminate() to finish things and
+         * then call join() to wait for the thread to complete.
          *
-         * @date    October 5, 2018
+         * Queue up queries with queue().
+         *
+         * @date    October 7, 2018
          * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
          */
         class Connection
         {
         public:
-            //! General connection handler
-            void handler();
-
             //! Call from any thread to stop the handler() thread
             /*!
              * Calling this thread will signal the handler() thread to
@@ -91,11 +104,11 @@ namespace Fastcgipp
              */
             void start();
 
-            //! Block until a stop() or terminate() is completed
+            //! %Block until a stop() or terminate() is completed
             void join();
 
             //! Queue up a query
-            bool query(const Query& query);
+            bool queue(const Query& query);
 
             //! Initialize the connection
             /*!
@@ -104,11 +117,11 @@ namespace Fastcgipp
              * @param [in] host Hostname/address/socket of the SQL server.
              * @param [in] db Database name
              * @param [in] username Server username
-             * @param [in] username Server password
+             * @param [in] password Server password
              * @param [in] port Server port number
              * @param [in] concurrency How many connnections/simultaneous
              *                         queries?
-             * @param [in] port Type value for Message sent via callback.
+             * @param [in] messageType Type value for Message sent via callback.
              * @param [in] retryInterval How many seconds before retrying a bad
              *                           connection to the SQL server?
              */
@@ -129,6 +142,9 @@ namespace Fastcgipp
             {}
 
         private:
+            //! General connection handler
+            void handler();
+
             //! Call this to wakeup the thread if it's sleeping
             void wake();
 
@@ -147,7 +163,7 @@ namespace Fastcgipp
             struct Conn
             {
                 bool idle;
-                PGconn* connection;
+                void* connection;
                 Query query;
             };
 
@@ -193,7 +209,7 @@ namespace Fastcgipp
             //! Server port
             std::string m_port;
 
-            //! Connection retry interval
+            //! %Connection retry interval
             unsigned m_retry;
 
             //! How many concurrent queries shall we allow?

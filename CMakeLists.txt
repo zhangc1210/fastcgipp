@@ -177,6 +177,11 @@ foreach(UNITTEST IN LISTS TESTS)
     list(APPEND TEST_TARGET ${UNITTEST}_test)
 endforeach()
 add_custom_target(tests DEPENDS ${TEST_TARGET})
+if(BUILD_SQL)
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/CTestCustom.cmake.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/CTestCustom.cmake" @ONLY)
+endif(BUILD_SQL)
 
 # Examples
 foreach(EXAMPLE IN LISTS EXAMPLES)

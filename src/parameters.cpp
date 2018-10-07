@@ -27,6 +27,7 @@
 *******************************************************************************/
 
 #include "fastcgi++/sql/parameters.hpp"
+#include "fastcgi++/log.hpp"
 
 #include <locale>
 #include <codecvt>
@@ -34,10 +35,9 @@
 #include <postgres.h>
 #include <libpq-fe.h>
 #include <catalog/pg_type.h>
-#undef ERROR
 #undef WARNING
-// I sure would like to know who thought it clever to define the macros ERROR
-// and WARNING in these postgresql header files
+// I sure would like to know who thought it clever to define the macro WARNING
+// in these postgresql header files
 
 void Fastcgipp::SQL::Parameters_base::build()
 {
@@ -63,3 +63,12 @@ Fastcgipp::SQL::Parameter<std::wstring>::operator=(const std::wstring& x)
     }
     return *this;
 }
+
+const unsigned Fastcgipp::SQL::Parameter<int16_t>::oid = INT2OID;
+const unsigned Fastcgipp::SQL::Parameter<int32_t>::oid = INT4OID;
+const unsigned Fastcgipp::SQL::Parameter<int64_t>::oid = INT8OID;
+const unsigned Fastcgipp::SQL::Parameter<float>::oid = FLOAT4OID;
+const unsigned Fastcgipp::SQL::Parameter<double>::oid = FLOAT8OID;
+const unsigned Fastcgipp::SQL::Parameter<std::string>::oid = TEXTOID;
+const unsigned Fastcgipp::SQL::Parameter<std::wstring>::oid = TEXTOID;
+const unsigned Fastcgipp::SQL::Parameter<std::vector<char>>::oid = BYTEAOID;

@@ -1,8 +1,8 @@
 /*!
  * @file       parameters.hpp
- * @brief      Declares SQL parameters types
+ * @brief      Declares %SQL parameters types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 6, 2018
+ * @date       October 7, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -30,83 +30,66 @@
 #define FASTCGIPP_SQL_PARAMETERS_HPP
 
 #include "fastcgi++/protocol.hpp"
-#include "fastcgi++/log.hpp"
 
 #include <tuple>
-#include <utility>
 #include <string>
 #include <vector>
-#include <type_traits>
-
-#include <postgres.h>
-#include <libpq-fe.h>
-#include <catalog/pg_type.h>
-#undef ERROR
-#undef WARNING
-// I sure would like to know who thought it clever to define the macros ERROR
-// and WARNING in these postgresql header files
 
 //! Topmost namespace for the fastcgi++ library
 namespace Fastcgipp
 {
-    //! Contains all fastcgi++ SQL facilities
+    //! Contains all fastcgi++ %SQL facilities
     namespace SQL
     {
-        //! A single parameter in an SQL query
+        //! A single parameter in an %SQL query
         /*!
          * All these types are assignable from an object of the template
          * parameter type while providing some additional interfacing so they
-         * fit in nicely into a Parameters tuple.
+         * fit in nicely into a Parameters tuple. Note that no generic
+         * definition exists for this class so only specializations are valid.
          */
         template<typename T> class Parameter;
 
-        //! Parameter specialization for 16 bit signed integers
         template<>
         struct Parameter<int16_t>: public Protocol::BigEndian<int16_t>
         {
             using Protocol::BigEndian<int16_t>::BigEndian;
             using Protocol::BigEndian<int16_t>::operator=;
-            static const Oid oid = INT2OID;
+            static const unsigned oid;
         };
 
-        //! Parameter specialization for 32 bit signed integers
         template<>
         struct Parameter<int32_t>: public Protocol::BigEndian<int32_t>
         {
             using Protocol::BigEndian<int32_t>::BigEndian;
             using Protocol::BigEndian<int32_t>::operator=;
-            static const Oid oid = INT4OID;
+            static const unsigned oid;
         };
 
-        //! Parameter specialization for 64 bit signed integers
         template<>
         struct Parameter<int64_t>: public Protocol::BigEndian<int64_t>
         {
             using Protocol::BigEndian<int64_t>::BigEndian;
             using Protocol::BigEndian<int64_t>::operator=;
-            static const Oid oid = INT8OID;
+            static const unsigned oid;
         };
 
-
-        //! Parameter specialization for 32 bit floating point values
         template<>
         struct Parameter<float>: public Protocol::BigEndian<float>
         {
             using Protocol::BigEndian<float>::BigEndian;
             using Protocol::BigEndian<float>::operator=;
-            static const Oid oid = FLOAT4OID;
+            static const unsigned oid;
         };
 
-        //! Parameter specialization for 64 bit floating point values
         template<>
         struct Parameter<double>: public Protocol::BigEndian<double>
         {
             using Protocol::BigEndian<double>::BigEndian;
             using Protocol::BigEndian<double>::operator=;
-            static const Oid oid = FLOAT8OID;
+            static const unsigned oid;
         };
 
-        //! Parameter specialization for character text strings
         template<>
         struct Parameter<std::string>: public std::string
         {
@@ -115,10 +98,9 @@ namespace Fastcgipp
             {}
             using std::string::string;
             using std::string::operator=;
-            static const Oid oid = TEXTOID;
+            static const unsigned oid;
         };
 
-        //! Parameter specialization for data arrays
         template<>
         struct Parameter<std::vector<char>>: public std::vector<char>
         {
@@ -127,14 +109,9 @@ namespace Fastcgipp
             {}
             using std::vector<char>::vector;
             using std::vector<char>::operator=;
-            static const Oid oid = BYTEAOID;
+            static const unsigned oid;
         };
 
-        //! Parameter specialization for wide character text strings
-        /*!
-         * This specialization should be used for both wide and narrow character
-         * strings.
-         */
         template<>
         struct Parameter<std::wstring>: public std::string
         {
@@ -147,19 +124,18 @@ namespace Fastcgipp
                 *this = x;
             }
 
-            //! Associated PostgreSQL Oid
-            static const Oid oid = TEXTOID;
+            static const unsigned oid;
         };
 
         //! De-templated base class for Parameters
         class Parameters_base
         {
         protected:
-            //! Array of Oids for each parameter
+            //! Array of oids for each parameter
             /*!
              * This gets initialized by calling build().
              */
-            const std::vector<Oid>* m_oids;
+            const std::vector<unsigned>* m_oids;
 
             //! Array of raw data pointers for each parameter
             /*!
@@ -187,14 +163,14 @@ namespace Fastcgipp
             virtual void build_impl() =0;
 
         public:
-            //! Initialize the arrays needed by PostgreSQL
+            //! Initialize the arrays needed by %SQL
             void build();
 
-            //! Constant pointer to array of all parameter Oids
+            //! Constant pointer to array of all parameter oids
             /*!
              * This is not valid until build() is called
              */
-            const Oid* oids() const
+            const unsigned* oids() const
             {
                 return m_oids->data();
             }
@@ -226,15 +202,15 @@ namespace Fastcgipp
             virtual ~Parameters_base() {}
         };
 
-        //! A tuple of parameters to tie to a PostgreSQL query
+        //! A tuple of parameters to tie to a %SQL query
         /*!
-         * This class allows you to pass separate parameters to a PostgreSQL
+         * This class allows you to pass separate parameters to a %SQL
          * query. From the interface perspective this should behave exactly like
          * an std::tuple<Types...>. The differences from std::tuple lie in it's
-         * ability to format the tuple data in a way PostgreSQL wants to see it.
+         * ability to format the tuple data in a way %SQL wants to see it.
          *
          * @tparam Types Pack of types to contain in the tuple.
-         * @date    September 29, 2018
+         * @date    October 7, 2018
          * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
          */
         template<typename... Types>
@@ -243,7 +219,7 @@ namespace Fastcgipp
             public Parameters_base
         {
         private:
-            static const std::vector<Oid> s_oids;
+            static const std::vector<unsigned> s_oids;
             static const std::vector<int> s_formats;
 
             //! How many items in the tuple?
@@ -252,7 +228,7 @@ namespace Fastcgipp
                 return sizeof...(Types);
             }
 
-            //! Recursive template PostgreSQL array building function
+            //! Recursive template %SQL array building function
             template<size_t column, size_t... columns>
             inline void build_impl(std::index_sequence<column, columns...>)
             {
@@ -261,7 +237,7 @@ namespace Fastcgipp
                 build_impl(std::index_sequence<columns...>{});
             }
 
-            //! Terminating template PostgreSQL array building function
+            //! Terminating template %SQL array building function
             template<size_t column>
             inline void build_impl(std::index_sequence<column>)
             {
@@ -277,14 +253,16 @@ namespace Fastcgipp
         };
 
         template<typename... Types>
-        std::shared_ptr<Parameters<Types...>> make_Parameters(const Types&... args)
+        std::shared_ptr<Parameters<Types...>> make_Parameters(
+                const Types&... args)
         {
             return std::shared_ptr<Parameters<Types...>>(
                     new Parameters<Types...>(args...));
         }
 
         template<typename... Types>
-        std::shared_ptr<Parameters<Types...>> make_Parameters(const std::tuple<Types...>& tuple)
+        std::shared_ptr<Parameters<Types...>> make_Parameters(
+                const std::tuple<Types...>& tuple)
         {
             return std::shared_ptr<Parameters<Types...>>(
                     new Parameters<Types...>(tuple));
@@ -301,7 +279,7 @@ void Fastcgipp::SQL::Parameters<Types...>::build_impl()
 }
 
 template<typename... Types>
-const std::vector<Oid> Fastcgipp::SQL::Parameters<Types...>::s_oids
+const std::vector<unsigned> Fastcgipp::SQL::Parameters<Types...>::s_oids
 {
     Fastcgipp::SQL::Parameter<Types>::oid...
 };
