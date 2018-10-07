@@ -1,4 +1,5 @@
 #!/bin/sh
 
-dropdb -e fastcgipp_test
-dropuser -e fastcgipp_test
+echo "Purging test database"
+dropdb fastcgipp_test
+dropuser fastcgipp_test
