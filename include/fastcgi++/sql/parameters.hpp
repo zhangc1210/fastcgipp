@@ -34,6 +34,7 @@
 #include <tuple>
 #include <string>
 #include <vector>
+#include <chrono>
 
 //! Topmost namespace for the fastcgi++ library
 namespace Fastcgipp
@@ -113,16 +114,49 @@ namespace Fastcgipp
         };
 
         template<>
-        struct Parameter<std::wstring>: public std::string
+        class Parameter<std::wstring>: std::string
         {
-            using std::string::operator=;
-            using std::string::string;
-            Parameter& operator=(const std::wstring& x);
+        private:
+            static std::string convert(const std::wstring& x);
 
-            Parameter(const std::wstring& x)
+        public:
+            Parameter& operator=(const std::wstring& x)
             {
-                *this = x;
+                 assign(convert(x));
             }
+
+            Parameter(const std::wstring& x):
+                std::string(convert(x))
+            {}
+
+            static const unsigned oid;
+        };
+
+        template<>
+        class Parameter<std::chrono::time_point<std::chrono::system_clock>>:
+            public Protocol::BigEndian<int64_t>
+        {
+        private:
+            using Protocol::BigEndian<int64_t>::operator=;
+            static int64_t convert(
+                    const std::chrono::time_point<std::chrono::system_clock>& x)
+            {
+                return std::chrono::duration_cast<
+                    std::chrono::duration<int64_t, std::ratio<1,1000000>>>(
+                        x.time_since_epoch()).count();
+            }
+
+        public:
+            Parameter& operator=(
+                    const std::chrono::time_point<std::chrono::system_clock>& x)
+            {
+                *this = convert(x);
+            }
+
+            Parameter(
+                    const std::chrono::time_point<std::chrono::system_clock>& x):
+                Protocol::BigEndian<int64_t>(convert(x))
+            {}
 
             static const unsigned oid;
         };

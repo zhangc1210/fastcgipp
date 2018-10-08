@@ -49,19 +49,19 @@ void Fastcgipp::SQL::Parameters_base::build()
     build_impl();
 }
 
-Fastcgipp::SQL::Parameter<std::wstring>&
-Fastcgipp::SQL::Parameter<std::wstring>::operator=(const std::wstring& x)
+std::string
+Fastcgipp::SQL::Parameter<std::wstring>::convert(const std::wstring& x)
 {
     std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
     try
     {
-        *this = converter.to_bytes(x);
+        return converter.to_bytes(x);
     }
     catch(const std::range_error& e)
     {
         WARNING_LOG("Error in code conversion to utf8 in SQL parameter")
     }
-    return *this;
+    return std::string("");
 }
 
 const unsigned Fastcgipp::SQL::Parameter<int16_t>::oid = INT2OID;
@@ -72,3 +72,5 @@ const unsigned Fastcgipp::SQL::Parameter<double>::oid = FLOAT8OID;
 const unsigned Fastcgipp::SQL::Parameter<std::string>::oid = TEXTOID;
 const unsigned Fastcgipp::SQL::Parameter<std::wstring>::oid = TEXTOID;
 const unsigned Fastcgipp::SQL::Parameter<std::vector<char>>::oid = BYTEAOID;
+const unsigned Fastcgipp::SQL::Parameter<
+    std::chrono::time_point<std::chrono::system_clock>>::oid = ABSTIMEOID;
