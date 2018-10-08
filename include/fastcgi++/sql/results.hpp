@@ -2,7 +2,7 @@
  * @file       results.hpp
  * @brief      Declares %SQL Results types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 7, 2018
+ * @date       October 8, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -32,6 +32,7 @@
 #include <tuple>
 #include <string>
 #include <vector>
+#include <chrono>
 
 //! Topmost namespace for the fastcgi++ library
 namespace Fastcgipp
@@ -148,6 +149,14 @@ namespace Fastcgipp
         bool Results_base::verifyColumn<std::vector<char>>(int column) const;
         template<>
         std::vector<char> Results_base::field<std::vector<char>>(
+                int row,
+                int column) const;
+        template<>
+        bool Results_base::verifyColumn<std::chrono::time_point<
+            std::chrono::system_clock>>(int column) const;
+        template<>
+        std::chrono::time_point<std::chrono::system_clock>
+        Results_base::field<std::chrono::time_point<std::chrono::system_clock>>(
                 int row,
                 int column) const;
 

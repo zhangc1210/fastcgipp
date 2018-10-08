@@ -2,7 +2,7 @@
  * @file       results.cpp
  * @brief      Defines SQL results types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 7, 2018
+ * @date       October 8, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -159,6 +159,34 @@ std::vector<char> Fastcgipp::SQL::Results_base::field<std::vector<char>>(
     data.reserve(size);
     data.assign(start, end);
     return data;
+}
+
+template<>
+bool Fastcgipp::SQL::Results_base::verifyColumn<
+    std::chrono::time_point<std::chrono::system_clock>>(int column) const
+{
+    const Oid type = PQftype(reinterpret_cast<const PGresult*>(m_res), column);
+    return type == ABSTIMEOID
+        && PQfsize(reinterpret_cast<const PGresult*>(m_res), column) == 8;
+}
+template<> std::chrono::time_point<std::chrono::system_clock>
+Fastcgipp::SQL::Results_base::field<
+  std::chrono::time_point<std::chrono::system_clock>>(int row, int column) const
+{
+    const char* const data = PQgetvalue(
+            reinterpret_cast<const PGresult*>(m_res),
+            row,
+            column);
+
+    const Protocol::BigEndian<int64_t>& count
+        = *reinterpret_cast<const Protocol::BigEndian<int64_t>*>(data);
+
+    const std::chrono::duration<int64_t, std::ratio<1,1000000>> duration(count);
+
+    const std::chrono::time_point<std::chrono::system_clock> time_point(
+            duration);
+
+    return time_point;
 }
 
 Fastcgipp::SQL::Status Fastcgipp::SQL::Results_base::status() const
