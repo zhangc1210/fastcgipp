@@ -381,19 +381,19 @@ int main()
         if(
                 *(base->oids()+0) != INT2OID ||
                 *(base->sizes()+0) != 2 ||
-                Fastcgipp::Protocol::BigEndian<int16_t>::read(
+                Fastcgipp::BigEndian<int16_t>::read(
                     *(base->raws()+0)) != zero)
             FAIL_LOG("Fastcgipp::SQL::Parameters failed on column 0")
         if(
                 *(base->oids()+1) != INT4OID ||
                 *(base->sizes()+1) != 4 ||
-                Fastcgipp::Protocol::BigEndian<int32_t>::read(
+                Fastcgipp::BigEndian<int32_t>::read(
                     *(base->raws()+1)) != one)
             FAIL_LOG("Fastcgipp::SQL::Parameters failed on column 1")
         if(
                 *(base->oids()+2) != INT8OID ||
                 *(base->sizes()+2) != 8 ||
-                Fastcgipp::Protocol::BigEndian<int64_t>::read(
+                Fastcgipp::BigEndian<int64_t>::read(
                     *(base->raws()+2)) != two)
             FAIL_LOG("Fastcgipp::SQL::Parameters failed on column 2")
         if(
@@ -408,13 +408,13 @@ int main()
         if(
                 *(base->oids()+4) != FLOAT4OID ||
                 *(base->sizes()+4) != 4 ||
-                Fastcgipp::Protocol::BigEndian<float>::read(
+                Fastcgipp::BigEndian<float>::read(
                     *(base->raws()+4)) != four)
             FAIL_LOG("Fastcgipp::SQL::Parameters failed on column 4")
         if(
                 *(base->oids()+5) != FLOAT8OID ||
                 *(base->sizes()+5) != 8 ||
-                Fastcgipp::Protocol::BigEndian<double>::read(
+                Fastcgipp::BigEndian<double>::read(
                     *(base->raws()+5)) != five)
             FAIL_LOG("Fastcgipp::SQL::Parameters failed on column 5")
         if(

@@ -14,84 +14,84 @@
 
 int main()
 {
-    // Test Fastcgipp::Http::Address
+    // Test Fastcgipp::Address
     {
-        const unsigned char randomAddress1Data[Fastcgipp::Http::Address::size] =
+        const unsigned char randomAddress1Data[Fastcgipp::Address::size] =
         {
             0xcc, 0x22, 0x40, 0x08, 0x79, 0xa1, 0xc1, 0x78, 0x05, 0xc5, 0x88,
             0x2a, 0x19, 0x0d, 0x7f, 0xbf
         };
         const char randomAddress1String[] =
             "cc22:4008:79a1:c178:5c5:882a:190d:7fbf";
-        const Fastcgipp::Http::Address randomAddress1(randomAddress1Data);
+        const Fastcgipp::Address randomAddress1(randomAddress1Data);
 
-        const unsigned char randomAddress2Data[Fastcgipp::Http::Address::size] =
+        const unsigned char randomAddress2Data[Fastcgipp::Address::size] =
         {
             0xce, 0x9c, 0x51, 0x16, 0x78, 0x17, 0x00, 0x00, 0x00, 0x00, 0x8d,
             0x97, 0x00, 0x00, 0xe7, 0x55
         };
         const char randomAddress2String[] = "ce9c:5116:7817::8d97:0:e755";
-        const Fastcgipp::Http::Address randomAddress2(randomAddress2Data);
+        const Fastcgipp::Address randomAddress2(randomAddress2Data);
 
-        const unsigned char ipv4AddressData[Fastcgipp::Http::Address::size] =
+        const unsigned char ipv4AddressData[Fastcgipp::Address::size] =
         {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff,
             0xff, 0xb3, 0x7c, 0x83, 0x91
         };
         const char ipv4AddressStringNew[] = "::ffff:179.124.131.145";
         const char ipv4AddressStringOld[] = "179.124.131.145";
-        const Fastcgipp::Http::Address ipv4Address(ipv4AddressData);
+        const Fastcgipp::Address ipv4Address(ipv4AddressData);
 
         const char badAddressString1[] =
             "cc22:4008:79a1:c178:5y5:882a:190d:7fbf";
         const char badAddressString2[] =
             "cc22:4008:79a1:c178:5c5:190d:7fbf";
 
-        std::list<Fastcgipp::Http::Address> correctAddresses;
+        std::list<Fastcgipp::Address> correctAddresses;
         correctAddresses.push_back(ipv4Address);
         correctAddresses.push_back(randomAddress1);
         correctAddresses.push_back(randomAddress2);
 
         // Test assign()
         {
-            Fastcgipp::Http::Address address;
+            Fastcgipp::Address address;
 
             address.assign(
                     randomAddress1String,
                     randomAddress1String+sizeof(randomAddress1String)-1);
             if(address != randomAddress1)
-                FAIL_LOG("Fastcgipp::Http::Address::assign() with randomAddress1")
+                FAIL_LOG("Fastcgipp::Address::assign() with randomAddress1")
 
             address.assign(
                     randomAddress2String,
                     randomAddress2String+sizeof(randomAddress2String)-1);
             if(address != randomAddress2)
-                FAIL_LOG("Fastcgipp::Http::Address::assign() with randomAddress2")
+                FAIL_LOG("Fastcgipp::Address::assign() with randomAddress2")
 
             address.assign(
                     ipv4AddressStringNew,
                     ipv4AddressStringNew+sizeof(ipv4AddressStringNew)-1);
             if(address != ipv4Address)
-                FAIL_LOG("Fastcgipp::Http::Address::assign() with ipv4 new style")
+                FAIL_LOG("Fastcgipp::Address::assign() with ipv4 new style")
 
             address.assign(
                     ipv4AddressStringOld,
                     ipv4AddressStringOld+sizeof(ipv4AddressStringOld)-1);
             if(address != ipv4Address)
-                FAIL_LOG("Fastcgipp::Http::Address::assign() with ipv4 old style")
+                FAIL_LOG("Fastcgipp::Address::assign() with ipv4 old style")
 
             Fastcgipp::Logging::suppress=true;
             address.assign(
                     badAddressString1,
                     badAddressString1+sizeof(badAddressString1)-1);
             if(address)
-                FAIL_LOG("Fastcgipp::Http::Address::assign() badAddress1")
+                FAIL_LOG("Fastcgipp::Address::assign() badAddress1")
 
             address.assign(
                     badAddressString2,
                     badAddressString2+sizeof(badAddressString2)-1);
             if(address)
-                FAIL_LOG("Fastcgipp::Http::Address::assign() badAddress1")
+                FAIL_LOG("Fastcgipp::Address::assign() badAddress1")
             Fastcgipp::Logging::suppress=false;
         }
 
@@ -102,35 +102,35 @@ int main()
             ss << randomAddress1;
             if(ss.str() != randomAddress1String)
                 FAIL_LOG(\
-                        "Fastcgipp::Http::Address stream insertion with"\
+                        "Fastcgipp::Address stream insertion with"\
                         " randomAddress1. Got " << ss.str().c_str())
 
             ss.str("");
             ss << randomAddress2;
             if(ss.str() != randomAddress2String)
                 FAIL_LOG(\
-                        "Fastcgipp::Http::Address stream insertion with"\
+                        "Fastcgipp::Address stream insertion with"\
                         " randomAddress2. Got " << ss.str().c_str())
 
             ss.str("");
             ss << ipv4Address;
             if(ss.str() != ipv4AddressStringNew)
                 FAIL_LOG(\
-                        "Fastcgipp::Http::Address stream insertion with"\
+                        "Fastcgipp::Address stream insertion with"\
                         " ipv4Address. Got " << ss.str().c_str())
         }
 
         // Testing stream extraction
         {
             std::istringstream ss;
-            Fastcgipp::Http::Address address;
+            Fastcgipp::Address address;
 
             ss.clear();
             ss.str(randomAddress1String);
             ss >> address;
             if(address != randomAddress1)
                 FAIL_LOG(\
-                        "Fastcgipp::Http::Address stream extraction with"\
+                        "Fastcgipp::Address stream extraction with"\
                         " randomAddress1. Got " << ss.str().c_str())
 
             ss.clear();
@@ -138,7 +138,7 @@ int main()
             ss >> address;
             if(address != randomAddress2)
                 FAIL_LOG(\
-                        "Fastcgipp::Http::Address stream extraction with"\
+                        "Fastcgipp::Address stream extraction with"\
                         " randomAddress2. Got " << ss.str().c_str())
 
             ss.clear();
@@ -146,7 +146,7 @@ int main()
             ss >> address;
             if(address != ipv4Address)
                 FAIL_LOG(\
-                        "Fastcgipp::Http::Address stream extraction with"\
+                        "Fastcgipp::Address stream extraction with"\
                         " ipv4Address new style. Got " << ss.str().c_str())
 
             ss.clear();
@@ -154,7 +154,7 @@ int main()
             ss >> address;
             if(address != ipv4Address)
                 FAIL_LOG(\
-                        "Fastcgipp::Http::Address stream extraction with"\
+                        "Fastcgipp::Address stream extraction with"\
                         " ipv4Address old style. Got " << ss.str().c_str())
 
             address.zero();
@@ -163,7 +163,7 @@ int main()
             ss >> address;
             if(address)
                 FAIL_LOG(\
-                        "Fastcgipp::Http::Address stream extraction with"\
+                        "Fastcgipp::Address stream extraction with"\
                         " badAddress1. Got " << ss.str().c_str())
 
             ss.clear();
@@ -171,13 +171,13 @@ int main()
             ss >> address;
             if(address)
                 FAIL_LOG(\
-                        "Fastcgipp::Http::Address stream extraction with"\
+                        "Fastcgipp::Address stream extraction with"\
                         " badAddress2. Got " << ss.str().c_str())
         }
 
         // Testing sorting abilities
         {
-            std::list<Fastcgipp::Http::Address> addresses;
+            std::list<Fastcgipp::Address> addresses;
             addresses.push_back(randomAddress1);
             addresses.push_back(ipv4Address);
             addresses.push_back(randomAddress2);
@@ -185,7 +185,7 @@ int main()
             addresses.sort();
 
             if(addresses != correctAddresses)
-                FAIL_LOG("Fastcgipp::Http::Address sorting")
+                FAIL_LOG("Fastcgipp::Address sorting")
         }
     }
 
@@ -442,7 +442,7 @@ int main()
 
     // Testing Fastcgipp::Http::Environment
     {
-        Fastcgipp::Http::Address loopback;
+        Fastcgipp::Address loopback;
         loopback.m_data.back() = 1;
 
         static const std::vector<std::wstring> properPath

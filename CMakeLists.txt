@@ -14,7 +14,8 @@ set(SRC_FILES
     "src/fcgistreambuf.cpp"
     "src/webstreambuf.cpp"
     "src/request.cpp"
-    "src/manager.cpp")
+    "src/manager.cpp"
+    "src/address.cpp")
 set(TESTS
     "protocol"
     "http"

@@ -7,10 +7,10 @@
 
 int main()
 {
-    // Testing Fastcgipp::Protocol::BigEndian with a 64 bit signed integer
+    // Testing Fastcgipp::BigEndian with a 64 bit signed integer
     {
         const int64_t actual = -0x62c74ce376736dd0;
-        const Fastcgipp::Protocol::BigEndian<int64_t> reversed(actual);
+        const Fastcgipp::BigEndian<int64_t> reversed(actual);
         const unsigned char* data = reinterpret_cast<const unsigned char*>(
                 &reversed);
 
@@ -24,13 +24,13 @@ int main()
                     data[5] == 0x8c &&
                     data[6] == 0x92 &&
                     data[7] == 0x30))
-            FAIL_LOG("Fastcgipp::Protocol::BigEndian with a 64 bit signed int")
+            FAIL_LOG("Fastcgipp::BigEndian with a 64 bit signed int")
     }
 
-    // Testing Fastcgipp::Protocol::BigEndian with a 16 bit unsigned integer
+    // Testing Fastcgipp::BigEndian with a 16 bit unsigned integer
     {
         const uint16_t actual = 57261;
-        const Fastcgipp::Protocol::BigEndian<uint16_t> reversed(actual);
+        const Fastcgipp::BigEndian<uint16_t> reversed(actual);
         const unsigned char* data = reinterpret_cast<const unsigned char*>(
                 &reversed);
 
@@ -38,13 +38,13 @@ int main()
                     reversed == actual &&
                     data[0] == 0xdf &&
                     data[1] == 0xad))
-            FAIL_LOG("Fastcgipp::Protocol::BigEndian with a 16 bit unsigned int")
+            FAIL_LOG("Fastcgipp::BigEndian with a 16 bit unsigned int")
     }
 
-    // Testing Fastcgipp::Protocol::BigEndian with a 32 bit float
+    // Testing Fastcgipp::BigEndian with a 32 bit float
     {
         const float actual = -3.21748e-05;
-        const Fastcgipp::Protocol::BigEndian<float> reversed(actual);
+        const Fastcgipp::BigEndian<float> reversed(actual);
         const unsigned char* data = reinterpret_cast<const unsigned char*>(
                 &reversed);
 
@@ -54,13 +54,13 @@ int main()
                     data[1] == 0x06 &&
                     data[2] == 0xf3 &&
                     data[3] == 0x6e))
-            FAIL_LOG("Fastcgipp::Protocol::BigEndian with a 32 bit float")
+            FAIL_LOG("Fastcgipp::BigEndian with a 32 bit float")
     }
 
-    // Testing Fastcgipp::Protocol::BigEndian with a 64 bit float
+    // Testing Fastcgipp::BigEndian with a 64 bit float
     {
         const double actual = 8.854187817e-12;
-        const Fastcgipp::Protocol::BigEndian<double> reversed(actual);
+        const Fastcgipp::BigEndian<double> reversed(actual);
         const unsigned char* data = reinterpret_cast<const unsigned char*>(
                 &reversed);
 
@@ -74,7 +74,7 @@ int main()
                     data[5] == 0x48 &&
                     data[6] == 0x11 &&
                     data[7] == 0x2e))
-            FAIL_LOG("Fastcgipp::Protocol::BigEndian with a 64 bit float")
+            FAIL_LOG("Fastcgipp::BigEndian with a 64 bit float")
     }
 
     std::random_device device;
@@ -133,7 +133,7 @@ int main()
         const char* const value = name+nameSize;
         const char* const end = value+valueSize;
         body[0] = static_cast<char>(nameSize);
-        *reinterpret_cast<Fastcgipp::Protocol::BigEndian<int32_t>*>(&body[1])
+        *reinterpret_cast<Fastcgipp::BigEndian<int32_t>*>(&body[1])
             = static_cast<uint32_t>(valueSize);
         body[1] |= 0x80;
 
@@ -171,7 +171,7 @@ int main()
         const char* const name = bodyStart+5;
         const char* const value = name+nameSize;
         const char* const end = value+valueSize;
-        *reinterpret_cast<Fastcgipp::Protocol::BigEndian<int32_t>*>(body.get())
+        *reinterpret_cast<Fastcgipp::BigEndian<int32_t>*>(body.get())
             = static_cast<uint32_t>(nameSize);
         body[0] |= 0x80;
         body[4] = static_cast<char>(valueSize);
@@ -210,10 +210,10 @@ int main()
         const char* const name = bodyStart+8;
         const char* const value = name+nameSize;
         const char* const end = value+valueSize;
-        *reinterpret_cast<Fastcgipp::Protocol::BigEndian<int32_t>*>(body.get())
+        *reinterpret_cast<Fastcgipp::BigEndian<int32_t>*>(body.get())
             = static_cast<uint32_t>(nameSize);
         body[0] |= 0x80;
-        *reinterpret_cast<Fastcgipp::Protocol::BigEndian<int32_t>*>(&body[4])
+        *reinterpret_cast<Fastcgipp::BigEndian<int32_t>*>(&body[4])
             = static_cast<uint32_t>(valueSize);
         body[4] |= 0x80;
 

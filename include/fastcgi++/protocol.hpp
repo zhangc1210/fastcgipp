@@ -6,7 +6,6 @@
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
-
 /*******************************************************************************
 * Copyright (C) 2018 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *

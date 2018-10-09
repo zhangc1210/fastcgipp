@@ -27,7 +27,7 @@
 *******************************************************************************/
 
 #include "fastcgi++/sql/results.hpp"
-#include "fastcgi++/protocol.hpp"
+#include "fastcgi++/endian.hpp"
 #include "fastcgi++/log.hpp"
 
 #include <locale>
@@ -50,7 +50,7 @@ bool Fastcgipp::SQL::Results_base::verifyColumn<int16_t>(int column) const
 template<>
 int16_t Fastcgipp::SQL::Results_base::field<int16_t>(int row, int column) const
 {
-    return Protocol::BigEndian<int16_t>::read(
+    return BigEndian<int16_t>::read(
             PQgetvalue(reinterpret_cast<const PGresult*>(m_res), row, column));
 }
 
@@ -63,7 +63,7 @@ bool Fastcgipp::SQL::Results_base::verifyColumn<int32_t>(int column) const
 template<>
 int32_t Fastcgipp::SQL::Results_base::field<int32_t>(int row, int column) const
 {
-    return Protocol::BigEndian<int32_t>::read(
+    return BigEndian<int32_t>::read(
             PQgetvalue(reinterpret_cast<const PGresult*>(m_res), row, column));
 }
 
@@ -76,7 +76,7 @@ bool Fastcgipp::SQL::Results_base::verifyColumn<int64_t>(int column) const
 template<>
 int64_t Fastcgipp::SQL::Results_base::field<int64_t>(int row, int column) const
 {
-    return Protocol::BigEndian<int64_t>::read(
+    return BigEndian<int64_t>::read(
             PQgetvalue(reinterpret_cast<const PGresult*>(m_res), row, column));
 }
 
@@ -89,7 +89,7 @@ bool Fastcgipp::SQL::Results_base::verifyColumn<float>(int column) const
 template<>
 float Fastcgipp::SQL::Results_base::field<float>(int row, int column) const
 {
-    return Protocol::BigEndian<float>::read(
+    return BigEndian<float>::read(
             PQgetvalue(reinterpret_cast<const PGresult*>(m_res), row, column));
 }
 
@@ -102,7 +102,7 @@ bool Fastcgipp::SQL::Results_base::verifyColumn<double>(int column) const
 template<>
 double Fastcgipp::SQL::Results_base::field<double>(int row, int column) const
 {
-    return Protocol::BigEndian<double>::read(
+    return BigEndian<double>::read(
             PQgetvalue(reinterpret_cast<const PGresult*>(m_res), row, column));
 }
 
@@ -178,8 +178,8 @@ Fastcgipp::SQL::Results_base::field<
             row,
             column);
 
-    const Protocol::BigEndian<int64_t>& count
-        = *reinterpret_cast<const Protocol::BigEndian<int64_t>*>(data);
+    const BigEndian<int64_t>& count
+        = *reinterpret_cast<const BigEndian<int64_t>*>(data);
 
     const std::chrono::duration<int64_t, std::micro> duration(count);
 
