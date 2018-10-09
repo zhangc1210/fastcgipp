@@ -29,12 +29,13 @@
 #ifndef FASTCGIPP_SQL_PARAMETERS_HPP
 #define FASTCGIPP_SQL_PARAMETERS_HPP
 
-#include "fastcgi++/protocol.hpp"
+#include "fastcgi++/endian.hpp"
 
 #include <tuple>
 #include <string>
 #include <vector>
 #include <chrono>
+#include <memory>
 
 //! Topmost namespace for the fastcgi++ library
 namespace Fastcgipp
@@ -52,42 +53,42 @@ namespace Fastcgipp
         template<typename T> class Parameter;
 
         template<>
-        struct Parameter<int16_t>: public Protocol::BigEndian<int16_t>
+        struct Parameter<int16_t>: public BigEndian<int16_t>
         {
-            using Protocol::BigEndian<int16_t>::BigEndian;
-            using Protocol::BigEndian<int16_t>::operator=;
+            using BigEndian<int16_t>::BigEndian;
+            using BigEndian<int16_t>::operator=;
             static const unsigned oid;
         };
 
         template<>
-        struct Parameter<int32_t>: public Protocol::BigEndian<int32_t>
+        struct Parameter<int32_t>: public BigEndian<int32_t>
         {
-            using Protocol::BigEndian<int32_t>::BigEndian;
-            using Protocol::BigEndian<int32_t>::operator=;
+            using BigEndian<int32_t>::BigEndian;
+            using BigEndian<int32_t>::operator=;
             static const unsigned oid;
         };
 
         template<>
-        struct Parameter<int64_t>: public Protocol::BigEndian<int64_t>
+        struct Parameter<int64_t>: public BigEndian<int64_t>
         {
-            using Protocol::BigEndian<int64_t>::BigEndian;
-            using Protocol::BigEndian<int64_t>::operator=;
+            using BigEndian<int64_t>::BigEndian;
+            using BigEndian<int64_t>::operator=;
             static const unsigned oid;
         };
 
         template<>
-        struct Parameter<float>: public Protocol::BigEndian<float>
+        struct Parameter<float>: public BigEndian<float>
         {
-            using Protocol::BigEndian<float>::BigEndian;
-            using Protocol::BigEndian<float>::operator=;
+            using BigEndian<float>::BigEndian;
+            using BigEndian<float>::operator=;
             static const unsigned oid;
         };
 
         template<>
-        struct Parameter<double>: public Protocol::BigEndian<double>
+        struct Parameter<double>: public BigEndian<double>
         {
-            using Protocol::BigEndian<double>::BigEndian;
-            using Protocol::BigEndian<double>::operator=;
+            using BigEndian<double>::BigEndian;
+            using BigEndian<double>::operator=;
             static const unsigned oid;
         };
 
@@ -134,10 +135,10 @@ namespace Fastcgipp
 
         template<>
         class Parameter<std::chrono::time_point<std::chrono::system_clock>>:
-            public Protocol::BigEndian<int64_t>
+            public BigEndian<int64_t>
         {
         private:
-            using Protocol::BigEndian<int64_t>::operator=;
+            using BigEndian<int64_t>::operator=;
             static int64_t convert(
                     const std::chrono::time_point<std::chrono::system_clock>& x)
             {
@@ -155,7 +156,7 @@ namespace Fastcgipp
 
             Parameter(
                     const std::chrono::time_point<std::chrono::system_clock>& x):
-                Protocol::BigEndian<int64_t>(convert(x))
+                BigEndian<int64_t>(convert(x))
             {}
 
             static const unsigned oid;

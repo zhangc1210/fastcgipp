@@ -37,6 +37,7 @@
 #include <thread>
 
 #include "fastcgi++/sockets.hpp"
+#include "fastcgi++/message.hpp"
 #include "fastcgi++/sql/parameters.hpp"
 #include "fastcgi++/sql/results.hpp"
 
