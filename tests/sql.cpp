@@ -33,7 +33,8 @@ private:
         float,
         double,
         std::vector<char>,
-        std::wstring> m_parameters;
+        std::wstring,
+        std::chrono::time_point<std::chrono::system_clock>> m_parameters;
 
     std::shared_ptr<Fastcgipp::SQL::Results<int32_t>> m_insertResult;
 
@@ -45,6 +46,7 @@ private:
         double,
         std::vector<char>,
         std::wstring,
+        std::chrono::time_point<std::chrono::system_clock>,
         std::wstring>> m_selectResults;
 
     std::shared_ptr<Fastcgipp::SQL::Results<>> m_deleteResult;
@@ -206,11 +208,12 @@ bool TestQuery::handle()
                 floatdist(device),
                 doubledist(device),
                 vectors[stringdist(device)],
-                wstrings[stringdist(device)]);
+                wstrings[stringdist(device)],
+                std::chrono::system_clock::now());
             m_insertResult.reset(new Fastcgipp::SQL::Results<int32_t>);
 
             Fastcgipp::SQL::Query query;
-            query.statement = "INSERT INTO fastcgipp_test (zero, one, two, three, four, five, six, seven) VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7) RETURNING zero;";
+            query.statement = "INSERT INTO fastcgipp_test (zero, one, two, three, four, five, six, seven, eight) VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8) RETURNING zero;";
             query.parameters = Fastcgipp::SQL::make_Parameters(m_parameters);
             query.results = m_insertResult;
             query.callback = m_callback;
@@ -241,10 +244,11 @@ bool TestQuery::handle()
                     double,
                     std::vector<char>,
                     std::wstring,
+                    std::chrono::time_point<std::chrono::system_clock>,
                     std::wstring>);
 
             Fastcgipp::SQL::Query query;
-            query.statement = "SELECT one, two, three, four, five, six, seven, zero::text || ' ' || one::text || ' ' || two::text || ' ' || three || ' ' || to_char(four, '9.999EEEE') || ' ' || to_char(five, '9.999EEEE') || ' ' || seven AS eight FROM fastcgipp_test WHERE zero=$1;";
+            query.statement = "SELECT one, two, three, four, five, six, seven, eight, zero::text || ' ' || one::text || ' ' || two::text || ' ' || three || ' ' || to_char(four, '9.999EEEE') || ' ' || to_char(five, '9.999EEEE') || ' ' || seven || ' ' || to_char(eight, 'YYYY-MM-DD HH24:MI:SS') AS nine FROM fastcgipp_test WHERE zero=$1;";
             query.parameters = parameters;
             query.results = m_selectResults;
             query.callback = m_callback;
@@ -280,6 +284,17 @@ bool TestQuery::handle()
                 FAIL_LOG("Fastcgipp::SQL::Connection test fail #16")
             if(std::get<6>(row) != std::get<6>(m_parameters))
                 FAIL_LOG("Fastcgipp::SQL::Connection test fail #17")
+            if(
+                    std::chrono::time_point_cast<
+                        std::chrono::duration<int64_t, std::micro>>(
+                            std::get<7>(row))
+                    != std::chrono::time_point_cast<
+                        std::chrono::duration<int64_t, std::micro>>(
+                            std::get<7>(m_parameters)))
+                FAIL_LOG("Fastcgipp::SQL::Connection test fail #18")
+
+            const std::time_t timeStamp = std::chrono::system_clock::to_time_t(
+                    std::get<7>(m_parameters));
 
             std::wostringstream ss;
             ss  << std::get<0>(m_insertResult->row(0)) << ' '
@@ -291,10 +306,11 @@ bool TestQuery::handle()
                 << std::get<3>(m_parameters) << ' '
                 << (std::get<4>(m_parameters)>0?" ":"")
                 << std::get<4>(m_parameters) << ' '
-                << std::get<6>(m_parameters);
+                << std::get<6>(m_parameters)
+                << std::put_time(std::gmtime(&timeStamp), L" %Y-%m-%d %H:%M:%S");
 
-            if(ss.str() != std::get<7>(row))
-                FAIL_LOG("Fastcgipp::SQL::Connection test fail #19")
+            if(ss.str() != std::get<8>(row))
+                FAIL_LOG("Fastcgipp::SQL::Connection test fail #19" << ss.str() << " vs " << std::get<8>(row))
 
             const int32_t id = std::get<0>(m_insertResult->row(0));
 

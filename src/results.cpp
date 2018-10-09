@@ -2,7 +2,7 @@
  * @file       results.cpp
  * @brief      Defines SQL results types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 8, 2018
+ * @date       October 9, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -166,7 +166,7 @@ bool Fastcgipp::SQL::Results_base::verifyColumn<
     std::chrono::time_point<std::chrono::system_clock>>(int column) const
 {
     const Oid type = PQftype(reinterpret_cast<const PGresult*>(m_res), column);
-    return type == ABSTIMEOID
+    return type == TIMESTAMPOID
         && PQfsize(reinterpret_cast<const PGresult*>(m_res), column) == 8;
 }
 template<> std::chrono::time_point<std::chrono::system_clock>
@@ -181,10 +181,11 @@ Fastcgipp::SQL::Results_base::field<
     const Protocol::BigEndian<int64_t>& count
         = *reinterpret_cast<const Protocol::BigEndian<int64_t>*>(data);
 
-    const std::chrono::duration<int64_t, std::ratio<1,1000000>> duration(count);
+    const std::chrono::duration<int64_t, std::micro> duration(count);
 
     const std::chrono::time_point<std::chrono::system_clock> time_point(
-            duration);
+            std::chrono::duration_cast<std::chrono::system_clock::duration>(
+                duration)+std::chrono::seconds(946684800));
 
     return time_point;
 }

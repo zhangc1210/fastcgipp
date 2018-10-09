@@ -2,7 +2,7 @@
  * @file       parameters.hpp
  * @brief      Declares %SQL parameters types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 7, 2018
+ * @date       October 9, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -114,7 +114,7 @@ namespace Fastcgipp
         };
 
         template<>
-        class Parameter<std::wstring>: std::string
+        class Parameter<std::wstring>: public std::string
         {
         private:
             static std::string convert(const std::wstring& x);
@@ -142,8 +142,8 @@ namespace Fastcgipp
                     const std::chrono::time_point<std::chrono::system_clock>& x)
             {
                 return std::chrono::duration_cast<
-                    std::chrono::duration<int64_t, std::ratio<1,1000000>>>(
-                        x.time_since_epoch()).count();
+                    std::chrono::duration<int64_t, std::micro>>(
+                        x.time_since_epoch()-std::chrono::seconds(946684800)).count();
             }
 
         public:

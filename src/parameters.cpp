@@ -2,7 +2,7 @@
  * @file       parameters.cpp
  * @brief      Defines SQL parameters types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 6, 2018
+ * @date       October 9, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -73,4 +73,4 @@ const unsigned Fastcgipp::SQL::Parameter<std::string>::oid = TEXTOID;
 const unsigned Fastcgipp::SQL::Parameter<std::wstring>::oid = TEXTOID;
 const unsigned Fastcgipp::SQL::Parameter<std::vector<char>>::oid = BYTEAOID;
 const unsigned Fastcgipp::SQL::Parameter<
-    std::chrono::time_point<std::chrono::system_clock>>::oid = ABSTIMEOID;
+    std::chrono::time_point<std::chrono::system_clock>>::oid = TIMESTAMPOID;
