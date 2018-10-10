@@ -2,7 +2,7 @@
  * @file       results.cpp
  * @brief      Defines SQL results types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 9, 2018
+ * @date       October 10, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -47,10 +47,12 @@ bool Fastcgipp::SQL::Results_base::verifyColumn<int16_t>(int column) const
     return PQftype(reinterpret_cast<const PGresult*>(m_res), column) == INT2OID
         && PQfsize(reinterpret_cast<const PGresult*>(m_res), column) == 2;
 }
-template<>
-int16_t Fastcgipp::SQL::Results_base::field<int16_t>(int row, int column) const
+template<> void Fastcgipp::SQL::Results_base::field<int16_t>(
+        int row,
+        int column,
+        int16_t& value) const
 {
-    return BigEndian<int16_t>::read(
+    value = BigEndian<int16_t>::read(
             PQgetvalue(reinterpret_cast<const PGresult*>(m_res), row, column));
 }
 
@@ -60,10 +62,12 @@ bool Fastcgipp::SQL::Results_base::verifyColumn<int32_t>(int column) const
     return PQftype(reinterpret_cast<const PGresult*>(m_res), column) == INT4OID
         && PQfsize(reinterpret_cast<const PGresult*>(m_res), column) == 4;
 }
-template<>
-int32_t Fastcgipp::SQL::Results_base::field<int32_t>(int row, int column) const
+template<> void Fastcgipp::SQL::Results_base::field<int32_t>(
+        int row,
+        int column,
+        int32_t& value) const
 {
-    return BigEndian<int32_t>::read(
+    value = BigEndian<int32_t>::read(
             PQgetvalue(reinterpret_cast<const PGresult*>(m_res), row, column));
 }
 
@@ -73,10 +77,12 @@ bool Fastcgipp::SQL::Results_base::verifyColumn<int64_t>(int column) const
     return PQftype(reinterpret_cast<const PGresult*>(m_res), column) == INT8OID
         && PQfsize(reinterpret_cast<const PGresult*>(m_res), column) == 8;
 }
-template<>
-int64_t Fastcgipp::SQL::Results_base::field<int64_t>(int row, int column) const
+template<> void Fastcgipp::SQL::Results_base::field<int64_t>(
+        int row,
+        int column,
+        int64_t& value) const
 {
-    return BigEndian<int64_t>::read(
+    value = BigEndian<int64_t>::read(
             PQgetvalue(reinterpret_cast<const PGresult*>(m_res), row, column));
 }
 
@@ -86,10 +92,12 @@ bool Fastcgipp::SQL::Results_base::verifyColumn<float>(int column) const
     return PQftype(reinterpret_cast<const PGresult*>(m_res), column)==FLOAT4OID
         && PQfsize(reinterpret_cast<const PGresult*>(m_res), column) == 4;
 }
-template<>
-float Fastcgipp::SQL::Results_base::field<float>(int row, int column) const
+template<> void Fastcgipp::SQL::Results_base::field<float>(
+        int row,
+        int column,
+        float& value) const
 {
-    return BigEndian<float>::read(
+    value = BigEndian<float>::read(
             PQgetvalue(reinterpret_cast<const PGresult*>(m_res), row, column));
 }
 
@@ -99,10 +107,12 @@ bool Fastcgipp::SQL::Results_base::verifyColumn<double>(int column) const
     return PQftype(reinterpret_cast<const PGresult*>(m_res), column)==FLOAT8OID
         && PQfsize(reinterpret_cast<const PGresult*>(m_res), column) == 8;
 }
-template<>
-double Fastcgipp::SQL::Results_base::field<double>(int row, int column) const
+template<> void Fastcgipp::SQL::Results_base::field<double>(
+        int row,
+        int column,
+        double& value) const
 {
-    return BigEndian<double>::read(
+    value = BigEndian<double>::read(
             PQgetvalue(reinterpret_cast<const PGresult*>(m_res), row, column));
 }
 
@@ -112,12 +122,12 @@ bool Fastcgipp::SQL::Results_base::verifyColumn<std::string>(int column) const
     const Oid type = PQftype(reinterpret_cast<const PGresult*>(m_res), column);
     return type == TEXTOID || type == VARCHAROID;
 }
-template<>
-std::string Fastcgipp::SQL::Results_base::field<std::string>(
+template<> void Fastcgipp::SQL::Results_base::field<std::string>(
         int row,
-        int column) const
+        int column,
+        std::string& value) const
 {
-    return std::string(
+    value.assign(
             PQgetvalue(reinterpret_cast<const PGresult*>(m_res), row, column),
             PQgetlength(reinterpret_cast<const PGresult*>(m_res), row, column));
 }
@@ -128,10 +138,29 @@ bool Fastcgipp::SQL::Results_base::verifyColumn<std::wstring>(int column) const
     const Oid type = PQftype(reinterpret_cast<const PGresult*>(m_res), column);
     return type == TEXTOID || type == VARCHAROID;
 }
-template<>
-std::wstring Fastcgipp::SQL::Results_base::field<std::wstring>(
+template<> void Fastcgipp::SQL::Results_base::field<std::wstring>(
         int row,
-        int column) const;
+        int column,
+        std::wstring& value) const
+{
+    std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
+    const char* const start = PQgetvalue(
+            reinterpret_cast<const PGresult*>(m_res),
+            row,
+            column);
+    const char* const end = start+PQgetlength(
+            reinterpret_cast<const PGresult*>(m_res),
+            row,
+            column);
+    try
+    {
+        value = converter.from_bytes(start, end);
+    }
+    catch(const std::range_error& e)
+    {
+        WARNING_LOG("Error in code conversion from utf8 in SQL result")
+    }
+}
 
 template<>
 bool Fastcgipp::SQL::Results_base::verifyColumn<std::vector<char>>(
@@ -140,10 +169,10 @@ bool Fastcgipp::SQL::Results_base::verifyColumn<std::vector<char>>(
     const Oid type = PQftype(reinterpret_cast<const PGresult*>(m_res), column);
     return type == BYTEAOID;
 }
-template<>
-std::vector<char> Fastcgipp::SQL::Results_base::field<std::vector<char>>(
+template<> void Fastcgipp::SQL::Results_base::field<std::vector<char>>(
         int row,
-        int column) const
+        int column,
+        std::vector<char>& value) const
 {
     const unsigned size = PQgetlength(
             reinterpret_cast<const PGresult*>(m_res),
@@ -155,10 +184,8 @@ std::vector<char> Fastcgipp::SQL::Results_base::field<std::vector<char>>(
             column);
     const char* const end = start+size;
 
-    std::vector<char> data;
-    data.reserve(size);
-    data.assign(start, end);
-    return data;
+    value.reserve(size);
+    value.assign(start, end);
 }
 
 template<>
@@ -169,9 +196,11 @@ bool Fastcgipp::SQL::Results_base::verifyColumn<
     return type == TIMESTAMPOID
         && PQfsize(reinterpret_cast<const PGresult*>(m_res), column) == 8;
 }
-template<> std::chrono::time_point<std::chrono::system_clock>
-Fastcgipp::SQL::Results_base::field<
-  std::chrono::time_point<std::chrono::system_clock>>(int row, int column) const
+template<> void Fastcgipp::SQL::Results_base::field<
+  std::chrono::time_point<std::chrono::system_clock>>(
+          int row,
+          int column,
+          std::chrono::time_point<std::chrono::system_clock>& value) const
 {
     const char* const data = PQgetvalue(
             reinterpret_cast<const PGresult*>(m_res),
@@ -183,11 +212,9 @@ Fastcgipp::SQL::Results_base::field<
 
     const std::chrono::duration<int64_t, std::micro> duration(count);
 
-    const std::chrono::time_point<std::chrono::system_clock> time_point(
+    value = std::chrono::time_point<std::chrono::system_clock>(
             std::chrono::duration_cast<std::chrono::system_clock::duration>(
                 duration)+std::chrono::seconds(946684800));
-
-    return time_point;
 }
 
 template<> bool Fastcgipp::SQL::Results_base::verifyColumn<Fastcgipp::Address>(
@@ -195,13 +222,12 @@ template<> bool Fastcgipp::SQL::Results_base::verifyColumn<Fastcgipp::Address>(
 {
     return PQftype(reinterpret_cast<const PGresult*>(m_res), column) == INETOID;
 }
-template<>
-Fastcgipp::Address Fastcgipp::SQL::Results_base::field<Fastcgipp::Address>(
+template<> void Fastcgipp::SQL::Results_base::field<Fastcgipp::Address>(
         int row,
-        int column) const
+        int column,
+        Address& value) const
 {
-    Address address;
-    char* address_p = reinterpret_cast<char*>(&address);
+    char* address_p = reinterpret_cast<char*>(&value);
     const char* const data = PQgetvalue(
             reinterpret_cast<const PGresult*>(m_res),
             row,
@@ -225,8 +251,6 @@ Fastcgipp::Address Fastcgipp::SQL::Results_base::field<Fastcgipp::Address>(
             break;
         }
     }
-
-    return address;
 }
 
 Fastcgipp::SQL::Status Fastcgipp::SQL::Results_base::status() const
@@ -257,30 +281,6 @@ Fastcgipp::SQL::Status Fastcgipp::SQL::Results_base::status() const
         default:
             return Status::fatalError;
     };
-}
-
-template<> std::wstring Fastcgipp::SQL::Results_base::field<std::wstring>(
-        int row,
-        int column) const
-{
-    std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
-    const char* const start = PQgetvalue(
-            reinterpret_cast<const PGresult*>(m_res),
-            row,
-            column);
-    const char* const end = start+PQgetlength(
-            reinterpret_cast<const PGresult*>(m_res),
-            row,
-            column);
-    try
-    {
-        return converter.from_bytes(start, end);
-    }
-    catch(const std::range_error& e)
-    {
-        WARNING_LOG("Error in code conversion from utf8 in SQL result")
-    }
-    return std::wstring();
 }
 
 unsigned Fastcgipp::SQL::Results_base::affectedRows() const

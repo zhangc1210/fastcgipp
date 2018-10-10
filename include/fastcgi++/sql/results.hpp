@@ -2,7 +2,7 @@
  * @file       results.hpp
  * @brief      Declares %SQL Results types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 8, 2018
+ * @date       October 10, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -114,57 +114,67 @@ namespace Fastcgipp
              * This function has no default definition and must be specialized
              * for each and every type that is to be used.
              */
-            template<typename T> T field(int row, int column) const;
+            template<typename T> void field(
+                    int row,
+                    int column,
+                    T& value) const;
         };
 
-        template<>
-        bool Results_base::verifyColumn<int16_t>(int column) const;
-        template<>
-        int16_t Results_base::field<int16_t>(int row, int column) const;
-        template<>
-        bool Results_base::verifyColumn<int32_t>(int column) const;
-        template<>
-        int32_t Results_base::field<int32_t>(int row, int column) const;
-        template<>
-        bool Results_base::verifyColumn<int64_t>(int column) const;
-        template<>
-        int64_t Results_base::field<int64_t>(int row, int column) const;
-        template<>
-        bool Results_base::verifyColumn<float>(int column) const;
-        template<>
-        float Results_base::field<float>(int row, int column) const;
-        template<>
-        bool Results_base::verifyColumn<double>(int column) const;
-        template<>
-        double Results_base::field<double>(int row, int column) const;
-        template<>
-        bool Results_base::verifyColumn<std::string>(int column) const;
-        template<>
-        std::string Results_base::field<std::string>(int row, int column) const;
+        template<> bool Results_base::verifyColumn<int16_t>(int column) const;
+        template<> void Results_base::field<int16_t>(
+                int row,
+                int column,
+                int16_t& value) const;
+        template<> bool Results_base::verifyColumn<int32_t>(int column) const;
+        template<> void Results_base::field<int32_t>(
+                int row,
+                int column,
+                int32_t& value) const;
+        template<> bool Results_base::verifyColumn<int64_t>(int column) const;
+        template<> void Results_base::field<int64_t>(
+                int row,
+                int column,
+                int64_t& value) const;
+        template<> bool Results_base::verifyColumn<float>(int column) const;
+        template<> void Results_base::field<float>(
+                int row,
+                int column,
+                float& value) const;
+        template<> bool Results_base::verifyColumn<double>(int column) const;
+        template<> void Results_base::field<double>(
+                int row,
+                int column,
+                double& value) const;
+        template<> bool Results_base::verifyColumn<std::string>(int column) const;
+        template<> void Results_base::field<std::string>(
+                int row,
+                int column,
+                std::string& value) const;
         template<>
         bool Results_base::verifyColumn<std::wstring>(int column) const;
-        template<>
-        std::wstring Results_base::field<std::wstring>(
+        template<> void Results_base::field<std::wstring>(
                 int row,
-                int column) const;
+                int column,
+                std::wstring& value) const;
         template<>
         bool Results_base::verifyColumn<std::vector<char>>(int column) const;
-        template<>
-        std::vector<char> Results_base::field<std::vector<char>>(
+        template<> void Results_base::field<std::vector<char>>(
                 int row,
-                int column) const;
-        template<>
-        bool Results_base::verifyColumn<std::chrono::time_point<
+                int column,
+                std::vector<char>& value) const;
+        template<> bool Results_base::verifyColumn<std::chrono::time_point<
             std::chrono::system_clock>>(int column) const;
-        template<>
-        std::chrono::time_point<std::chrono::system_clock>
+        template<> void
         Results_base::field<std::chrono::time_point<std::chrono::system_clock>>(
                 int row,
-                int column) const;
-        template<>
-        bool Results_base::verifyColumn<Address>(int column) const;
-        template<>
-        Address Results_base::field<Address>(int row, int column) const;
+                int column,
+                std::chrono::time_point<std::chrono::system_clock>& value)
+            const;
+        template<> bool Results_base::verifyColumn<Address>(int column) const;
+        template<> void Results_base::field<Address>(
+                int row,
+                int column,
+                Address& value) const;
 
         //! Holds %SQL query result sets
         /*!
@@ -180,7 +190,7 @@ namespace Fastcgipp
          *  3. If there is row data, call row() to retrieve a row.
          *
          * @tparam Types Pack of types to contain in the row tuple.
-         * @date    October 7, 2018
+         * @date    October 10, 2018
          * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
          */
         template<typename... Types>
@@ -216,14 +226,21 @@ namespace Fastcgipp
                     return column+1;
             }
 
-            template<int... columns>
-            Row row_impl(
-                    int index, std::integer_sequence<int, columns...>) const
+            template<int column, int... columns> void row_impl(
+                    Row &row,
+                    int index,
+                    std::integer_sequence<int, column, columns...>) const
             {
-                return Row(field<
-                        typename std::tuple_element<columns, Row>::type>(
-                            index,
-                            columns)...);
+                field(index, column, std::get<column>(row));
+                row_impl(row, index, std::integer_sequence<int, columns...>{});
+            }
+
+            template<int column> void row_impl(
+                    Row &row,
+                    int index,
+                    std::integer_sequence<int, column>) const
+            {
+                field(index, column, std::get<column>(row));
             }
 
         public:
@@ -262,9 +279,12 @@ namespace Fastcgipp
              */
             Row row(int index) const
             {
-                return row_impl(
+                Row row;
+                row_impl(
+                        row,
                         index,
                         std::make_integer_sequence<int, size>{});
+                return row;
             }
         };
 
