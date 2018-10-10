@@ -87,7 +87,6 @@ configure_file(
 option(BUILD_SQL "Set to ON to build and install the SQL components" OFF)
 if(BUILD_SQL)
     find_package(PostgreSQL REQUIRED)
-    list(APPEND TESTS "sql")
     list(APPEND SRC_FILES "src/parameters.cpp")
     list(APPEND SRC_FILES "src/results.cpp")
     list(APPEND SRC_FILES "src/connection.cpp")
@@ -158,13 +157,13 @@ install(DIRECTORY
 
 if(BUILD_SQL)
     target_link_libraries(fastcgipp PUBLIC ${PostgreSQL_LIBRARIES})
-    target_include_directories(fastcgipp PUBLIC ${PostgreSQL_INCLUDE_DIRS})
+    target_include_directories(fastcgipp PRIVATE ${PostgreSQL_INCLUDE_DIRS})
     install(DIRECTORY
         "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/sql"
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/fastcgi++")
 endif(BUILD_SQL)
 
-# Install the header file
+# Install the config header file
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/include/fastcgi++/config.hpp"
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/fastcgi++)
@@ -177,12 +176,17 @@ foreach(UNITTEST IN LISTS TESTS)
     add_test("${UNITTEST}" ${UNITTEST}_test)
     list(APPEND TEST_TARGET ${UNITTEST}_test)
 endforeach()
-add_custom_target(tests DEPENDS ${TEST_TARGET})
 if(BUILD_SQL)
     configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/CTestCustom.cmake.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/CTestCustom.cmake" @ONLY)
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/sql.sh.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/sql_test.sh" @ONLY)
+    add_executable(sql_test EXCLUDE_FROM_ALL tests/sql.cpp)
+    target_link_libraries(sql_test PRIVATE Fastcgipp::fastcgipp)
+    add_test("sql" sql_test.sh)
+    list(APPEND TEST_TARGET sql_test)
+    target_include_directories(sql_test PRIVATE ${PostgreSQL_INCLUDE_DIRS})
 endif(BUILD_SQL)
+add_custom_target(tests DEPENDS ${TEST_TARGET})
 
 # Examples
 foreach(EXAMPLE IN LISTS EXAMPLES)
