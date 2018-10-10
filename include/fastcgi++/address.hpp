@@ -111,6 +111,11 @@ namespace Fastcgipp
                 const charT* start,
                 const charT* end);
 
+        Address(const char* string)
+        {
+            assign(string, string+std::strlen(string));
+        }
+
         bool operator==(const Address& x) const
         {
             return std::equal(

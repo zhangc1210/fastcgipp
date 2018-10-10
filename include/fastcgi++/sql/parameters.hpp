@@ -6,7 +6,6 @@
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
-
 /*******************************************************************************
 * Copyright (C) 2018 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
@@ -30,6 +29,7 @@
 #define FASTCGIPP_SQL_PARAMETERS_HPP
 
 #include "fastcgi++/endian.hpp"
+#include "fastcgi++/address.hpp"
 
 #include <tuple>
 #include <string>
@@ -160,6 +160,29 @@ namespace Fastcgipp
             {}
 
             static const unsigned oid;
+        };
+
+        template<>
+        struct Parameter<Address>: public std::array<char, 20>
+        {
+            Parameter& operator=(const Address& x)
+            {
+                auto next = begin();
+                *next++ = addressFamily;
+                *next++ = 128;
+                *next++ = 0;
+                *next++ = 16;
+                next = std::copy_n(
+                        reinterpret_cast<const char*>(&x),
+                        Address::size,
+                        next);
+            }
+            Parameter(const Address& x)
+            {
+                *this = x;
+            }
+            static const unsigned oid;
+            static const char addressFamily;
         };
 
         //! De-templated base class for Parameters

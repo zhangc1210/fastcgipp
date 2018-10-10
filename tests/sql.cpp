@@ -34,7 +34,8 @@ private:
         double,
         std::vector<char>,
         std::wstring,
-        std::chrono::time_point<std::chrono::system_clock>> m_parameters;
+        std::chrono::time_point<std::chrono::system_clock>,
+        Fastcgipp::Address> m_parameters;
 
     std::shared_ptr<Fastcgipp::SQL::Results<int32_t>> m_insertResult;
 
@@ -47,6 +48,7 @@ private:
         std::vector<char>,
         std::wstring,
         std::chrono::time_point<std::chrono::system_clock>,
+        Fastcgipp::Address,
         std::wstring>> m_selectResults;
 
     std::shared_ptr<Fastcgipp::SQL::Results<>> m_deleteResult;
@@ -71,6 +73,7 @@ private:
     static std::array<std::wstring, 6> wstrings;
     static std::array<std::string, 6> strings;
     static std::array<std::vector<char>, 6> vectors;
+    static std::array<Fastcgipp::Address, 6> addresses;
     static std::uniform_int_distribution<unsigned> stringdist;
 
     bool handle();
@@ -146,6 +149,15 @@ std::array<std::vector<char>, 6> TestQuery::vectors
     {'e', 'f'},
     {'f'}
 }};
+std::array<Fastcgipp::Address, 6> TestQuery::addresses
+{
+    "cc22:4008:79a1:c178:5c5:882a:190d:7fbf",
+    "ce9c:5116:7817::8d97:0:e755",
+    "::ffff:179.124.131.145",
+    "cc22:4008:79a1:c178:5c5:882a:190d:7fbf",
+    "ce9c:5116:7817::8d97:0:e755",
+    "::ffff:179.124.131.145"
+};
 std::uniform_int_distribution<unsigned> TestQuery::stringdist(0,5);
 
 void TestQuery::callback(unsigned id, Fastcgipp::Message message)
@@ -209,11 +221,12 @@ bool TestQuery::handle()
                 doubledist(device),
                 vectors[stringdist(device)],
                 wstrings[stringdist(device)],
-                std::chrono::system_clock::now());
+                std::chrono::system_clock::now(),
+                addresses[stringdist(device)]);
             m_insertResult.reset(new Fastcgipp::SQL::Results<int32_t>);
 
             Fastcgipp::SQL::Query query;
-            query.statement = "INSERT INTO fastcgipp_test (zero, one, two, three, four, five, six, seven, eight) VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8) RETURNING zero;";
+            query.statement = "INSERT INTO fastcgipp_test (zero, one, two, three, four, five, six, seven, eight, nine) VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING zero;";
             query.parameters = Fastcgipp::SQL::make_Parameters(m_parameters);
             query.results = m_insertResult;
             query.callback = m_callback;
@@ -245,10 +258,11 @@ bool TestQuery::handle()
                     std::vector<char>,
                     std::wstring,
                     std::chrono::time_point<std::chrono::system_clock>,
+                    Fastcgipp::Address,
                     std::wstring>);
 
             Fastcgipp::SQL::Query query;
-            query.statement = "SELECT one, two, three, four, five, six, seven, eight, zero::text || ' ' || one::text || ' ' || two::text || ' ' || three || ' ' || to_char(four, '9.999EEEE') || ' ' || to_char(five, '9.999EEEE') || ' ' || seven || ' ' || to_char(eight, 'YYYY-MM-DD HH24:MI:SS') AS nine FROM fastcgipp_test WHERE zero=$1;";
+            query.statement = "SELECT one, two, three, four, five, six, seven, eight, nine, zero::text || ' ' || one::text || ' ' || two::text || ' ' || three || ' ' || to_char(four, '9.999EEEE') || ' ' || to_char(five, '9.999EEEE') || ' ' || seven || ' ' || to_char(eight, 'YYYY-MM-DD HH24:MI:SS') || ' ' || nine AS ten FROM fastcgipp_test WHERE zero=$1;";
             query.parameters = parameters;
             query.results = m_selectResults;
             query.callback = m_callback;
@@ -292,6 +306,8 @@ bool TestQuery::handle()
                         std::chrono::duration<int64_t, std::micro>>(
                             std::get<7>(m_parameters)))
                 FAIL_LOG("Fastcgipp::SQL::Connection test fail #18")
+            if(std::get<8>(row) != std::get<8>(m_parameters))
+                FAIL_LOG("Fastcgipp::SQL::Connection test fail #19")
 
             const std::time_t timeStamp = std::chrono::system_clock::to_time_t(
                     std::get<7>(m_parameters));
@@ -307,10 +323,11 @@ bool TestQuery::handle()
                 << (std::get<4>(m_parameters)>0?" ":"")
                 << std::get<4>(m_parameters) << ' '
                 << std::get<6>(m_parameters)
-                << std::put_time(std::gmtime(&timeStamp), L" %Y-%m-%d %H:%M:%S");
+                << std::put_time(std::gmtime(&timeStamp), L" %Y-%m-%d %H:%M:%S ")
+                << std::get<8>(m_parameters) << "/128";
 
-            if(ss.str() != std::get<8>(row))
-                FAIL_LOG("Fastcgipp::SQL::Connection test fail #19" << ss.str() << " vs " << std::get<8>(row))
+            if(ss.str() != std::get<9>(row))
+                FAIL_LOG("Fastcgipp::SQL::Connection test fail #20" << ss.str() << " vs " << std::get<9>(row))
 
             const int32_t id = std::get<0>(m_insertResult->row(0));
 
@@ -323,7 +340,7 @@ bool TestQuery::handle()
             query.results = m_deleteResult;
             query.callback = m_callback;
             if(!connection.queue(query))
-                FAIL_LOG("Fastcgipp::SQL::Connection test fail #20")
+                FAIL_LOG("Fastcgipp::SQL::Connection test fail #21")
 
             ++m_state;
             return false;
@@ -332,13 +349,13 @@ bool TestQuery::handle()
         case 3:
         {
             if(m_deleteResult->status() != Fastcgipp::SQL::Status::commandOk)
-                FAIL_LOG("Fastcgipp::SQL::Connection test fail #21: " << m_deleteResult->errorMessage())
+                FAIL_LOG("Fastcgipp::SQL::Connection test fail #22: " << m_deleteResult->errorMessage())
             if(m_deleteResult->rows() != 0)
-                FAIL_LOG("Fastcgipp::SQL::Connection test fail #22")
-            if(m_deleteResult->affectedRows() != 1)
                 FAIL_LOG("Fastcgipp::SQL::Connection test fail #23")
+            if(m_deleteResult->affectedRows() != 1)
+                FAIL_LOG("Fastcgipp::SQL::Connection test fail #24")
             if(m_deleteResult->verify() != 0)
-                FAIL_LOG("Fastcgipp::SQL::Connection test fail #24: " << m_deleteResult->verify())
+                FAIL_LOG("Fastcgipp::SQL::Connection test fail #25: " << m_deleteResult->verify())
 
             return true;
         }

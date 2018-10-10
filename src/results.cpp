@@ -190,6 +190,45 @@ Fastcgipp::SQL::Results_base::field<
     return time_point;
 }
 
+template<> bool Fastcgipp::SQL::Results_base::verifyColumn<Fastcgipp::Address>(
+        int column) const
+{
+    return PQftype(reinterpret_cast<const PGresult*>(m_res), column) == INETOID;
+}
+template<>
+Fastcgipp::Address Fastcgipp::SQL::Results_base::field<Fastcgipp::Address>(
+        int row,
+        int column) const
+{
+    Address address;
+    char* address_p = reinterpret_cast<char*>(&address);
+    const char* const data = PQgetvalue(
+            reinterpret_cast<const PGresult*>(m_res),
+            row,
+            column);
+
+    switch(PQgetlength(reinterpret_cast<const PGresult*>(m_res), row, column))
+    {
+        case 8:
+        {
+            address_p = std::fill_n(address_p, 10, char(0));
+            address_p = std::fill_n(address_p, 2, char(-1));
+            std::copy_n(
+                    data+4,
+                    4,
+                    address_p);
+            break;
+        }
+        case 20:
+        {
+            std::copy_n(data+4, Address::size, address_p);
+            break;
+        }
+    }
+
+    return address;
+}
+
 Fastcgipp::SQL::Status Fastcgipp::SQL::Results_base::status() const
 {
     if(reinterpret_cast<const PGresult*>(m_res) == nullptr)

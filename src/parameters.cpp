@@ -35,6 +35,7 @@
 #include <postgres.h>
 #include <libpq-fe.h>
 #include <catalog/pg_type.h>
+#include <server/utils/inet.h>
 #undef WARNING
 // I sure would like to know who thought it clever to define the macro WARNING
 // in these postgresql header files
@@ -74,3 +75,6 @@ const unsigned Fastcgipp::SQL::Parameter<std::wstring>::oid = TEXTOID;
 const unsigned Fastcgipp::SQL::Parameter<std::vector<char>>::oid = BYTEAOID;
 const unsigned Fastcgipp::SQL::Parameter<
     std::chrono::time_point<std::chrono::system_clock>>::oid = TIMESTAMPOID;
+const unsigned Fastcgipp::SQL::Parameter<Fastcgipp::Address>::oid = INETOID;
+const char Fastcgipp::SQL::Parameter<Fastcgipp::Address>::addressFamily
+    = PGSQL_AF_INET6;

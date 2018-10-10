@@ -34,6 +34,8 @@
 #include <vector>
 #include <chrono>
 
+#include "fastcgi++/address.hpp"
+
 //! Topmost namespace for the fastcgi++ library
 namespace Fastcgipp
 {
@@ -159,7 +161,10 @@ namespace Fastcgipp
         Results_base::field<std::chrono::time_point<std::chrono::system_clock>>(
                 int row,
                 int column) const;
-
+        template<>
+        bool Results_base::verifyColumn<Address>(int column) const;
+        template<>
+        Address Results_base::field<Address>(int row, int column) const;
 
         //! Holds %SQL query result sets
         /*!
