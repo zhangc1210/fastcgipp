@@ -246,7 +246,8 @@ bool TestQuery::handle()
             if(m_insertResult->verify() != 0)
                 FAIL_LOG("Fastcgipp::SQL::Connection test fail #6")
 
-            const int32_t id = std::get<0>(m_insertResult->row(0));
+            const auto& row = m_insertResult->row(0);
+            const int32_t& id = std::get<0>(row);
 
             auto parameters = Fastcgipp::SQL::make_Parameters(id);
             m_selectResults.reset(new Fastcgipp::SQL::Results<
@@ -282,7 +283,7 @@ bool TestQuery::handle()
             if(m_selectResults->verify() != 0)
                 FAIL_LOG("Fastcgipp::SQL::Connection test fail #10: " << m_selectResults->verify())
 
-            const auto row = m_selectResults->row(0);
+            const auto& row = m_selectResults->row(0);
 
             if(std::get<0>(row) != std::get<0>(m_parameters))
                 FAIL_LOG("Fastcgipp::SQL::Connection test fail #11")
@@ -329,7 +330,8 @@ bool TestQuery::handle()
             if(ss.str() != std::get<9>(row))
                 FAIL_LOG("Fastcgipp::SQL::Connection test fail #20" << ss.str() << " vs " << std::get<9>(row))
 
-            const int32_t id = std::get<0>(m_insertResult->row(0));
+            const auto& insertRow = m_insertResult->row(0);
+            const int32_t& id = std::get<0>(insertRow);
 
             auto parameters = Fastcgipp::SQL::make_Parameters(id);
             m_deleteResult.reset(new Fastcgipp::SQL::Results<>);

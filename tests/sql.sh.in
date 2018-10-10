@@ -18,9 +18,9 @@ CREATE TABLE fastcgipp_test (
 );" &&
 @CMAKE_CURRENT_BINARY_DIR@/sql_test
 
-stat = $?
+retval=$?
 
 dropdb fastcgipp_test
 dropuser fastcgipp_test
 
-exit $stat
+exit $retval
