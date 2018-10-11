@@ -56,7 +56,7 @@ public:
                 return false;
             }
 
-            case 2:
+            case 1:
             {
                 if(m_insertResult->status() != Fastcgipp::SQL::Status::commandOk)
                 {
@@ -65,6 +65,13 @@ public:
                                 m_insertResult->status()) \
                             << "' with message '" \
                             <<m_insertResult->errorMessage() << '\'')
+                    errorHandler();
+                    return true;
+                }
+                if(m_insertResult->verify() != 0)
+                {
+                    ERROR_LOG("SQL column verification failed: " << \
+                            m_insertResult->verify())
                     errorHandler();
                     return true;
                 }
@@ -89,7 +96,7 @@ public:
                         std::string>);
                 Fastcgipp::SQL::Query query;
                 query.statement =
-                    "SELECT stamp, address, string FROM fastcgipp_example"
+                    "SELECT stamp, address, string FROM fastcgipp_example "
                     "ORDER BY stamp DESC LIMIT 20;";
                 query.results = m_selectResults;
                 query.callback = callback();
@@ -105,7 +112,7 @@ public:
                 return false;
             }
 
-            case 3:
+            case 2:
             {
                 if(m_selectResults->status() != Fastcgipp::SQL::Status::rowsOk)
                 {
@@ -117,7 +124,14 @@ public:
                     errorHandler();
                     return true;
                 }
-                if(m_selectResults->rows() != 0)
+                if(m_selectResults->verify() != 0)
+                {
+                    ERROR_LOG("SQL column verification failed: " << \
+                            m_selectResults->verify())
+                    errorHandler();
+                    return true;
+                }
+                if(m_selectResults->rows() == 0)
                 {
                     ERROR_LOG("SQL select didn't return rows when it should "\
                             "have")
@@ -151,13 +165,11 @@ public:
                     out <<
             "<tr>"
                 "<td>" 
-                    << Encoding::HTML << std::put_time(
-                            std::localtime(&timestamp), "%A %B %e, %Y at %H:%M:%S")
-                    << Encoding::NONE <<
+                    << std::put_time(
+                            std::localtime(&timestamp),
+                            "%A, %B %e %Y at %H:%M:%S %Z") <<
                 "</td>"
-                "<td>" 
-                    << Encoding::HTML << std::get<1>(row) << Encoding::NONE <<
-                "</td>"
+                "<td>" << std::get<1>(row) << "</td>"
                 "<td>" 
                     << Encoding::HTML << std::get<2>(row) << Encoding::NONE <<
                 "</td>"

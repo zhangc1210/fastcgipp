@@ -2,7 +2,7 @@
  * @file       connection.cpp
  * @brief      Defines the Fastcgipp::SQL::SQL::Connection class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 9, 2018
+ * @date       October 11, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -82,9 +82,15 @@ void Fastcgipp::SQL::Connection::handler()
                             query.parameters->formats(),
                             1);
                 else
-                    result = PQsendQuery(
+                    result = PQsendQueryParams(
                             conn,
-                            query.statement);
+                            query.statement,
+                            0,
+                            nullptr,
+                            nullptr,
+                            nullptr,
+                            nullptr,
+                            1);
 
                 if(result != 1)
                 {

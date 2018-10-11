@@ -2,7 +2,7 @@
  * @file       results.cpp
  * @brief      Defines SQL results types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 10, 2018
+ * @date       October 11, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -207,8 +207,8 @@ template<> void Fastcgipp::SQL::Results_base::field<
             row,
             column);
 
-    const BigEndian<int64_t>& count
-        = *reinterpret_cast<const BigEndian<int64_t>*>(data);
+    const int64_t count = BigEndian<int64_t>::read(
+            PQgetvalue(reinterpret_cast<const PGresult*>(m_res), row, column));
 
     const std::chrono::duration<int64_t, std::micro> duration(count);
 
