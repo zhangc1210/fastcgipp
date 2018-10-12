@@ -88,6 +88,10 @@ Now we need run cmake.
 
     cmake -DCMAKE_BUILD_TYPE=RELEASE ../fastcgi++
 
+And if we want to build the PostgreSQL stuff we need to actually make it do so.
+
+    cmake -DCMAKE_BUILD_TYPE=RELEASE -DSQL=true ../fastcgi++
+
 Note that that was to do a release build. That means heavily optimized and not
 good for debugging. If you want to do some debugging to either fastcgi++ or an
 application you are developing that uses fastcgi++, do a debug build.

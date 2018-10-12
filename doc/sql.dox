@@ -19,6 +19,10 @@ As always, the example can be build by:
 
     make sql.fcgi
 
+Make sure, however, that you had called CMake setting the SQL option eg:
+
+    cmake -DSQL=true ../fastcgi++
+
 Of course in order for this example to work, the PostgreSQL server needs to be
 in a state we're expecting. Specifically the necessary username, password,
 database, and table needs to be setup beforehand. From the source tree,

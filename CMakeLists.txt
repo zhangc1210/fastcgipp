@@ -84,14 +84,14 @@ configure_file(
     "${CMAKE_CURRENT_BINARY_DIR}/include/fastcgi++/config.hpp" @ONLY)
 
 # Are we worrying about SQL?
-option(BUILD_SQL "Set to ON to build and install the SQL components" OFF)
-if(BUILD_SQL)
+option(SQL "Set to ON to build and install the SQL components" OFF)
+if(SQL)
     find_package(PostgreSQL REQUIRED)
     list(APPEND SRC_FILES "src/parameters.cpp")
     list(APPEND SRC_FILES "src/results.cpp")
     list(APPEND SRC_FILES "src/connection.cpp")
     list(APPEND EXAMPLES "sql")
-endif(BUILD_SQL)
+endif(SQL)
 
 # Build the library itself
 option(BUILD_STATIC_LIBS "Set to ON to build and install only the static library" OFF)
@@ -156,13 +156,13 @@ install(DIRECTORY
 	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     PATTERN "sql" EXCLUDE)
 
-if(BUILD_SQL)
+if(SQL)
     target_link_libraries(fastcgipp PUBLIC ${PostgreSQL_LIBRARIES})
     target_include_directories(fastcgipp PRIVATE ${PostgreSQL_INCLUDE_DIRS})
     install(DIRECTORY
         "${CMAKE_CURRENT_SOURCE_DIR}/include/fastcgi++/sql"
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/fastcgi++")
-endif(BUILD_SQL)
+endif(SQL)
 
 # Install the config header file
 install(FILES
@@ -177,7 +177,7 @@ foreach(UNITTEST IN LISTS TESTS)
     add_test("${UNITTEST}" ${UNITTEST}_test)
     list(APPEND TEST_TARGET ${UNITTEST}_test)
 endforeach()
-if(BUILD_SQL)
+if(SQL)
     configure_file(
         "${CMAKE_CURRENT_SOURCE_DIR}/tests/sql.sh.in"
         "${CMAKE_CURRENT_BINARY_DIR}/sql_test.sh" @ONLY)
@@ -186,7 +186,7 @@ if(BUILD_SQL)
     add_test("sql" sql_test.sh)
     list(APPEND TEST_TARGET sql_test)
     target_include_directories(sql_test PRIVATE ${PostgreSQL_INCLUDE_DIRS})
-endif(BUILD_SQL)
+endif(SQL)
 add_custom_target(tests DEPENDS ${TEST_TARGET})
 
 # Examples
