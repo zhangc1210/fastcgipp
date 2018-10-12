@@ -164,7 +164,8 @@ void Fastcgipp::SQL::Connection::handler()
                                 query.statement = nullptr;
                                 query.parameters.reset();
                                 query.results.reset();
-                                query.callback(m_messageType);
+                                if(query.callback)
+                                    query.callback(m_messageType);
                                 break;
                             }
 

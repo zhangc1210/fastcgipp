@@ -2,7 +2,7 @@
  * @file       connection.hpp
  * @brief      Declares the Fastcgipp::SQL::Connection class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 7, 2018
+ * @date       October 12, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
