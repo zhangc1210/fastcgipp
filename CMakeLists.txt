@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(fastcgi++ VERSION 3.0 LANGUAGES CXX)
+project(fastcgi++ VERSION 3.1 LANGUAGES CXX)
 
 string(TIMESTAMP BUILD_TIME UTC)
 

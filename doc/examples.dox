@@ -32,4 +32,12 @@ client. It covers the following topics:
  - Flushing the output stream buffer to force a partial HTTP response.
  - Defining the number of concurrent request handling threads.
 
+\subpage sql : An example demonstrating the PostgreSQL facilities available in
+fastcgi++. Specifically it covers the following:
+ - Executing asynchronous SQL queries and pausing requests while waiting for
+   results.
+ - Communicating query parameters and results as strongly typed tuples to reduce
+   bug and exploit potential.
+ - Handling errors and exceptions associated with SQL queries and connections.
+
 */

@@ -1,0 +1,200 @@
+/*!
+
+\page sql SQL
+
+Here we'll be using the PostgreSQL facilities of fastcgi++ to do some simple SQL
+queries. To maximize throughput and scalability, we'll combine this with the
+asynchronous nature of fastcgi++'s request handling to ensure request handling
+threads aren't sitting idle waiting for SQL queries to complete. Since this is
+C++, we'll carry the strongly typed principles into parameter and result tuples
+reducing the probability of bugs and exploits. Rigorous error and exception
+handling will further bring down this "error floor". To summarize, we'll be:
+ - Executing asynchronous SQL queries and pausing requests while waiting for
+   results.
+ - Communicating query parameters and results as strongly typed tuples to reduce
+   bug and exploit potential.
+ - Handling errors and exceptions associated with SQL queries and connections.
+
+As always, the example can be build by:
+
+    make sql.fcgi
+
+Of course in order for this example to work, the PostgreSQL server needs to be
+in a state we're expecting. Specifically the necessary username, password,
+database, and table needs to be setup beforehand. From the source tree,
+executing
+
+    examples/sql-start.sh
+
+will do the necessary initialization under the assumption that the active user
+will have the capability of creating a new PostgreSQL user, database and table
+on the default server (PGHOST). Once you're done with the example, call
+
+    examples/sql-finish.sh
+
+to clean everything up.
+
+### Walkthrough ###
+
+First off, in order to define an SQL connection, we'll need to include this
+file.
+\snippet examples/sql.cpp Include
+
+Next we'll start defining our Request class as per the usual.
+\snippet examples/sql.cpp Request definition
+
+Since we're going to be doing some inserts, this next bit of stuff is just for
+the purpose of randomly selecting a string to be inserted.
+\snippet examples/sql.cpp Random string
+
+Now we're going to declare our SQL connection object. The object will manage the
+connections to the PostgreSQL server along with it's queries. It is static since
+it'll be shared between all request objects and often one might declare this in
+the global space so everything can share it.
+\snippet examples/sql.cpp Declare connection
+
+Every SQL query should have an associated Results object that lives in a shared
+pointer owned by the request object. This thing will contain all status and
+error information about how the query went and rows can be retrieved from it as
+std::tuple objects. The template parameters define the types of the tuple
+returned in row retrieval.
+
+This first Results object we're declaring is for an INSERT statement that will
+returns nothing. Thus we put _no_ types in the template parameters.
+\snippet examples/sql.cpp Declare insertResult
+
+This next Results object is for a SELECT statement that _will_ return rows. Rows
+will contain a time stamp, an IP address and a string of sorts. Since this is
+C++, we wants our columns to be strongly typed, not some hand-wavy string
+representation. The types of these columns are passed as template parameters.
+\snippet examples/sql.cpp Declare selectResults
+
+We'll breeze forward a bit here now. Since this request will be returning
+multiple times we'll need to maintain state information, thus the m_state
+variable. Let's get the response() function started.
+\snippet examples/sql.cpp Response
+
+So here we are at m_state=0 (first call to response()). This first thing we're
+going to do is insert some data into the database. The results shared pointer
+for said INSERT query is currently sitting empty so one must always make sure to
+allocate the results object into the shared pointer before doing a query.
+\snippet examples/sql.cpp Init insertResult
+
+Now we need to build the actual Query object for this data insertion. Query
+objects have four members.
+ - The statement member is simply a pointer to a c-style string that contains
+   the SQL statement itself. This must always be set.
+ - The parameters member is a shared pointer to a strongly typed tuple-like
+   object that contains parameters for the query. You can make one using the
+   make_Parameters() function or initialize it manually and set individual
+   parameters with std::get(). Make sure the types match up with those of the
+   statement itself. If there are no parameters associated with the query, this
+   member can be left uninitialized.
+ - The results member must always be set and we just assign it from the shared
+   pointer we've already set up earlier.
+ - The callback member is a std::function object that should be called once the
+   query is complete. We need to set this to our requests callback function if
+   we want our response() function to be called again once the query is
+   completed. If we _don't_ want a callback (maybe we don't care how the query
+   went), we can leave this uninitialized.
+
+\snippet examples/sql.cpp insert query
+
+So the Query object is built and all we need to do is tell the connection object
+to queue it up for execution. Calling queue on a connection can return either
+true or false. If it returns true, the connection object accepted it for
+execution. If it returns false, the connection object is not yet fully
+connected with the PostgreSQL server. Make sure to check for and handle this
+possibility.
+\snippet examples/sql.cpp insert queue
+
+So we're done with the first call to response(). Our INSERT query is queued up
+for execution and all this request can do now is wait for completion. Let's
+advance our state and return false giving up compute time to other requests.
+\snippet examples/sql.cpp finish 0
+
+We're back! The INSERT must be done if we're back in response() so let's ensure
+our results are what we were expecting them to be.
+
+The first thing we should always check after a query is complete is the result
+status. Since this query was a non-returning INSERT, our status should be
+"Command OK".
+\snippet examples/sql.cpp check insert status
+
+Now let's verify that the template parameters we supplied for the result row
+tuples matches the types associated with each column. Since this is a
+non-returning statement and we supplied zero template parameters, this simply
+checks to ensure the SQL result had "zero" columns. If everything is good, this
+function will return 0. If the column count doesn't match, it returns -1. If a
+specific column type doesn't match, the 1-indexed column number will be
+returned.
+\snippet examples/sql.cpp check insert rows
+
+Next let's see how many rows were returned with this query. Since this query was
+non-returning, we'll just make sure the row count is zero.
+\snippet examples/sql.cpp check insert row count
+
+Lastly we'll check on how many rows were _affected_ by this query. Since we
+attempted to insert a single row, this should be 1.
+\snippet examples/sql.cpp check insert affected row count
+
+Thus the INSERT query returned to us exactly as expected so let's move on to the
+SELECT query. Just as before, we need to initialize the result object associated
+with the SELECT query and then queue it up. This time, however, we need template
+parameters associated with the result columns. The query object is built up just
+as before but we can leave the parameters member uninitialized as there aren't
+any.
+\snippet examples/sql.cpp select query
+
+Alright! The query is queued up and, again, all this request has to do is wait
+for a reply so let's advance our state, return false and let another request use
+the compute resources. Beyond that, however, we'll also free up the result
+object associate with the INSERT query since we don't need it anymore.
+\snippet examples/sql.cpp finish 1
+
+Back again! This must mean that our SELECT query is done. Just like before, our
+first priority will be ensuring the validity of what we got back. Since we're
+expecting rows this time our status should be "Rows OK". Verification, again,
+_must_ be called before any row retrieval to ensure tuple types match column
+types. Given the circumstances of what we're doing, we should return _at least_
+one row.
+\snippet examples/sql.cpp check select
+
+So the SELECT query went well, now we can start outputting rows.
+\snippet examples/sql.cpp output
+
+Here's were we retrieve actual rows. What we get back is an std::tuple with the
+types provided as the Result template parameters. Since we're only going to read
+data from the row, let's make it a constant reference to avoid any unnecessary
+copying of data. This row retrieval method _should_ be quite computationally
+efficient. We access the columns of the row just as we access elements of an
+std::tuple.
+\snippet examples/sql.cpp get row
+
+So we're done defining the response, but we still haven't actually initialized
+the database connection. We'll accomplish this all in a little function that'll
+be called from main(). Two member functions are called on the SQL connection
+object. The first one initializes the internal data itself while the second
+spins up the handling thread that manages all connections to the PostgreSQL
+server and dispatches the queries. We'll shoot for allowing 8 concurrent queries
+with the database. Make sure to check the reference docs for these two
+functions.
+\snippet examples/sql.cpp start
+
+We also need something to stop the connection. The following little function
+first signals the connection handler thread to terminate and then waits until
+said termination is complete.
+\snippet examples/sql.cpp terminate
+
+Now we'll just define our statics.
+\snippet examples/sql.cpp statics
+
+And the last little bit. None of this should be of no surprise to you save the
+calls to start/terminate the database connection.
+\snippet examples/sql.cpp main
+
+### Full Source Code ###
+
+\include examples/sql.cpp
+
+*/

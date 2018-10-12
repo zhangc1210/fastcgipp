@@ -2,9 +2,15 @@
 
 **Author:** Eddie Carle
 
-**Version:** 3.0
+**Version:** 3.1alpha
 
 ## News ##
+
+**October 12, 2018** - PostgreSQL functionality is now complete and I'm really
+hoping to get people testing and giving feedback as soon as possible. I'm pretty
+proud of this particular iteration at integrating database functionality into
+fastcgi++ so go easy on me! Check out the example, unit test and reference
+documentation for further details.
 
 **April 5, 2018** - It's been long enough, 3.0 is now official and marked
 stable.
@@ -112,6 +118,6 @@ And of course we should run them as well.
 
     make test
 
-And hey, let's build the examples to!
+And hey, let's build the examples too!
 
     make examples
