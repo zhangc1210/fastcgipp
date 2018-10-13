@@ -2,7 +2,7 @@
  * @file       http.hpp
  * @brief      Declares elements of the HTTP protocol
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 9, 2018
+ * @date       October 13, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -116,7 +116,7 @@ namespace Fastcgipp
          *
          * @tparam charT Character type to use for strings
          *
-         * @date    May 3, 2017
+         * @date    October 13, 2018
          * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
          */
         template<class charT> struct Environment
@@ -184,6 +184,11 @@ namespace Fastcgipp
             //! Timestamp the client has for this document
             std::time_t ifModifiedSince;
 
+            //! Container with all other enironment variables
+            std::map<
+                std::basic_string<charT>,
+                std::basic_string<charT>> others;
+
             //! Container with all url-encoded cookie data
             std::multimap<
                 std::basic_string<charT>,
@@ -194,7 +199,7 @@ namespace Fastcgipp
                 std::basic_string<charT>,
                 std::basic_string<charT>> gets;
 
-            //! Container of none-file POST data
+            //! Container of non-file POST data
             std::multimap<
                 std::basic_string<charT>,
                 std::basic_string<charT>> posts;

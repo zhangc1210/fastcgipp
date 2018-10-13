@@ -54,6 +54,11 @@ Next we will take a look at what path info we were sent. This is available as a
 vector of strings.
 \snippet examples/echo.cpp Path Info
 
+Of course, there may have been some other non-standard environment parameters
+passed from the server so those have all been thrown into an associative map
+container linking names to values.
+\snippet examples/echo.cpp Other Environment
+
 Now let's take a look at the GET data. The GET data is stored in an associative
 multimap container linking names to values.
 \snippet examples/echo.cpp GET Data

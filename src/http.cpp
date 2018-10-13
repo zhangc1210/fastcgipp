@@ -2,7 +2,7 @@
  * @file       http.cpp
  * @brief      Defines elements of the HTTP protocol
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 9, 2018
+ * @date       October 13, 2018
  * @copyright  Copyright &copy; 2017 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -177,6 +177,8 @@ template<class charT> void Fastcgipp::Http::Environment<charT>::fill(
             value,
             end))
     {
+        bool processed=true;
+
         switch(value-name)
         {
         case 9:
@@ -210,6 +212,8 @@ template<class charT> void Fastcgipp::Http::Environment<charT>::fill(
                     }
                 }
             }
+            else
+                processed=false;
             break;
         case 11:
             if(std::equal(name, value, "HTTP_ACCEPT"))
@@ -228,6 +232,8 @@ template<class charT> void Fastcgipp::Http::Environment<charT>::fill(
                 vecToString(value, end, scriptName);
             else if(std::equal(name, value, "REQUEST_URI"))
                 vecToString(value, end, requestUri);
+            else
+                processed=false;
             break;
         case 12:
             if(std::equal(name, value, "HTTP_REFERER"))
@@ -250,10 +256,14 @@ template<class charT> void Fastcgipp::Http::Environment<charT>::fill(
             }
             else if(std::equal(name, value, "QUERY_STRING"))
                 decodeUrlEncoded(value, end, gets);
+            else
+                processed=false;
             break;
         case 13:
             if(std::equal(name, value, "DOCUMENT_ROOT"))
                 vecToString(value, end, root);
+            else
+                processed=false;
             break;
         case 14:
             if(std::equal(name, value, "REQUEST_METHOD"))
@@ -323,22 +333,30 @@ template<class charT> void Fastcgipp::Http::Environment<charT>::fill(
             }
             else if(std::equal(name, value, "CONTENT_LENGTH"))
                 contentLength=atoi(&*value, &*end);
+            else
+                processed=false;
             break;
         case 15:
             if(std::equal(name, value, "HTTP_USER_AGENT"))
                 vecToString(value, end, userAgent);
             else if(std::equal(name, value, "HTTP_KEEP_ALIVE"))
                 keepAlive=atoi(&*value, &*end);
+            else
+                processed=false;
             break;
         case 18:
             if(std::equal(name, value, "HTTP_IF_NONE_MATCH"))
                 etag=atoi(&*value, &*end);
             else if(std::equal(name, value, "HTTP_AUTHORIZATION"))
                 vecToString(value, end, authorization);
+            else
+                processed=false;
             break;
         case 19:
             if(std::equal(name, value, "HTTP_ACCEPT_CHARSET"))
                 vecToString(value, end, acceptCharsets);
+            else
+                processed=false;
             break;
         case 20:
             if(std::equal(name, value, "HTTP_ACCEPT_LANGUAGE"))
@@ -371,6 +389,8 @@ template<class charT> void Fastcgipp::Http::Environment<charT>::fill(
                     groupStart = groupEnd+1;
                 }
             }
+            else
+                processed=false;
             break;
         case 22:
             if(std::equal(name, value, "HTTP_IF_MODIFIED_SINCE"))
@@ -387,7 +407,17 @@ template<class charT> void Fastcgipp::Http::Environment<charT>::fill(
                         "%a, %d %b %Y %H:%M:%S GMT");
                 ifModifiedSince = std::mktime(&time) - timezone;
             }
+            else
+                processed=false;
             break;
+        }
+        if(!processed)
+        {
+            std::basic_string<charT> nameString;
+            std::basic_string<charT> valueString;
+            vecToString(name, value, nameString);
+            vecToString(value, end, valueString);
+            others[nameString] = valueString;
         }
         data = end;
     }

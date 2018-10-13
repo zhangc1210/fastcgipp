@@ -117,10 +117,23 @@ L"<html>"
         L"<p>No Path Info</p>";
         //! [Path Info]
 
+        //! [Other Environment]
+        out <<
+        L"<h2>Other Environment Parameters</h2>";
+        if(!environment().others.empty())
+            for(const auto& other: environment().others)
+                out << L"<b>" << Encoding::HTML << other.first << Encoding::NONE
+                    << L":</b> " << Encoding::HTML << other.second
+                    << Encoding::NONE << L"<br />";
+        else
+            out <<
+        L"<p>No Other Environment Parameters</p>";
+        //! [Other Environment]
+
         //! [GET Data]
         out <<
         L"<h2>GET Data</h2>";
-        if(environment().gets.size())
+        if(!environment().gets.empty())
             for(const auto& get: environment().gets)
                 out << L"<b>" << Encoding::HTML << get.first << Encoding::NONE
                     << L":</b> " << Encoding::HTML << get.second
@@ -133,7 +146,7 @@ L"<html>"
         //! [POST Data]
         out <<
         L"<h2>POST Data</h2>";
-        if(environment().posts.size())
+        if(!environment().posts.empty())
             for(const auto& post: environment().posts)
                 out << L"<b>" << Encoding::HTML << post.first << Encoding::NONE
                     << L":</b> " << Encoding::HTML << post.second
@@ -146,7 +159,7 @@ L"<html>"
         //! [Cookies]
         out <<
         L"<h2>Cookies</h2>";
-        if(environment().cookies.size())
+        if(!environment().cookies.empty())
             for(const auto& cookie: environment().cookies)
                 out << L"<b>" << Encoding::HTML << cookie.first
                     << Encoding::NONE << L":</b> " << Encoding::HTML
@@ -159,7 +172,7 @@ L"<html>"
         //! [Files]
         out <<
         L"<h2>Files</h2>";
-        if(environment().files.size())
+        if(!environment().files.empty())
         {
             for(const auto& file: environment().files)
             {
