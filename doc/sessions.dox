@@ -1,0 +1,51 @@
+/*!
+
+\page sessions Sessions
+
+This little tutorial will cover the built in session handling functionality
+included with fastcgi++. There really isn't much to it but we'll nonetheless be
+covering the following:
+ - Passing session ids to and from clients with cookies
+ - Storing and recovering session data
+
+Since the sessions container will persist in memory as opposed to some sort of
+database, it will only be accessible to the process that owns it. This means
+that if the webserver takes it upon itself to spawn multiple processes, sessions
+will behave inconsistently. Since well designed and implemented fastcgi++
+processes should scale well, there should not be a need to spawn multiple
+processes to "share the load". This default behaviour of most webservers is a
+relic from the days when FastCGI apps were inefficient garbage and should be
+disabled when using fastcgi++. If you're using mod_fastcgi with apache this
+means adding:
+
+    FastCgiConfig -maxClassProcesses 1
+
+whereas for mod_fcgid you'll need
+
+    FcgidMaxProcessesPerClass 1
+
+As you might assume, build the example with
+
+    make sessions.fcgi
+
+### Walkthrough ###
+
+\snippet examples/sessions.cpp Start
+\snippet examples/sessions.cpp session Declaration
+\snippet examples/sessions.cpp Response
+\snippet examples/sessions.cpp With cookie
+\snippet examples/sessions.cpp logout
+\snippet examples/sessions.cpp normal session
+\snippet examples/sessions.cpp finish session
+\snippet examples/sessions.cpp login
+\snippet examples/sessions.cpp normal sessionless
+\snippet examples/sessions.cpp output
+\snippet examples/sessions.cpp construct
+\snippet examples/sessions.cpp session Definition
+\snippet examples/sessions.cpp manager
+
+### Full Source Code ###
+
+\include examples/sessions.cpp
+
+*/

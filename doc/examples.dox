@@ -32,6 +32,11 @@ client. It covers the following topics:
  - Flushing the output stream buffer to force a partial HTTP response.
  - Defining the number of concurrent request handling threads.
 
+\subpage sessions : A simple example showing the session functionality in
+fastcgi++. It covers the following:
+ - Passing session ids to and from clients with cookies
+ - Storing and recovering session data
+
 \subpage sql : An example demonstrating the PostgreSQL facilities available in
 fastcgi++. Specifically it covers the following:
  - Executing asynchronous SQL queries and pausing requests while waiting for

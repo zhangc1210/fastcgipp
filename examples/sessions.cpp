@@ -1,22 +1,31 @@
+//! [Start]
 #include <fastcgi++/request.hpp>
 
 class Sessions: public Fastcgipp::Request<char>
 {
-	static Fastcgipp::Http::Sessions<std::string> s_sessions;
+    //! [Start]
+    //! [session Declaration]
+    static Fastcgipp::Http::Sessions<std::string> s_sessions;
     std::shared_ptr<const std::string> m_session;
     Fastcgipp::Http::SessionId m_sid;
+    //! [session Declaration]
 
-	bool response()
-	{
+    //! [Response]
+    bool response()
+    {
         using Fastcgipp::Encoding;
-		const auto command = environment().gets.find("cmd");
+        const auto command = environment().gets.find("cmd");
         const auto sessionCookie = environment().cookies.find("sid");
+        //! [Response]
+        //! [With cookie]
         if(sessionCookie != environment().cookies.cend())
         {
             m_sid = sessionCookie->second;
             m_session = s_sessions.get(m_sid);
             if(m_session)
             {
+                //! [With cookie]
+                //! [logout]
                 if(command!=environment().gets.cend()
                         && command->second=="logout")
                 {
@@ -25,6 +34,8 @@ class Sessions: public Fastcgipp::Request<char>
                     s_sessions.erase(m_sid);
                     handleNoSession();
                 }
+                //! [logout]
+                //! [normal session]
                 else
                 {
                     out << "Set-Cookie: sid=" << Encoding::URL
@@ -32,11 +43,15 @@ class Sessions: public Fastcgipp::Request<char>
                         << "; path=/; expires=" << s_sessions.expiration() << "\n";
                     handleSession();
                 }
+                //! [normal session]
 
+                //! [finish session]
                 return true;
             }
         }
+        //! [finish session]
 
+        //! [login]
         if(command!=environment().gets.cend() && command->second=="login")
         {
             std::shared_ptr<std::string> session(new std::string);
@@ -54,69 +69,79 @@ class Sessions: public Fastcgipp::Request<char>
                 << "\n";
             handleSession();
         }
+        //! [login]
+        //! [normal sessionless]
         else
             handleNoSession();
 
-		return true;
-	}
+        return true;
+    }
+    //! [normal sessionless]
 
+    //! [output]
     void header()
     {
         out <<
 "Content-Type: text/html; charset=ISO-8859-1\r\n\r\n"
 "<!DOCTYPE html>\n"
 "<html lang='en'>"
-	"<head>"
+    "<head>"
         "<meta charset='ISO-8859-1' />"
-		"<title>fastcgi++: Sessions</title>"
-	"</head>"
-	"<body>";
+        "<title>fastcgi++: Sessions</title>"
+    "</head>"
+    "<body>";
     }
 
     void footer()
     {
-		out <<
+        out <<
         "<p>There are " << s_sessions.size() << " sessions open</p>"
-	"</body>"
+    "</body>"
 "</html>";
     }
 
-	void handleSession()
-	{
+    void handleSession()
+    {
         using Fastcgipp::Encoding;
         header();
-		out <<
-		"<p>We are currently in a session. The session id is "
+        out <<
+        "<p>We are currently in a session. The session id is "
             << m_sid << " and the session data is \"" << Encoding::HTML
             << *m_session << Encoding::NONE << "\"."
-		"<p>Click <a href='?cmd=logout'>here</a> to logout</p>";
+        "<p>Click <a href='?cmd=logout'>here</a> to logout</p>";
         footer();
-	}
+    }
 
-	void handleNoSession()
-	{
+    void handleNoSession()
+    {
         header();
         out <<
-		"<p>We are currently not in a session.</p>"
-		"<form action='?cmd=login' method='post' "
+        "<p>We are currently not in a session.</p>"
+        "<form action='?cmd=login' method='post' "
                 "enctype='application/x-www-form-urlencoded' "
                 "accept-charset='ISO-8859-1'>"
-			"<div>"
-				"Text: <input type='text' name='data' value='Hola señor, usted "
+            "<div>"
+                "Text: <input type='text' name='data' value='Hola señor, usted "
                     "me almacenó en una sesión' />"
-				"<input type='submit' name='submit' value='submit' />"
-			"</div>"
-		"</form>";
+                "<input type='submit' name='submit' value='submit' />"
+            "</div>"
+        "</form>";
         footer();
-	}
+    }
 public:
+    //! [output]
+    //! [construct]
     Sessions():
         Fastcgipp::Request<char>(256)
     {}
 };
+//! [construct]
 
+//! [session Definition]
 Fastcgipp::Http::Sessions<std::string> Sessions::s_sessions(3600);
+//! [session Definition]
 
+//! [manager]
 #include <fastcgi++/manager.hpp>
 
 int main()
@@ -129,3 +154,4 @@ int main()
 
     return 0;
 }
+//! [manager]

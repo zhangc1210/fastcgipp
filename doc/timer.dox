@@ -23,7 +23,7 @@ this means adding
 
     FastCgiConfig -flush
 
-to your server's configuration whereas with mod_fcgi use
+to your server's configuration whereas with mod_fcgid use
 
     FcgidOutputBufferSize 0
 
