@@ -2,7 +2,7 @@
  * @file       request.hpp
  * @brief      Declares the Request class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 3, 2017
+ * @date       October 13, 2018
  * @copyright  Copyright &copy; 2017 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -94,7 +94,7 @@ namespace Fastcgipp
      *
      * @tparam charT Character type for internal processing (wchar_t or char)
      *
-     * @date    May 3, 2017
+     * @date    October 13, 2018
      * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
      */
     template<class charT> class Request: public Request_base
@@ -149,8 +149,14 @@ namespace Fastcgipp
         virtual ~Request() {}
 
     protected:
-        //! Accessor for the HTTP environment data
+        //! Const accessor for the HTTP environment data
         const Http::Environment<charT>& environment() const
+        {
+            return m_environment;
+        }
+
+        //! Accessor for the HTTP environment data
+        Http::Environment<charT>& environment()
         {
             return m_environment;
         }
