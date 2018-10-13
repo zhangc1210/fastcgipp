@@ -7,10 +7,10 @@
 ## News ##
 
 **October 12, 2018** - PostgreSQL functionality is now complete and I'm really
-hoping to get people testing and giving feedback as soon as possible. I'm pretty
-proud of this particular iteration at integrating database functionality into
-fastcgi++ so go easy on me! Check out the example, unit test and reference
-documentation for further details.
+hoping to get people testing and giving feedback as soon as possible. I'm
+pretty proud of this particular iteration at integrating database functionality
+into fastcgi++ so go easy on me! Check out the [example][15], [unit test][16]
+and [reference documentation][17] for further details.
 
 **April 5, 2018** - It's been long enough, 3.0 is now official and marked
 stable.
@@ -31,7 +31,10 @@ version scroll down to the releases section. If you'd like to read a bit more
 about the rewrite and fastcgi++ in general, check out [[Ten years of
 fastcgi++][1]].
 
-[1]: http://eddie.isatec.ca/2016/04/10/ten-years-of-fastcgi++.html
+[1]: https://eddie.isatec.ca/2016/04/10/ten-years-of-fastcgi++.html
+[15]: https://isatec.ca/fastcgipp/sql.html
+[16]: https://github.com/eddic/fastcgipp/blob/master/tests/sql.cpp
+[17]: https://isatec.ca/fastcgipp/namespaceFastcgipp_1_1SQL.html
 
 ## About ##
 
@@ -66,7 +69,7 @@ the risk and try the following links.
 [10]: https://github.com/eddic/fastcgipp/tree/2.1
 [11]: https://github.com/eddic/fastcgipp/tree/2.0
 [12]: https://github.com/eddic/fastcgipp/archive/3.0.tar.gz
-[13]: http://isatec.ca/fastcgipp
+[13]: https://isatec.ca/fastcgipp
 [14]: https://github.com/eddic/fastcgipp/tree/3.0
 
 ## Building ##
