@@ -1,3 +1,4 @@
+//! See https://isatec.ca/fastcgipp/echo.html
 //! [Request definition]
 #include <fastcgi++/request.hpp>
 #include <iomanip>

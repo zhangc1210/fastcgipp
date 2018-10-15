@@ -1,3 +1,4 @@
+//! See https://isatec.ca/fastcgipp/sessions.html
 //! [Start]
 #include <fastcgi++/request.hpp>
 

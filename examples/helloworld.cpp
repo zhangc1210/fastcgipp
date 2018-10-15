@@ -1,3 +1,4 @@
+//! See https://isatec.ca/fastcgipp/helloWorld.html
 //! [Request definition]
 #include <fastcgi++/request.hpp>
 

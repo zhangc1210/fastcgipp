@@ -1,3 +1,4 @@
+//! See https://isatec.ca/fastcgipp/sql.html
 //! [Include]
 #include <fastcgi++/sql/connection.hpp>
 //! [Include]

@@ -1,3 +1,4 @@
+//! https://isatec.ca/fastcgipp/gnu.html
 //! [Request definition]
 #include <fastcgi++/request.hpp>
 #include <iomanip>

@@ -1,3 +1,4 @@
+//! See https://isatec.ca/fastcgipp/timer.html
 //! [Request definition]
 #include <thread>
 #include <condition_variable>
