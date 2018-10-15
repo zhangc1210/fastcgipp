@@ -5,7 +5,7 @@
 This little tutorial will cover the built in session handling functionality
 included with fastcgi++. There really isn't much to it but we'll nonetheless be
 covering the following:
- - Passing session ids to and from clients with cookies
+ - Passing session IDs to and from clients via cookies
  - Storing and recovering session data
 
 Since the sessions container will persist in memory as opposed to some sort of
@@ -30,18 +30,61 @@ As you might assume, build the example with
 
 ### Walkthrough ###
 
+First off let's get started defining our Request class.
 \snippet examples/sessions.cpp Start
+
+Now we shall declare our static sessions container. The template argument is the
+data we want to store in it. For this example we'll just store an std::string in
+each session. The two non-static declarations that follow are a shared pointer
+to the session data itself and the session ID value.
 \snippet examples/sessions.cpp session Declaration
+
+The first thing we'll do in our response is check for a login/logout command in
+the GET data. Next we'll check the cookies for a session ID string.
 \snippet examples/sessions.cpp Response
+
+_If_ we've got a session ID cookie, let's build our session ID member and use it
+to recover our session data. If the session associated with the ID doesn't exist
+or has expired, an invalid shared pointer is returned. We'll use this as a test
+to check for session validity.
 \snippet examples/sessions.cpp With cookie
+
+So the session data is valid, let us see if we were issued a "logout" command.
+If so, we'll purge the session from the container and tell the client to delete
+the cookie.
 \snippet examples/sessions.cpp logout
+
+If we weren't issued a logout command let's just refresh the expiry of the
+cookie client side. Note that the expiration of the server side session data was
+refresh when  Fastcgipp::Http::Sessions::get() was called earlier.
 \snippet examples/sessions.cpp normal session
+
+So _if_ the session turned out valid we're now done and can return true. If not,
+however, we'll break out and keep going.
 \snippet examples/sessions.cpp finish session
+
+If we're here, that means there is no valid session associated with this
+request. Let's see if a login command was issued. If it was, we'll allocate some
+new session data and assign the string from post data sent from the client. Next
+we insert it into our static session container and generate a session ID in the
+process. Finally, set a cookie on the client with the session ID.
 \snippet examples/sessions.cpp login
+
+No login command? Just output the "no session" stuff. Either way we're done.
 \snippet examples/sessions.cpp normal sessionless
+
+The following member functions just handle the actually HTML output.
 \snippet examples/sessions.cpp output
+
+Quick note on the request constructor. We are allowing 256 bytes of
+possible data to show up via post.
 \snippet examples/sessions.cpp construct
+
+Now we actually define our static sessions container. Note the constructor
+argument. This is the amount of seconds until sessions expire.
 \snippet examples/sessions.cpp session Definition
+
+Everything else should be no surprise to the reader.
 \snippet examples/sessions.cpp manager
 
 ### Full Source Code ###

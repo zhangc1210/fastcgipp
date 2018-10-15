@@ -59,7 +59,7 @@ class Sessions: public Fastcgipp::Request<char>
             if(sessionData == environment().posts.cend())
                 *session = "WTF we weren't given session data!!!";
             else
-                *session = sessionData->second;
+                *session = std::move(sessionData->second);
 
             m_session = session;
             m_sid = s_sessions.generate(m_session);
