@@ -2,11 +2,10 @@
  * @file       fcgistreambuf.cpp
  * @brief      Defines the FcgiStreambuf class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 30, 2018
+ * @date       November 27, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
-
 /*******************************************************************************
 * Copyright (C) 2018 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
@@ -37,13 +36,13 @@ namespace Fastcgipp
     template <> bool
     Fastcgipp::FcgiStreambuf<wchar_t, std::char_traits<wchar_t>>::emptyBuffer()
     {
-        const std::codecvt_utf8<char_type> converter;
+        const std::codecvt_utf8<wchar_t> converter;
         std::codecvt_base::result result;
         Block record;
         size_t count;
         mbstate_t state = mbstate_t();
         char* toNext;
-        const char_type* fromNext;
+        const wchar_t* fromNext;
 
         while((count = this->pptr() - this->pbase()) != 0)
         {
@@ -121,18 +120,6 @@ namespace Fastcgipp
 
         return true;
     }
-}
-
-template <class charT, class traits>
-typename Fastcgipp::FcgiStreambuf<charT, traits>::int_type
-Fastcgipp::FcgiStreambuf<charT, traits>::overflow(int_type c)
-{
-    if(!emptyBuffer())
-        return traits_type::eof();
-    if(!traits_type::eq_int_type(c, traits_type::eof()))
-        return this->sputc(c);
-    else
-        return traits_type::not_eof(c);
 }
 
 template <class charT, class traits>

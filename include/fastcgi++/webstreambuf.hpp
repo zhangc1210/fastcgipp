@@ -2,13 +2,12 @@
  * @file       webstreambuf.hpp
  * @brief      Declares the WebStreambuf stuff
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 2, 2016
- * @copyright  Copyright &copy; 2016 Eddie Carle. This project is released under
+ * @date       November 27, 2018
+ * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
-
 /*******************************************************************************
-* Copyright (C) 2016 Eddie Carle [eddie@isatec.ca]                             *
+* Copyright (C) 2018 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
 * This file is part of fastcgi++.                                              *
 *                                                                              *
@@ -199,12 +198,14 @@ namespace Fastcgipp
      * @tparam charT Character type (char or wchar_t)
      * @tparam traits Character traits
      *
-     * @date    May 2, 2016
+     * @date    November 27, 2018
      * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
      */
     template <class charT, class traits = std::char_traits<charT>>
     class WebStreambuf: public std::basic_streambuf<charT, traits>
     {
+        typedef typename std::basic_streambuf<charT, traits>::int_type int_type;
+        typedef typename std::basic_streambuf<charT, traits>::traits_type traits_type;
         typedef typename std::basic_streambuf<charT, traits>::char_type char_type;
 
         //! Needed for html encoding of stream data
@@ -222,7 +223,23 @@ namespace Fastcgipp
         friend std::basic_ostream<charT, traits>& operator<< <charT, traits>(
                 std::basic_ostream<charT, traits>& os,
                 const Encoding& encoding);
-    public:
+
+        int sync()
+        {
+            return emptyBuffer()?0:-1;
+        }
+
+        int_type overflow(int_type c = traits_type::eof());
+
+    protected:
+        //! Code converts, packages and deals with all data in the stream buffer
+        virtual bool emptyBuffer() =0;
+
+        ~WebStreambuf()
+        {
+            sync();
+        }
+
         WebStreambuf():
             m_encoding(Encoding::NONE)
         {}
