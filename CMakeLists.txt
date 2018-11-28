@@ -15,7 +15,8 @@ set(SRC_FILES
     "src/webstreambuf.cpp"
     "src/request.cpp"
     "src/manager.cpp"
-    "src/address.cpp")
+    "src/address.cpp"
+    "src/email.cpp")
 set(TESTS
     "protocol"
     "http"
