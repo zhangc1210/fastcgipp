@@ -16,6 +16,7 @@ set(SRC_FILES
     "src/request.cpp"
     "src/manager.cpp"
     "src/address.cpp"
+    "src/mailer.cpp"
     "src/email.cpp")
 set(TESTS
     "protocol"
