@@ -122,7 +122,7 @@ std::unique_lock<std::mutex>Fastcgipp::Request<charT>::handler()
                         if(!inProcessor() && !m_environment.parsePostBuffer())
                         {
                             WARNING_LOG("Unknown content type from client")
-                            errorHandler();
+                            unknownContentErrorHandler();
                             complete();
                             goto exit;
                         }
@@ -196,6 +196,22 @@ template<class charT> void Fastcgipp::Request<charT>::bigPostErrorHandler()
     "</head>"\
     "<body>"\
         "<h1>413 Request Entity Too Large</h1>"\
+    "</body>"\
+"</html>";
+}
+
+template<class charT> void Fastcgipp::Request<charT>::unknownContentErrorHandler()
+{
+        out << \
+"Status: 415 Unsupported Media Type\n"\
+"Content-Type: text/html; charset=utf-8\r\n\r\n"\
+"<!DOCTYPE html>"\
+"<html lang='en'>"\
+    "<head>"\
+        "<title>415 Unsupported Media Type</title>"\
+    "</head>"\
+    "<body>"\
+        "<h1>415 Unsupported Media Type</h1>"\
     "</body>"\
 "</html>";
 }

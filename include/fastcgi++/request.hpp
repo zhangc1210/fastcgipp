@@ -184,6 +184,14 @@ namespace Fastcgipp
          */
         virtual void bigPostErrorHandler();
 
+        //! Called when receiving an unknown content type
+        /*!
+         * This function is called when the client sends an unknown content
+         * type. By default it will send a standard 415 Unsupported Media Type
+         * message to the user.  Override for more specialized purposes.
+         */
+        virtual void unknownContentErrorHandler();
+
         //! See the requests role
         Protocol::Role role() const
         {
