@@ -2,7 +2,7 @@
  * @file       fcgistreambuf.hpp
  * @brief      Declares the FcgiStreambuf class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       November 27, 2018
+ * @date       December 7, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -48,7 +48,7 @@ namespace Fastcgipp
      * @tparam charT Character type (char or wchar_t)
      * @tparam traits Character traits
      *
-     * @date    November 27, 2018
+     * @date    December 7, 2018
      * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
      */
     template <class charT, class traits = std::char_traits<charT>>
@@ -58,6 +58,11 @@ namespace Fastcgipp
         FcgiStreambuf()
         {
             this->setp(m_buffer, m_buffer+s_buffSize);
+        }
+
+        ~FcgiStreambuf()
+        {
+            emptyBuffer();
         }
 
         //! Configure the stream buffer

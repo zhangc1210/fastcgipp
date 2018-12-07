@@ -2,7 +2,7 @@
  * @file       email.hpp
  * @brief      Declares types for composing emails
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       November 27, 2018
+ * @date       December 7, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -113,6 +113,11 @@ namespace Fastcgipp
 
             //! Empty/flush the buffer
             bool emptyBuffer();
+
+            ~StreamBuffer()
+            {
+                emptyBuffer();
+            }
         };
 
         //! Specialized email body stream buffer for wchar_t
@@ -130,6 +135,11 @@ namespace Fastcgipp
 
             //! Empty/flush the buffer
             bool emptyBuffer();
+
+            ~StreamBuffer()
+            {
+                emptyBuffer();
+            }
         };
 
         //! Object for composing email messages
