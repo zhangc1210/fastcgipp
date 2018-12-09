@@ -414,6 +414,17 @@ void Fastcgipp::Manager_base::push(Protocol::RequestId id, Message&& message)
     m_wake.notify_one();
 }
 
+void Fastcgipp::Manager_base::resizeThreads(unsigned threads)
+{
+    if(m_stop)
+    {
+        m_threads.resize(threads);
+#if FASTCGIPP_LOG_LEVEL > 3
+        m_activeThreads = threads;
+#endif
+    }
+}
+
 Fastcgipp::Manager_base::~Manager_base()
 {
     instance=nullptr;

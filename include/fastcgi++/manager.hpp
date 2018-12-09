@@ -182,6 +182,17 @@ namespace Fastcgipp
             m_transceiver.reuseAddress(value);
         }
 
+        //! Call before start to change the number of threads
+        /*!
+         * If the Manager is already running this will do nothing.
+         *
+         * @param[in] threads Number of threads to use for request handling
+         *
+         * @sa Manager_base()
+         * @sa start()
+         */
+        void resizeThreads(unsigned threads);
+
     protected:
         //! Make a request object
         virtual std::unique_ptr<Request_base> makeRequest(
