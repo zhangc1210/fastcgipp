@@ -29,6 +29,7 @@ set(EXAMPLES
     "echo"
     "gnu"
     "sessions"
+    "email"
     "timer")
 
 # Set up our log level for fastcgi++/log.hpp
