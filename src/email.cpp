@@ -2,7 +2,7 @@
  * @file       email.cpp
  * @brief      Defines types for composing emails
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       November 27, 2018
+ * @date       December 22, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -118,6 +118,12 @@ void Fastcgipp::Mail::Email<charT>::close()
     this->setstate(std::ios_base::failbit);
     this->setstate(std::ios_base::badbit);
 }
+
+template<class charT>
+Fastcgipp::Mail::Email<charT>::Email():
+    std::basic_ostream<charT>(&m_streamBuffer),
+    m_streamBuffer(m_data.body)
+{}
 
 template <>
 void Fastcgipp::Mail::Email<wchar_t>::to(const std::wstring& address)

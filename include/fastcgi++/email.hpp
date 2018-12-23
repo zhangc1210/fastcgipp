@@ -2,7 +2,7 @@
  * @file       email.hpp
  * @brief      Declares types for composing emails
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       December 7, 2018
+ * @date       December 22, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -154,7 +154,7 @@ namespace Fastcgipp
          *
          * @tparam charT Character type for internal processing (wchar_t or
          *               char)
-         * @date    November 27, 2018
+         * @date    December 22, 2018
          * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
          */
         template <class charT>
@@ -167,10 +167,7 @@ namespace Fastcgipp
             void close();
 
         public:
-            Email():
-                std::basic_ostream<charT>(&m_streamBuffer),
-                m_streamBuffer(m_data.body)
-            {}
+            Email();
 
             //! Set the to address
             void to(const std::basic_string<charT>& address);
