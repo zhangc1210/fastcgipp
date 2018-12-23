@@ -74,7 +74,7 @@ bool Fastcgipp::Mail::Email_base::StreamBuffer<wchar_t>::emptyBuffer()
     char* toNext;
     const wchar_t* fromNext;
 
-    if(m_body.back().size == Chunk::capacity)
+    if(m_body.empty() || m_body.back().size == Chunk::capacity)
         m_body.emplace_back();
 
     while(true)
