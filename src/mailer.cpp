@@ -2,7 +2,7 @@
  * @file       mailer.cpp
  * @brief      Defines types for sending emails
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       November 28, 2018
+ * @date       December 22, 2018
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -93,16 +93,16 @@ void Fastcgipp::Mail::Mailer::handler()
 
                     case EHLO:
                     {
-                        if(m_line == "250-EIGHTBITMIME")
+                        if(m_line == "250-8BITMIME")
                         {
-                            m_state == EIGHTBIT;
+                            m_state = EIGHTBIT;
                             break;
                         }
                         else if(m_line.size()>=4 && m_line.substr(0,3)=="250")
                         {
                             if(m_line[3] == ' ')
                             {
-                                ERROR_LOG("SMTP server does not support EIGHTBIT.")
+                                ERROR_LOG("SMTP server does not support 8BITMIME.")
                             }
                             else if(m_line[3] == '-')
                                 break;
