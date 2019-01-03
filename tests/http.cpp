@@ -407,7 +407,7 @@ int main()
             FAIL_LOG("Fastcgipp::Http::percentEscapedToRealBytes()")
     }
 
-    // Testing Fastcgipp::Http::decodeUrlEncoded()
+    // Testing Fastcgipp::Http::decodeUrlEncoded() #1
     {
         const char input[] =
             "%268c2LuPm=ccPd%5E92c%24Qd_1ab41hq%5EHDjHp!t!NJBa"
@@ -437,7 +437,51 @@ int main()
                 output);
 
         if(output != properOutput)
-            FAIL_LOG("Fastcgipp::Http::decodeUrlEncoded()")
+            FAIL_LOG("Fastcgipp::Http::decodeUrlEncoded() #1")
+    }
+
+    // Testing Fastcgipp::Http::decodeUrlEncoded() #2
+    {
+        const char input[] = "test1=test&test2=test&";
+
+        std::multimap<std::wstring, std::wstring> properOutput;
+        properOutput.insert(std::pair<std::wstring, std::wstring>(
+                    L"test1",
+                    L"test"));
+        properOutput.insert(std::pair<std::wstring, std::wstring>(
+                    L"test2",
+                    L"test"));
+
+        std::multimap<std::wstring, std::wstring> output;
+        Fastcgipp::Http::decodeUrlEncoded(
+                input,
+                input+sizeof(input)-1,
+                output);
+
+        if(output != properOutput)
+            FAIL_LOG("Fastcgipp::Http::decodeUrlEncoded() #2")
+    }
+
+    // Testing Fastcgipp::Http::decodeUrlEncoded() #3
+    {
+        const char input[] = "test1=test&test2=test&";
+
+        std::multimap<std::string, std::string> properOutput;
+        properOutput.insert(std::pair<std::string, std::string>(
+                    "test1",
+                    "test"));
+        properOutput.insert(std::pair<std::string, std::string>(
+                    "test2",
+                    "test"));
+
+        std::multimap<std::string, std::string> output;
+        Fastcgipp::Http::decodeUrlEncoded(
+                input,
+                input+sizeof(input)-1,
+                output);
+
+        if(output != properOutput)
+            FAIL_LOG("Fastcgipp::Http::decodeUrlEncoded() #3")
     }
 
     // Testing Fastcgipp::Http::Environment

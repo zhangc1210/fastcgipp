@@ -2,12 +2,12 @@
  * @file       http.cpp
  * @brief      Defines elements of the HTTP protocol
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 13, 2018
- * @copyright  Copyright &copy; 2017 Eddie Carle. This project is released under
+ * @date       January 3, 2019
+ * @copyright  Copyright &copy; 2019 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
 /*******************************************************************************
-* Copyright (C) 2017 Eddie Carle [eddie@isatec.ca]                             *
+* Copyright (C) 2019 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
 * This file is part of fastcgi++.                                              *
 *                                                                              *
@@ -711,67 +711,41 @@ template<class charT> void Fastcgipp::Http::decodeUrlEncoded(
     const size_t fieldSeparatorSize = std::strlen(fieldSeparator);
     const char* const fieldSeparatorEnd = fieldSeparator+fieldSeparatorSize;
 
-    enum EndState
-    {
-        NONE,
-        END,
-        SEPARATOR
-    };
-    EndState endState;
+    const char* nameStart = data;
+    const char* nameEnd = dataEnd;
+    const char* valueStart;
+    const char* valueEnd;
 
-    auto nameStart(data);
-    auto nameEnd(dataEnd);
-    auto valueStart(dataEnd);
-    auto valueEnd(dataEnd);
-
-    while(data < dataEnd)
+    while(data <= dataEnd)
     {
         if(nameEnd != dataEnd)
         {
-            if(data+1 == dataEnd)
-            {
-                endState = END;
-                valueEnd = data+1;
-            }
-            else if(data+fieldSeparatorSize<=dataEnd
-                        && std::equal(fieldSeparator, fieldSeparatorEnd, data))
-            {
-                endState = SEPARATOR;
-                valueEnd = data;
-            }
-            else
-                endState = NONE;
-
-            if(endState != NONE)
+            if(data == dataEnd || (data+fieldSeparatorSize<=dataEnd
+                        && std::equal(fieldSeparator, fieldSeparatorEnd, data)))
             {
                 valueEnd=percentEscapedToRealBytes(
                         valueStart,
-                        valueEnd,
+                        data,
                         buffer.get());
                 vecToString(buffer.get(), valueEnd, value);
-
                 output.insert(std::make_pair(
                             std::move(name),
                             std::move(value)));
 
                 nameStart = data+fieldSeparatorSize;
-                data += fieldSeparatorSize-1;
+                data += fieldSeparatorSize;
                 nameEnd = dataEnd;
-                valueStart = dataEnd;
-                valueEnd = dataEnd;
+                continue;
             }
         }
-        else
+        else if(data!=dataEnd && *data=='=')
         {
-            if(*data == '=')
-            {
-                nameEnd = percentEscapedToRealBytes(
-                        nameStart,
-                        data,
-                        buffer.get());
-                vecToString(buffer.get(), nameEnd, name);
-                valueStart=data+1;
-            }
+            nameEnd = percentEscapedToRealBytes(
+                    nameStart,
+                    data,
+                    buffer.get());
+            vecToString(buffer.get(), nameEnd, name);
+            valueStart=data+1;
         }
         ++data;
     }
