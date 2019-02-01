@@ -262,7 +262,7 @@ namespace Fastcgipp
          *
          * @return Return true if you've processed the data.
          */
-        bool virtual inProcessor()
+        virtual bool inProcessor()
         {
             return false;
         }
