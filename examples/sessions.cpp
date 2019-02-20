@@ -122,8 +122,8 @@ class Sessions: public Fastcgipp::Request<char>
                 "enctype='application/x-www-form-urlencoded' "
                 "accept-charset='ISO-8859-1'>"
             "<div>"
-                "Text: <input type='text' name='data' value='Hola señor, usted "
-                    "me almacenó en una sesión' />"
+                "Text: <input type='text' name='data' value='Hola se" "\xf1" "or, usted "
+                    "me almacen" "\xf3" " en una sesi" "\xf3" "n' />"
                 "<input type='submit' name='submit' value='submit' />"
             "</div>"
         "</form>";
