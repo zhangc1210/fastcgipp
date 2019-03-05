@@ -32,9 +32,9 @@ about the rewrite and fastcgi++ in general, check out [[Ten years of
 fastcgi++][1]].
 
 [1]: https://eddie.isatec.ca/2016/04/10/ten-years-of-fastcgi++.html
-[15]: https://isatec.ca/fastcgipp/sql.html
+[15]: https://fastcgipp.isatec.ca/sql.html
 [16]: https://github.com/eddic/fastcgipp/blob/master/tests/sql.cpp
-[17]: https://isatec.ca/fastcgipp/namespaceFastcgipp_1_1SQL.html
+[17]: https://fastcgipp.isatec.ca/namespaceFastcgipp_1_1SQL.html
 
 ## About ##
 
@@ -69,7 +69,7 @@ the risk and try the following links.
 [10]: https://github.com/eddic/fastcgipp/tree/2.1
 [11]: https://github.com/eddic/fastcgipp/tree/2.0
 [12]: https://github.com/eddic/fastcgipp/archive/3.0.tar.gz
-[13]: https://isatec.ca/fastcgipp
+[13]: https://fastcgipp.isatec.ca
 [14]: https://github.com/eddic/fastcgipp/tree/3.0
 
 ## Building ##
