@@ -235,36 +235,36 @@ void server()
 
         // Transmit data
         flushed = true;
-        for(auto& pair: buffers)
+        for(auto it=buffers.begin(); it!=buffers.end();)
         {
-            const Fastcgipp::Socket& socket = pair.first;
-            Buffer& buffer = pair.second;
+            const Fastcgipp::Socket& socket = it->first;
+            Buffer& buffer = it->second;
 
             if(socket.valid() && buffer.sending)
             {
                 const ssize_t sent = socket.write(
                         &*buffer.position,
                         buffer.data.end()-buffer.position);
-                if(sent<=0)
+                if(sent>0)
                 {
-                    continue;
-                    lock.lock();
-                }
-                buffer.position += sent;
-                if(buffer.position  == buffer.data.end())
-                {
-                    buffer.sending = false;
-                    buffer.position = buffer.data.begin();
-                    --sends;
-                    if(killSocket(rd))
+                    buffer.position += sent;
+                    if(buffer.position  == buffer.data.end())
                     {
-                        socket.close();
-                        buffers.erase(socket);
+                        buffer.sending = false;
+                        buffer.position = buffer.data.begin();
+                        --sends;
+                        if(killSocket(rd))
+                        {
+                            socket.close();
+                            it=buffers.erase(it);
+                            continue;
+                        }
                     }
+                    else
+                        flushed = false;
                 }
-                else
-                    flushed = false;
             }
+            ++it;
         }
 
         // Any data waiting for us to receive?
