@@ -225,6 +225,8 @@ public:
                 return true;
             }
         }
+
+        return true;
     }
     //! [get row]
 

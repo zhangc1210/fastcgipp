@@ -2,8 +2,8 @@
  * @file       parameters.hpp
  * @brief      Declares %SQL parameters types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 9, 2018
- * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
+ * @date       April 28, 2019
+ * @copyright  Copyright &copy; 2019 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
 /*******************************************************************************
@@ -124,6 +124,7 @@ namespace Fastcgipp
             Parameter& operator=(const std::wstring& x)
             {
                  assign(convert(x));
+                 return *this;
             }
 
             Parameter(const std::wstring& x):
@@ -152,6 +153,7 @@ namespace Fastcgipp
                     const std::chrono::time_point<std::chrono::system_clock>& x)
             {
                 *this = convert(x);
+                return *this;
             }
 
             Parameter(
@@ -176,6 +178,7 @@ namespace Fastcgipp
                         reinterpret_cast<const char*>(&x),
                         Address::size,
                         next);
+                return *this;
             }
             Parameter(const Address& x)
             {
