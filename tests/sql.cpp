@@ -362,6 +362,7 @@ bool TestQuery::handle()
             return true;
         }
     }
+    return false;
 }
 
 int main()
@@ -462,7 +463,7 @@ int main()
     {
         using namespace std::chrono_literals;
         TestQuery::init();
-        std::this_thread::sleep_for(1s);
+        std::this_thread::sleep_for(3s);
         TestQuery::handler();
         TestQuery::stop();
     }
