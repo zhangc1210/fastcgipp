@@ -7,7 +7,7 @@
  *             the GNU Lesser General Public License Version 3.
  */
 /*******************************************************************************
-* Copyright (C) 2018 Eddie Carle [eddie@isatec.ca]                             *
+* Copyright (C) 2019 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
 * This file is part of fastcgi++.                                              *
 *                                                                              *
