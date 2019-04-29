@@ -2,7 +2,7 @@
  * @file       http.cpp
  * @brief      Defines elements of the HTTP protocol
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       January 3, 2019
+ * @date       April 29, 2019
  * @copyright  Copyright &copy; 2019 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -713,7 +713,7 @@ template<class charT> void Fastcgipp::Http::decodeUrlEncoded(
 
     const char* nameStart = data;
     const char* nameEnd = dataEnd;
-    const char* valueStart;
+    const char* valueStart = nullptr;
     const char* valueEnd;
 
     while(data <= dataEnd)

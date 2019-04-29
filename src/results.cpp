@@ -2,13 +2,13 @@
  * @file       results.cpp
  * @brief      Defines SQL results types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 11, 2018
- * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
+ * @date       April 29, 2019
+ * @copyright  Copyright &copy; 2019 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
 
 /*******************************************************************************
-* Copyright (C) 2018 Eddie Carle [eddie@isatec.ca]                             *
+* Copyright (C) 2019 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
 * This file is part of fastcgi++.                                              *
 *                                                                              *
@@ -202,11 +202,6 @@ template<> void Fastcgipp::SQL::Results_base::field<
           int column,
           std::chrono::time_point<std::chrono::system_clock>& value) const
 {
-    const char* const data = PQgetvalue(
-            reinterpret_cast<const PGresult*>(m_res),
-            row,
-            column);
-
     const int64_t count = BigEndian<int64_t>::read(
             PQgetvalue(reinterpret_cast<const PGresult*>(m_res), row, column));
 
