@@ -2,7 +2,7 @@
  * @file       mailer.cpp
  * @brief      Defines types for sending emails
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       April 29, 2019
+ * @date       May 12, 2019
  * @copyright  Copyright &copy; 2019 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -28,16 +28,30 @@
 #include "fastcgi++/mailer.hpp"
 #include "fastcgi++/log.hpp"
 
+#include <chrono>
+
 void Fastcgipp::Mail::Mailer::handler()
 {
+    std::unique_lock<std::mutex> lock(m_mutex);
     while(!m_terminate && !(m_stop && m_queue.empty() && !inEmail()))
     {
+        if(m_state == ERROR)
+        {
+            using namespace std::chrono_literals;
+            m_wake.wait_for(lock, m_retry*1s);
+            m_state = DISCONNECTED;
+
+            if(m_terminate || (m_stop && m_queue.empty() && !inEmail()))
+                break;
+        }
+
         if(!inEmail() && !m_queue.empty())
         {
-            std::lock_guard<std::mutex> lock(m_mutex);
             m_email = std::move(m_queue.front());
             m_queue.pop();
         }
+
+        lock.unlock();
 
         if(inEmail() && !m_socket.valid())
         {
@@ -87,7 +101,7 @@ void Fastcgipp::Mail::Mailer::handler()
                                     "connecting: " << m_line.c_str())
                         }
                         m_socket.close();
-                        m_state = DISCONNECTED;
+                        m_state = ERROR;
                         break;
                     }
 
@@ -116,7 +130,7 @@ void Fastcgipp::Mail::Mailer::handler()
                                     << m_line.c_str())
                         }
                         m_socket.close();
-                        m_state = DISCONNECTED;
+                        m_state = ERROR;
                         break;
                     }
 
@@ -149,7 +163,7 @@ void Fastcgipp::Mail::Mailer::handler()
                                     << m_line.c_str())
                         }
                         m_socket.close();
-                        m_state = DISCONNECTED;
+                        m_state = ERROR;
                         break;
                     }
 
@@ -177,7 +191,7 @@ void Fastcgipp::Mail::Mailer::handler()
                                     << m_line.c_str())
                         }
                         m_socket.close();
-                        m_state = DISCONNECTED;
+                        m_state = ERROR;
                         break;
                     }
 
@@ -202,7 +216,7 @@ void Fastcgipp::Mail::Mailer::handler()
                                     << m_line.c_str())
                         }
                         m_socket.close();
-                        m_state = DISCONNECTED;
+                        m_state = ERROR;
                         break;
                     }
 
@@ -241,7 +255,7 @@ void Fastcgipp::Mail::Mailer::handler()
                                     << m_line.c_str())
                         }
                         m_socket.close();
-                        m_state = DISCONNECTED;
+                        m_state = ERROR;
                         break;
                     }
 
@@ -267,7 +281,7 @@ void Fastcgipp::Mail::Mailer::handler()
                                     "insertion: " << m_line.c_str())
                         }
                         m_socket.close();
-                        m_state = DISCONNECTED;
+                        m_state = ERROR;
                         break;
                     }
 
@@ -277,34 +291,45 @@ void Fastcgipp::Mail::Mailer::handler()
                         {
                             ERROR_LOG("Bad reply from SMTP server after QUIT: "\
                                     << m_line.c_str())
+                            m_state = ERROR;
                         }
+                        else
+                            m_state = DISCONNECTED;
                         m_socket.close();
-                        m_state = DISCONNECTED;
                         break;
                     }
 
+                    case ERROR:
                     case DISCONNECTED:
-                    {
-                        // DO STUFF
-                        break;
-                    }
+                        ;// DO NOTHING
                 }
                 m_line.clear();
             }
         }
+        else
+        {
+            ERROR_LOG("Error connecting to SMTP server.")
+            m_state = ERROR;
+        }
+
+        lock.lock();
     }
 }
 
 void Fastcgipp::Mail::Mailer::stop()
 {
+    std::lock_guard<std::mutex> lock(m_mutex);
     m_stop=true;
     m_socketGroup.wake();
+    m_wake.notify_all();
 }
 
 void Fastcgipp::Mail::Mailer::terminate()
 {
+    std::lock_guard<std::mutex> lock(m_mutex);
     m_terminate=true;
     m_socketGroup.wake();
+    m_wake.notify_all();
 }
 
 void Fastcgipp::Mail::Mailer::start()

@@ -2,12 +2,12 @@
  * @file       mailer.hpp
  * @brief      Declares types for sending emails
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       November 28, 2018
- * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
+ * @date       May 12, 2019
+ * @copyright  Copyright &copy; 2019 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
 /*******************************************************************************
-* Copyright (C) 2018 Eddie Carle [eddie@isatec.ca]                             *
+* Copyright (C) 2019 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
 * This file is part of fastcgi++.                                              *
 *                                                                              *
@@ -32,6 +32,7 @@
 #include <atomic>
 #include <mutex>
 #include <thread>
+#include <condition_variable>
 
 #include "fastcgi++/sockets.hpp"
 #include "fastcgi++/email.hpp"
@@ -52,7 +53,7 @@ namespace Fastcgipp
          *
          * Queue up emails for sending with queue().
          *
-         * @date    November 28, 2018
+         * @date    May 12, 2019
          * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
          */
         class Mailer
@@ -135,6 +136,9 @@ namespace Fastcgipp
             //! Always practice safe threading
             std::mutex m_mutex;
 
+            //! We'll use this to wake up from the retry interval sleep
+            std::condition_variable m_wake;
+
             //! Hostname/address of server
             std::string m_host;
 
@@ -181,7 +185,8 @@ namespace Fastcgipp
                 RCPT,
                 DATA,
                 DUMP,
-                QUIT
+                QUIT,
+                ERROR
             };
 
             //! Current state
