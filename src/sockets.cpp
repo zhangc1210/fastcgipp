@@ -2,8 +2,8 @@
  * @file       sockets.cpp
  * @brief      Defines everything for interfaces with OS level sockets.
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 3, 2018
- * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
+ * @date       May 12, 2019
+ * @copyright  Copyright &copy; 2019 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  *
  * It is this file, along with sockets.hpp, that must be modified to make
@@ -11,7 +11,7 @@
  */
 
 /*******************************************************************************
-* Copyright (C) 2018 Eddie Carle [eddie@isatec.ca]                             *
+* Copyright (C) 2019 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
 * This file is part of fastcgi++.                                              *
 *                                                                              *
@@ -515,7 +515,7 @@ Fastcgipp::Socket Fastcgipp::SocketGroup::connect(
     }
 
     int fd=-1;
-    for(auto i=result; i!=nullptr; i=result->ai_next)
+    for(auto i=result; i!=nullptr; i=result->ai_next==i?nullptr:result->ai_next)
     {
         fd = socket(i->ai_family, i->ai_socktype, i->ai_protocol);
         if(fd == -1)
