@@ -22,7 +22,7 @@ L"<html>"
         if(environment().requestMethod == Fastcgipp::Http::RequestMethod::POST)
         {
             if(send())
-                out << L"<h2>Email Sent!</h2>";
+                out << L"<h2>Email Queued!</h2>";
             else
                 out << L"<h2>Unable to send email</h2>";
         }
