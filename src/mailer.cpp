@@ -56,8 +56,17 @@ void Fastcgipp::Mail::Mailer::handler()
         if(inEmail() && !m_socket.valid())
         {
             m_line.clear();
-            m_state = CONNECTED;
             m_socket = m_socketGroup.connect(m_host.c_str(), m_port.c_str());
+            if(!m_socket.valid())
+            {
+                ERROR_LOG("Error connecting to SMTP server.")
+                m_state = ERROR;
+                m_socket.close();
+                lock.lock();
+                continue;
+            }
+            else
+                m_state = CONNECTED;
         }
 
         if(m_socketGroup.poll(true) == m_socket)
@@ -306,11 +315,6 @@ void Fastcgipp::Mail::Mailer::handler()
                 m_line.clear();
             }
         }
-        else
-        {
-            ERROR_LOG("Error connecting to SMTP server.")
-            m_state = ERROR;
-        }
 
         lock.lock();
     }
@@ -364,7 +368,7 @@ void Fastcgipp::Mail::Mailer::init(
         m_host = host;
         m_origin = origin;
         m_port = std::to_string(port);
-        m_retry = retryInterval*1000;
+        m_retry = retryInterval;
         m_initialized = true;
     }
 }
