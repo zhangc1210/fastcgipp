@@ -2,12 +2,12 @@
  * @file       http.hpp
  * @brief      Declares elements of the HTTP protocol
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 13, 2018
- * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
+ * @date       March 24, 2020
+ * @copyright  Copyright &copy; 2020 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
 /*******************************************************************************
-* Copyright (C) 2018 Eddie Carle [eddie@isatec.ca]                             *
+* Copyright (C) 2020 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
 * This file is part of fastcgi++.                                              *
 *                                                                              *
@@ -116,13 +116,16 @@ namespace Fastcgipp
          *
          * @tparam charT Character type to use for strings
          *
-         * @date    October 13, 2018
+         * @date    March 24, 2020
          * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
          */
         template<class charT> struct Environment
         {
             //! Hostname of the server
             std::basic_string<charT> host;
+
+            //! Origin server
+            std::basic_string<charT> origin;
 
             //! User agent string
             std::basic_string<charT> userAgent;

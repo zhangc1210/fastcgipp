@@ -47,6 +47,8 @@ L"<html>"
             L"<b>fastcgi++ Version:</b> " << Fastcgipp::version << L"<br />"
             L"<b>Hostname:</b> " << Encoding::HTML << environment().host
                 << Encoding::NONE << L"<br />"
+            L"<b>Origin Server:</b> " << Encoding::HTML << environment().origin
+                << Encoding::NONE << L"<br />"
             L"<b>User Agent:</b> " << Encoding::HTML << environment().userAgent
                 << Encoding::NONE << L"<br />"
             L"<b>Accepted Content Types:</b> " << Encoding::HTML

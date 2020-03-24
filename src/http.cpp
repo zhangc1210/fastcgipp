@@ -2,12 +2,12 @@
  * @file       http.cpp
  * @brief      Defines elements of the HTTP protocol
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       April 29, 2019
- * @copyright  Copyright &copy; 2019 Eddie Carle. This project is released under
+ * @date       March 24, 2020
+ * @copyright  Copyright &copy; 2020 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
 /*******************************************************************************
-* Copyright (C) 2019 Eddie Carle [eddie@isatec.ca]                             *
+* Copyright (C) 2020 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
 * This file is part of fastcgi++.                                              *
 *                                                                              *
@@ -232,6 +232,8 @@ template<class charT> void Fastcgipp::Http::Environment<charT>::fill(
                 vecToString(value, end, scriptName);
             else if(std::equal(name, value, "REQUEST_URI"))
                 vecToString(value, end, requestUri);
+            else if(std::equal(name, value, "HTTP_ORIGIN"))
+                vecToString(value, end, origin);
             else
                 processed=false;
             break;
