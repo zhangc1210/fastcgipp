@@ -35,7 +35,8 @@ private:
         std::vector<char>,
         std::wstring,
         std::chrono::time_point<std::chrono::system_clock>,
-        Fastcgipp::Address> m_parameters;
+        Fastcgipp::Address,
+        std::vector<int16_t>> m_parameters;
 
     std::shared_ptr<Fastcgipp::SQL::Results<int32_t>> m_insertResult;
 
@@ -49,6 +50,7 @@ private:
         std::wstring,
         std::chrono::time_point<std::chrono::system_clock>,
         Fastcgipp::Address,
+        std::vector<int16_t>,
         std::wstring>> m_selectResults;
 
     std::shared_ptr<Fastcgipp::SQL::Results<>> m_deleteResult;
@@ -74,6 +76,7 @@ private:
     static std::array<std::string, 6> strings;
     static std::array<std::vector<char>, 6> vectors;
     static std::array<Fastcgipp::Address, 6> addresses;
+    static std::array<std::vector<int16_t>, 6> int16Vectors;
     static std::uniform_int_distribution<unsigned> stringdist;
 
     bool handle();
@@ -158,6 +161,15 @@ std::array<Fastcgipp::Address, 6> TestQuery::addresses
     "ce9c:5116:7817::8d97:0:e755",
     "::ffff:179.124.131.145"
 };
+std::array<std::vector<int16_t>, 6> TestQuery::int16Vectors
+{{
+    {16045, -10447, -30005, -28036, -10498, -3546},
+    {28951, -27341, 31934, -18029, -10289},
+    {-8362, 5513, -2999, 18684},
+    {-488, -30159, 1865},
+    {31456, 30510},
+    {26529}
+}};
 std::uniform_int_distribution<unsigned> TestQuery::stringdist(0,5);
 
 void TestQuery::callback(unsigned id, Fastcgipp::Message message)
@@ -222,11 +234,12 @@ bool TestQuery::handle()
                 vectors[stringdist(device)],
                 wstrings[stringdist(device)],
                 std::chrono::system_clock::now(),
-                addresses[stringdist(device)]);
+                addresses[stringdist(device)],
+                int16Vectors[stringdist(device)]);
             m_insertResult.reset(new Fastcgipp::SQL::Results<int32_t>);
 
             Fastcgipp::SQL::Query query;
-            query.statement = "INSERT INTO fastcgipp_test (zero, one, two, three, four, five, six, seven, eight, nine) VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING zero;";
+            query.statement = "INSERT INTO fastcgipp_test (zero, one, two, three, four, five, six, seven, eight, nine, ten) VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING zero;";
             query.parameters = Fastcgipp::SQL::make_Parameters(m_parameters);
             query.results = m_insertResult;
             query.callback = m_callback;
@@ -260,10 +273,11 @@ bool TestQuery::handle()
                     std::wstring,
                     std::chrono::time_point<std::chrono::system_clock>,
                     Fastcgipp::Address,
+                    std::vector<int16_t>,
                     std::wstring>);
 
             Fastcgipp::SQL::Query query;
-            query.statement = "SELECT one, two, three, four, five, six, seven, eight, nine, zero::text || ' ' || one::text || ' ' || two::text || ' ' || three || ' ' || to_char(four, '9.999EEEE') || ' ' || to_char(five, '9.999EEEE') || ' ' || seven || ' ' || to_char(eight, 'YYYY-MM-DD HH24:MI:SS') || ' ' || nine AS ten FROM fastcgipp_test WHERE zero=$1;";
+            query.statement = "SELECT one, two, three, four, five, six, seven, eight, nine, ten, zero::text || ' ' || one::text || ' ' || two::text || ' ' || three || ' ' || to_char(four, '9.999EEEE') || ' ' || to_char(five, '9.999EEEE') || ' ' || seven || ' ' || to_char(eight, 'YYYY-MM-DD HH24:MI:SS') || ' ' || nine || ' [,' || array_to_string(ten, ',') || ']' AS ten FROM fastcgipp_test WHERE zero=$1;";
             query.parameters = parameters;
             query.results = m_selectResults;
             query.callback = m_callback;
@@ -309,6 +323,8 @@ bool TestQuery::handle()
                 FAIL_LOG("Fastcgipp::SQL::Connection test fail #18")
             if(std::get<8>(row) != std::get<8>(m_parameters))
                 FAIL_LOG("Fastcgipp::SQL::Connection test fail #19")
+            if(std::get<9>(row) != std::get<9>(m_parameters))
+                FAIL_LOG("Fastcgipp::SQL::Connection test fail #26")
 
             const std::time_t timeStamp = std::chrono::system_clock::to_time_t(
                     std::get<7>(m_parameters));
@@ -325,10 +341,13 @@ bool TestQuery::handle()
                 << std::get<4>(m_parameters) << ' '
                 << std::get<6>(m_parameters)
                 << std::put_time(std::gmtime(&timeStamp), L" %Y-%m-%d %H:%M:%S ")
-                << std::get<8>(m_parameters) << "/128";
+                << std::get<8>(m_parameters) << "/128 [";
+            for(const auto& number: std::get<9>(m_parameters))
+                ss << "," << number;
+            ss << "]";
 
-            if(ss.str() != std::get<9>(row))
-                FAIL_LOG("Fastcgipp::SQL::Connection test fail #20" << ss.str() << " vs " << std::get<9>(row))
+            if(ss.str() != std::get<10>(row))
+                FAIL_LOG("Fastcgipp::SQL::Connection test fail #20" << ss.str() << " vs " << std::get<10>(row))
 
             const auto& insertRow = m_insertResult->row(0);
             const int32_t& id = std::get<0>(insertRow);
@@ -336,7 +355,7 @@ bool TestQuery::handle()
             auto parameters = Fastcgipp::SQL::make_Parameters(id);
             m_deleteResult.reset(new Fastcgipp::SQL::Results<>);
 
-            Fastcgipp::SQL::Query query;
+            /*Fastcgipp::SQL::Query query;
             query.statement = "DELETE FROM fastcgipp_test WHERE zero=$1;";
             query.parameters = parameters;
             query.results = m_deleteResult;
@@ -345,7 +364,8 @@ bool TestQuery::handle()
                 FAIL_LOG("Fastcgipp::SQL::Connection test fail #21")
 
             ++m_state;
-            return false;
+            return false;*/
+            return true;
         }
 
         case 3:
@@ -378,10 +398,29 @@ int main()
         static const std::vector<char> six{'a', 'b', 'c', 'd', 'e', 'f'};
 
         static const std::wstring seven(L"インターネット");
-        static const std::array<unsigned char, 21> properEight =
+        static const std::array<unsigned char, 21> properSeven =
         {
             0xe3, 0x82, 0xa4, 0xe3, 0x83, 0xb3, 0xe3, 0x82, 0xbf, 0xe3, 0x83,
             0xbc, 0xe3, 0x83, 0x8d, 0xe3, 0x83, 0x83, 0xe3, 0x83, 0x88
+        };
+
+        static const std::vector<int16_t> eight{14662,5312,-5209,24755,-17290};
+        static std::array<unsigned char, 50> properEight{
+            0x00, 0x00, 0x00, 0x01,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x15,
+            0x00, 0x00, 0x00, 0x05,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x02,
+            0x39, 0x46,
+            0x00, 0x00, 0x00, 0x02,
+            0x14, 0xc0,
+            0x00, 0x00, 0x00, 0x02,
+            0xeb, 0xa7,
+            0x00, 0x00, 0x00, 0x02,
+            0x60, 0xb3,
+            0x00, 0x00, 0x00, 0x02,
+            0xbc, 0x76
         };
 
         auto data(Fastcgipp::SQL::make_Parameters(
@@ -392,7 +431,11 @@ int main()
                 four,
                 five,
                 six,
-                seven));
+                seven,
+                eight));
+        for(unsigned i=0; i<eight.size(); ++i)
+            if(eight[i] != std::get<8>(*data)[i])
+                FAIL_LOG("Fastcgipp::SQL::Parameters failed on column 8 []")
         std::shared_ptr<Fastcgipp::SQL::Parameters_base> base(data);
         data.reset();
 
@@ -444,13 +487,22 @@ int main()
             FAIL_LOG("Fastcgipp::SQL::Parameters failed on column 6")
         if(
                 *(base->oids()+7) != TEXTOID ||
-                *(base->sizes()+7) != properEight.size() ||
+                *(base->sizes()+7) != properSeven.size() ||
                 !std::equal(
-                    reinterpret_cast<const char*>(properEight.begin()),
-                    reinterpret_cast<const char*>(properEight.end()),
+                    reinterpret_cast<const char*>(properSeven.begin()),
+                    reinterpret_cast<const char*>(properSeven.end()),
                     *(base->raws()+7),
                     *(base->raws()+7)+*(base->sizes()+7)))
             FAIL_LOG("Fastcgipp::SQL::Parameters failed on column 7")
+        if(
+                *(base->oids()+8) != INT2ARRAYOID ||
+                *(base->sizes()+8) != properEight.size() ||
+                !std::equal(
+                    reinterpret_cast<const char*>(properEight.begin()),
+                    reinterpret_cast<const char*>(properEight.end()),
+                    *(base->raws()+8),
+                    *(base->raws()+8)+*(base->sizes()+8)))
+            FAIL_LOG("Fastcgipp::SQL::Parameters failed on column 8")
         for(
                 const int* value = base->formats();
                 value != base->formats() + base->size();

@@ -2,13 +2,13 @@
  * @file       results.hpp
  * @brief      Declares %SQL Results types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 10, 2018
- * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
+ * @date       March 30, 2020
+ * @copyright  Copyright &copy; 2020 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
 
 /*******************************************************************************
-* Copyright (C) 2018 Eddie Carle [eddie@isatec.ca]                             *
+* Copyright (C) 2020 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
 * This file is part of fastcgi++.                                              *
 *                                                                              *
@@ -125,6 +125,12 @@ namespace Fastcgipp
                 int row,
                 int column,
                 int16_t& value) const;
+        template<> bool Results_base::verifyColumn<std::vector<int16_t>>(
+                int column) const;
+        template<> void Results_base::field<std::vector<int16_t>>(
+                int row,
+                int column,
+                std::vector<int16_t>& value) const;
         template<> bool Results_base::verifyColumn<int32_t>(int column) const;
         template<> void Results_base::field<int32_t>(
                 int row,

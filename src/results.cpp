@@ -2,13 +2,13 @@
  * @file       results.cpp
  * @brief      Defines SQL results types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       April 29, 2019
- * @copyright  Copyright &copy; 2019 Eddie Carle. This project is released under
+ * @date       March 30, 2020
+ * @copyright  Copyright &copy; 2020 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
 
 /*******************************************************************************
-* Copyright (C) 2019 Eddie Carle [eddie@isatec.ca]                             *
+* Copyright (C) 2020 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
 * This file is part of fastcgi++.                                              *
 *                                                                              *
@@ -54,6 +54,34 @@ template<> void Fastcgipp::SQL::Results_base::field<int16_t>(
 {
     value = BigEndian<int16_t>::read(
             PQgetvalue(reinterpret_cast<const PGresult*>(m_res), row, column));
+}
+
+template<>
+bool Fastcgipp::SQL::Results_base::verifyColumn<std::vector<int16_t>>(
+        int column) const
+{
+    const Oid type = PQftype(reinterpret_cast<const PGresult*>(m_res), column);
+    return type == INT2ARRAYOID;
+}
+template<> void Fastcgipp::SQL::Results_base::field<std::vector<int16_t>>(
+        int row,
+        int column,
+        std::vector<int16_t>& value) const
+{
+    const char* const start = PQgetvalue(
+            reinterpret_cast<const PGresult*>(m_res),
+            row,
+            column);
+
+    const int32_t size(*reinterpret_cast<const BigEndian<int32_t>*>(
+                start+3*sizeof(int32_t)));
+
+    value.clear();
+    value.reserve(size);
+    for(int i=0; i<size; ++i)
+        value.push_back(*reinterpret_cast<const BigEndian<int16_t>*>(
+                    start + 6*sizeof(int32_t)
+                    + i*(sizeof(int32_t) + sizeof(int16_t))));
 }
 
 template<>

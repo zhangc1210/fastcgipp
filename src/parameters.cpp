@@ -2,13 +2,13 @@
  * @file       parameters.cpp
  * @brief      Defines SQL parameters types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       April 29, 2019
+ * @date       March 30, 2020
  * @copyright  Copyright &copy; 2019 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
 
 /*******************************************************************************
-* Copyright (C) 2019 Eddie Carle [eddie@isatec.ca]                             *
+* Copyright (C) 2020 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
 * This file is part of fastcgi++.                                              *
 *                                                                              *
@@ -66,6 +66,8 @@ Fastcgipp::SQL::Parameter<std::wstring>::convert(const std::wstring& x)
 }
 
 const unsigned Fastcgipp::SQL::Parameter<int16_t>::oid = INT2OID;
+const unsigned Fastcgipp::SQL::Parameter<std::vector<int16_t>>::oid
+    = INT2ARRAYOID;
 const unsigned Fastcgipp::SQL::Parameter<int32_t>::oid = INT4OID;
 const unsigned Fastcgipp::SQL::Parameter<int64_t>::oid = INT8OID;
 const unsigned Fastcgipp::SQL::Parameter<float>::oid = FLOAT4OID;
@@ -78,3 +80,51 @@ const unsigned Fastcgipp::SQL::Parameter<
 const unsigned Fastcgipp::SQL::Parameter<Fastcgipp::Address>::oid = INETOID;
 const char Fastcgipp::SQL::Parameter<Fastcgipp::Address>::addressFamily
     = PGSQL_AF_INET6;
+
+void Fastcgipp::SQL::Parameter<std::vector<int16_t>>::resize(
+        const unsigned size)
+{
+    m_size = sizeof(int32_t)*(5+size) + size*sizeof(INT_TYPE);
+    m_data.reset(new char[m_size]);
+
+    BigEndian<int32_t>& ndim(*reinterpret_cast<BigEndian<int32_t>*>(
+                m_data.get()+0*sizeof(int32_t)));
+    BigEndian<int32_t>& hasNull(*reinterpret_cast<BigEndian<int32_t>*>(
+                m_data.get()+1*sizeof(int32_t)));
+    BigEndian<int32_t>& elementType(*reinterpret_cast<BigEndian<int32_t>*>(
+                m_data.get()+2*sizeof(int32_t)));
+    BigEndian<int32_t>& dim(*reinterpret_cast<BigEndian<int32_t>*>(
+                m_data.get()+3*sizeof(int32_t)));
+    BigEndian<int32_t>& lBound(*reinterpret_cast<BigEndian<int32_t>*>(
+                m_data.get()+4*sizeof(int32_t)));
+
+    ndim = 1;
+    hasNull = 0;
+    elementType = Parameter<INT_TYPE>::oid;
+    dim = size;
+    lBound = 0;
+}
+
+Fastcgipp::SQL::Parameter<std::vector<int16_t>>&
+Fastcgipp::SQL::Parameter<std::vector<int16_t>>::operator=(
+        const std::vector<int16_t>& x)
+{
+    resize(x.size());
+
+    for(unsigned i=0; i < x.size(); ++i)
+    {
+        char* ptr = m_data.get() + 5*sizeof(int32_t)
+            + i*(sizeof(int32_t) + sizeof(INT_TYPE));
+
+        BigEndian<int32_t>& length(
+                *reinterpret_cast<BigEndian<int32_t>*>(ptr));
+        BigEndian<INT_TYPE>& value(
+                *reinterpret_cast<BigEndian<INT_TYPE>*>(
+                    ptr+sizeof(int32_t)));
+
+        length = sizeof(INT_TYPE);
+        value = x[i];
+    }
+
+    return *this;
+}

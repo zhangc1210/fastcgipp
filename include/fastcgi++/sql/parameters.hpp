@@ -2,12 +2,12 @@
  * @file       parameters.hpp
  * @brief      Declares %SQL parameters types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       April 28, 2019
- * @copyright  Copyright &copy; 2019 Eddie Carle. This project is released under
+ * @date       March 30, 2020
+ * @copyright  Copyright &copy; 2020 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
 /*******************************************************************************
-* Copyright (C) 2019 Eddie Carle [eddie@isatec.ca]                             *
+* Copyright (C) 2020 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
 * This file is part of fastcgi++.                                              *
 *                                                                              *
@@ -57,6 +57,49 @@ namespace Fastcgipp
         {
             using BigEndian<int16_t>::BigEndian;
             using BigEndian<int16_t>::operator=;
+            static const unsigned oid;
+        };
+
+        template<>
+        class Parameter<std::vector<int16_t>>:
+            public std::vector<BigEndian<int16_t>>
+        {
+        private:
+            typedef int16_t INT_TYPE;
+            unsigned m_size;
+            std::unique_ptr<char[]> m_data;
+        public:
+            void resize(const unsigned size);
+
+            Parameter& operator=(const std::vector<INT_TYPE>& x);
+
+            Parameter(const std::vector<INT_TYPE>& x)
+            {
+                *this = x;
+            }
+
+            Parameter(const unsigned size)
+            {
+                resize(size);
+            }
+
+            BigEndian<INT_TYPE>& operator[](const unsigned i)
+            {
+                return *reinterpret_cast<BigEndian<INT_TYPE>*>(
+                        m_data.get() + 6*sizeof(int32_t)
+                        + i*(sizeof(int32_t) + sizeof(INT_TYPE)));
+            }
+
+            unsigned size() const
+            {
+                return m_size;
+            }
+
+            const char* data() const
+            {
+                return m_data.get();
+            }
+
             static const unsigned oid;
         };
 
