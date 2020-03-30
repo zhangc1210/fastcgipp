@@ -73,15 +73,54 @@ template<> void Fastcgipp::SQL::Results_base::field<std::vector<int16_t>>(
             row,
             column);
 
+    const int32_t ndim(*reinterpret_cast<const BigEndian<int32_t>*>(
+                start+0*sizeof(int32_t)));
+    if(ndim != 1)
+    {
+        WARNING_LOG("SQL result array type for std::vector<int16_t> has "\
+                "ndim != 1");
+        return;
+    }
+
+    const int32_t hasNull(*reinterpret_cast<const BigEndian<int32_t>*>(
+                start+1*sizeof(int32_t)));
+    if(hasNull != 0)
+    {
+        WARNING_LOG("SQL result array type for std::vector<int16_t> has "\
+                "ndim != 0");
+        return;
+    }
+
+    const int32_t elementType(*reinterpret_cast<const BigEndian<int32_t>*>(
+                start+2*sizeof(int32_t)));
+    if(elementType != INT2OID)
+    {
+        WARNING_LOG("SQL result array type for std::vector<int16_t> has "\
+                "the wrong element type");
+        return;
+    }
+
     const int32_t size(*reinterpret_cast<const BigEndian<int32_t>*>(
                 start+3*sizeof(int32_t)));
 
     value.clear();
     value.reserve(size);
     for(int i=0; i<size; ++i)
+    {
+        const int32_t length(
+                *reinterpret_cast<const BigEndian<int32_t>*>(
+                    start + 5*sizeof(int32_t)
+                    + i*(sizeof(int32_t) + sizeof(int16_t))));
+        if(length != sizeof(int16_t))
+        {
+            WARNING_LOG("SQL result array for int16_t has element of wrong size");
+            continue;
+        }
+
         value.push_back(*reinterpret_cast<const BigEndian<int16_t>*>(
                     start + 6*sizeof(int32_t)
                     + i*(sizeof(int32_t) + sizeof(int16_t))));
+    }
 }
 
 template<>
