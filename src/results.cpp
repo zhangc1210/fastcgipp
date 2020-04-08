@@ -2,7 +2,7 @@
  * @file       results.cpp
  * @brief      Defines SQL results types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       March 30, 2020
+ * @date       April 8, 2020
  * @copyright  Copyright &copy; 2020 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -276,7 +276,7 @@ template<> void Fastcgipp::SQL::Results_base::field<
 
     value = std::chrono::time_point<std::chrono::system_clock>(
             std::chrono::duration_cast<std::chrono::system_clock::duration>(
-                duration)+std::chrono::seconds(946684800));
+                duration)+std::chrono::seconds(946706400));
 }
 
 template<> bool Fastcgipp::SQL::Results_base::verifyColumn<Fastcgipp::Address>(

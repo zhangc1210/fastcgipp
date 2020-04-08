@@ -2,7 +2,7 @@
  * @file       parameters.hpp
  * @brief      Declares %SQL parameters types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       March 30, 2020
+ * @date       April 8, 2020
  * @copyright  Copyright &copy; 2020 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -188,7 +188,7 @@ namespace Fastcgipp
             {
                 return std::chrono::duration_cast<
                     std::chrono::duration<int64_t, std::micro>>(
-                        x.time_since_epoch()-std::chrono::seconds(946684800)).count();
+                        x.time_since_epoch()-std::chrono::seconds(946706400)).count();
             }
 
         public:

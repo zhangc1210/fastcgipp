@@ -340,7 +340,7 @@ bool TestQuery::handle()
                 << (std::get<4>(m_parameters)>0?" ":"")
                 << std::get<4>(m_parameters) << ' '
                 << std::get<6>(m_parameters)
-                << std::put_time(std::gmtime(&timeStamp), L" %Y-%m-%d %H:%M:%S ")
+                << std::put_time(std::localtime(&timeStamp), L" %Y-%m-%d %H:%M:%S ")
                 << std::get<8>(m_parameters) << "/128 [";
             for(const auto& number: std::get<9>(m_parameters))
                 ss << "," << number;
