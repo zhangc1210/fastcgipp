@@ -87,23 +87,25 @@ Then we make a build directory.
     mkdir fastcgi++.build
     cd fastcgi++.build
 
-Now we need run cmake.
+Now we need run cmake. Note that the install prefix is being explicitly set to
+/usr because most server spawned FastCGI applications lack the /usr/local
+library directories in the search path.
 
-    cmake -DCMAKE_BUILD_TYPE=RELEASE ../fastcgi++
+    cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DCMAKE_BUILD_TYPE=RELEASE ../fastcgi++
 
 And if we want to build the PostgreSQL stuff we need to actually make it do so.
 
-    cmake -DCMAKE_BUILD_TYPE=RELEASE -DSQL=true ../fastcgi++
+    cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DCMAKE_BUILD_TYPE=RELEASE -DSQL=true ../fastcgi++
 
 Note that that was to do a release build. That means heavily optimized and not
 good for debugging. If you want to do some debugging to either fastcgi++ or an
 application you are developing that uses fastcgi++, do a debug build.
 
-    cmake -DCMAKE_BUILD_TYPE=DEBUG ../fastcgi++
+    cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DCMAKE_BUILD_TYPE=DEBUG ../fastcgi++
 
 Or if you want some really hardcore debug and diagnostics info
 
-    cmake -DCMAKE_BUILD_TYPE=DEBUG -D LOG_LEVEL:INT=4 ../fastcgi++
+    cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DCMAKE_BUILD_TYPE=DEBUG -D LOG_LEVEL:INT=4 ../fastcgi++
 
 Now let's build the library itself.
 
