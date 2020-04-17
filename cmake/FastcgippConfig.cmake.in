@@ -4,6 +4,10 @@ set(FASTCGIPP_VERSION @PROJECT_VERSION@)
 
 find_package(Threads REQUIRED)
 
+if(@SQL@)
+    find_package(PostgreSQL REQUIRED)
+endif(@SQL@)
+
 get_filename_component(FASTCGIPP_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 
 set_and_check(FASTCGIPP_INCLUDE_DIR "@FASTCGIPP_INCLUDE_DIR@")
