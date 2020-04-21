@@ -19,7 +19,9 @@ CREATE TABLE fastcgipp_test (
     seven   text,
     eight   timestamp,
     nine    inet,
-    ten     smallint ARRAY
+    ten     smallint ARRAY,
+    eleven  text ARRAY,
+    twelve  text ARRAY
 );" &&
 @CMAKE_CURRENT_BINARY_DIR@/sql_test
 

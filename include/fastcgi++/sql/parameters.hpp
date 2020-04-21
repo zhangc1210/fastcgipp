@@ -2,7 +2,7 @@
  * @file       parameters.hpp
  * @brief      Declares %SQL parameters types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       April 8, 2020
+ * @date       April 20, 2020
  * @copyright  Copyright &copy; 2020 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -57,49 +57,6 @@ namespace Fastcgipp
         {
             using BigEndian<int16_t>::BigEndian;
             using BigEndian<int16_t>::operator=;
-            static const unsigned oid;
-        };
-
-        template<>
-        class Parameter<std::vector<int16_t>>:
-            public std::vector<BigEndian<int16_t>>
-        {
-        private:
-            typedef int16_t INT_TYPE;
-            unsigned m_size;
-            std::unique_ptr<char[]> m_data;
-        public:
-            void resize(const unsigned size);
-
-            Parameter& operator=(const std::vector<INT_TYPE>& x);
-
-            Parameter(const std::vector<INT_TYPE>& x)
-            {
-                *this = x;
-            }
-
-            Parameter(const unsigned size)
-            {
-                resize(size);
-            }
-
-            BigEndian<INT_TYPE>& operator[](const unsigned i)
-            {
-                return *reinterpret_cast<BigEndian<INT_TYPE>*>(
-                        m_data.get() + 6*sizeof(int32_t)
-                        + i*(sizeof(int32_t) + sizeof(INT_TYPE)));
-            }
-
-            unsigned size() const
-            {
-                return m_size;
-            }
-
-            const char* data() const
-            {
-                return m_data.get();
-            }
-
             static const unsigned oid;
         };
 
@@ -229,6 +186,112 @@ namespace Fastcgipp
             }
             static const unsigned oid;
             static const char addressFamily;
+        };
+
+        template<typename Numeric>
+        class Parameter<std::vector<Numeric>>
+        {
+        private:
+            static_assert(
+                    std::is_integral<Numeric>::value ||
+                        std::is_floating_point<Numeric>::value,
+                    "Numeric must be a numeric type.");
+            unsigned m_size;
+            std::unique_ptr<char[]> m_data;
+        public:
+            void resize(const unsigned size);
+
+            Parameter& operator=(const std::vector<Numeric>& x);
+
+            Parameter(const std::vector<Numeric>& x)
+            {
+                *this = x;
+            }
+
+            Parameter(const unsigned size)
+            {
+                resize(size);
+            }
+
+            BigEndian<Numeric>& operator[](const unsigned i)
+            {
+                return *reinterpret_cast<BigEndian<Numeric>*>(
+                        m_data.get() + 6*sizeof(int32_t)
+                        + i*(sizeof(int32_t) + sizeof(Numeric)));
+            }
+
+            unsigned size() const
+            {
+                return m_size;
+            }
+
+            const char* data() const
+            {
+                return m_data.get();
+            }
+
+            static const unsigned oid;
+        };
+
+        template<>
+        class Parameter<std::vector<std::string>>
+        {
+        private:
+            unsigned m_size;
+            std::unique_ptr<char[]> m_data;
+        protected:
+            void assign(const std::vector<std::string>& x);
+        public:
+            Parameter& operator=(const std::vector<std::string>& x)
+            {
+                assign(x);
+                return *this;
+            }
+
+            Parameter(const std::vector<std::string>& x)
+            {
+                assign(x);
+            }
+
+            std::string operator[](const unsigned i) const;
+
+            unsigned size() const
+            {
+                return m_size;
+            }
+
+            const char* data() const
+            {
+                return m_data.get();
+            }
+
+            static const unsigned oid;
+        };
+
+        template<>
+        class Parameter<std::vector<std::wstring>>:
+            public Parameter<std::vector<std::string>>
+        {
+        private:
+            static std::vector<std::string> convert(
+                    const std::vector<std::wstring>& x);
+            static std::wstring convert(const std::string& x);
+        public:
+            Parameter& operator=(const std::vector<std::wstring>& x)
+            {
+                assign(convert(x));
+                return *this;
+            }
+
+            Parameter(const std::vector<std::wstring>& x):
+                Parameter<std::vector<std::string>>(convert(x))
+            {}
+
+            std::wstring operator[](const unsigned i) const
+            {
+                return convert(
+                        Parameter<std::vector<std::string>>::operator[](i));
+            }
         };
 
         //! De-templated base class for Parameters

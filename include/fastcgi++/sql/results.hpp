@@ -2,7 +2,7 @@
  * @file       results.hpp
  * @brief      Declares %SQL Results types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       March 30, 2020
+ * @date       April 20, 2020
  * @copyright  Copyright &copy; 2020 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -109,6 +109,12 @@ namespace Fastcgipp
              */
             template<typename T> bool verifyColumn(int column) const;
 
+            //! Extract typed array from specific row and column
+            template<typename Numeric> void field(
+                    int row,
+                    int column,
+                    std::vector<Numeric>& value) const;
+
             //! Extract typed value from specific row and column
             /*!
              * This function has no default definition and must be specialized
@@ -119,68 +125,6 @@ namespace Fastcgipp
                     int column,
                     T& value) const;
         };
-
-        template<> bool Results_base::verifyColumn<int16_t>(int column) const;
-        template<> void Results_base::field<int16_t>(
-                int row,
-                int column,
-                int16_t& value) const;
-        template<> bool Results_base::verifyColumn<std::vector<int16_t>>(
-                int column) const;
-        template<> void Results_base::field<std::vector<int16_t>>(
-                int row,
-                int column,
-                std::vector<int16_t>& value) const;
-        template<> bool Results_base::verifyColumn<int32_t>(int column) const;
-        template<> void Results_base::field<int32_t>(
-                int row,
-                int column,
-                int32_t& value) const;
-        template<> bool Results_base::verifyColumn<int64_t>(int column) const;
-        template<> void Results_base::field<int64_t>(
-                int row,
-                int column,
-                int64_t& value) const;
-        template<> bool Results_base::verifyColumn<float>(int column) const;
-        template<> void Results_base::field<float>(
-                int row,
-                int column,
-                float& value) const;
-        template<> bool Results_base::verifyColumn<double>(int column) const;
-        template<> void Results_base::field<double>(
-                int row,
-                int column,
-                double& value) const;
-        template<> bool Results_base::verifyColumn<std::string>(int column) const;
-        template<> void Results_base::field<std::string>(
-                int row,
-                int column,
-                std::string& value) const;
-        template<>
-        bool Results_base::verifyColumn<std::wstring>(int column) const;
-        template<> void Results_base::field<std::wstring>(
-                int row,
-                int column,
-                std::wstring& value) const;
-        template<>
-        bool Results_base::verifyColumn<std::vector<char>>(int column) const;
-        template<> void Results_base::field<std::vector<char>>(
-                int row,
-                int column,
-                std::vector<char>& value) const;
-        template<> bool Results_base::verifyColumn<std::chrono::time_point<
-            std::chrono::system_clock>>(int column) const;
-        template<> void
-        Results_base::field<std::chrono::time_point<std::chrono::system_clock>>(
-                int row,
-                int column,
-                std::chrono::time_point<std::chrono::system_clock>& value)
-            const;
-        template<> bool Results_base::verifyColumn<Address>(int column) const;
-        template<> void Results_base::field<Address>(
-                int row,
-                int column,
-                Address& value) const;
 
         //! Holds %SQL query result sets
         /*!

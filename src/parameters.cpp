@@ -2,8 +2,8 @@
  * @file       parameters.cpp
  * @brief      Defines SQL parameters types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       March 30, 2020
- * @copyright  Copyright &copy; 2019 Eddie Carle. This project is released under
+ * @date       April 20, 2020
+ * @copyright  Copyright &copy; 2020 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
 
@@ -28,17 +28,10 @@
 
 #include "fastcgi++/sql/parameters.hpp"
 #include "fastcgi++/log.hpp"
+#include "sqlTraits.hpp"
 
 #include <locale>
 #include <codecvt>
-
-#include <postgres.h>
-#include <libpq-fe.h>
-#include <catalog/pg_type.h>
-#include <utils/inet.h>
-#undef WARNING
-// I sure would like to know who thought it clever to define the macro WARNING
-// in these postgresql header files
 
 void Fastcgipp::SQL::Parameters_base::build()
 {
@@ -62,29 +55,38 @@ Fastcgipp::SQL::Parameter<std::wstring>::convert(const std::wstring& x)
     {
         WARNING_LOG("Error in code conversion to utf8 in SQL parameter")
     }
-    return std::string("");
+    return std::string();
 }
 
-const unsigned Fastcgipp::SQL::Parameter<int16_t>::oid = INT2OID;
-const unsigned Fastcgipp::SQL::Parameter<std::vector<int16_t>>::oid
-    = INT2ARRAYOID;
-const unsigned Fastcgipp::SQL::Parameter<int32_t>::oid = INT4OID;
-const unsigned Fastcgipp::SQL::Parameter<int64_t>::oid = INT8OID;
-const unsigned Fastcgipp::SQL::Parameter<float>::oid = FLOAT4OID;
-const unsigned Fastcgipp::SQL::Parameter<double>::oid = FLOAT8OID;
-const unsigned Fastcgipp::SQL::Parameter<std::string>::oid = TEXTOID;
-const unsigned Fastcgipp::SQL::Parameter<std::wstring>::oid = TEXTOID;
-const unsigned Fastcgipp::SQL::Parameter<std::vector<char>>::oid = BYTEAOID;
+const unsigned Fastcgipp::SQL::Parameter<int16_t>::oid = Traits<int16_t>::oid;
+const unsigned Fastcgipp::SQL::Parameter<int32_t>::oid = Traits<int32_t>::oid;
+const unsigned Fastcgipp::SQL::Parameter<int64_t>::oid = Traits<int64_t>::oid;
+const unsigned Fastcgipp::SQL::Parameter<float>::oid = Traits<float>::oid;
+const unsigned Fastcgipp::SQL::Parameter<double>::oid = Traits<double>::oid;
+const unsigned Fastcgipp::SQL::Parameter<std::string>::oid
+    = Traits<std::string>::oid;
+const unsigned Fastcgipp::SQL::Parameter<std::wstring>::oid
+    = Traits<std::wstring>::oid;
+const unsigned Fastcgipp::SQL::Parameter<std::vector<char>>::oid
+    = Traits<std::vector<char>>::oid;
 const unsigned Fastcgipp::SQL::Parameter<
-    std::chrono::time_point<std::chrono::system_clock>>::oid = TIMESTAMPOID;
-const unsigned Fastcgipp::SQL::Parameter<Fastcgipp::Address>::oid = INETOID;
+    std::chrono::time_point<std::chrono::system_clock>>::oid
+    = Traits<std::chrono::time_point<std::chrono::system_clock>>::oid;
+const unsigned Fastcgipp::SQL::Parameter<Fastcgipp::Address>::oid
+    = Traits<Fastcgipp::Address>::oid;
 const char Fastcgipp::SQL::Parameter<Fastcgipp::Address>::addressFamily
-    = PGSQL_AF_INET6;
+    = Traits<Fastcgipp::Address>::addressFamily;
+template<typename Numeric>
+const unsigned Fastcgipp::SQL::Parameter<std::vector<Numeric>>::oid
+    = Traits<std::vector<Numeric>>::oid;
+const unsigned Fastcgipp::SQL::Parameter<std::vector<std::string>>::oid
+    = Traits<std::vector<std::string>>::oid;
 
-void Fastcgipp::SQL::Parameter<std::vector<int16_t>>::resize(
+template<typename Numeric>
+void Fastcgipp::SQL::Parameter<std::vector<Numeric>>::resize(
         const unsigned size)
 {
-    m_size = sizeof(int32_t)*(5+size) + size*sizeof(INT_TYPE);
+    m_size = sizeof(int32_t)*(5+size) + size*sizeof(Numeric);
     m_data.reset(new char[m_size]);
 
     BigEndian<int32_t>& ndim(*reinterpret_cast<BigEndian<int32_t>*>(
@@ -100,31 +102,126 @@ void Fastcgipp::SQL::Parameter<std::vector<int16_t>>::resize(
 
     ndim = 1;
     hasNull = 0;
-    elementType = Parameter<INT_TYPE>::oid;
+    elementType = Traits<Numeric>::oid;
     dim = size;
     lBound = 0;
 }
 
-Fastcgipp::SQL::Parameter<std::vector<int16_t>>&
-Fastcgipp::SQL::Parameter<std::vector<int16_t>>::operator=(
-        const std::vector<int16_t>& x)
+template<typename Numeric>
+Fastcgipp::SQL::Parameter<std::vector<Numeric>>&
+Fastcgipp::SQL::Parameter<std::vector<Numeric>>::operator=(
+        const std::vector<Numeric>& x)
 {
     resize(x.size());
 
     for(unsigned i=0; i < x.size(); ++i)
     {
         char* ptr = m_data.get() + 5*sizeof(int32_t)
-            + i*(sizeof(int32_t) + sizeof(INT_TYPE));
+            + i*(sizeof(int32_t) + sizeof(Numeric));
 
         BigEndian<int32_t>& length(
                 *reinterpret_cast<BigEndian<int32_t>*>(ptr));
-        BigEndian<INT_TYPE>& value(
-                *reinterpret_cast<BigEndian<INT_TYPE>*>(
+        BigEndian<Numeric>& value(
+                *reinterpret_cast<BigEndian<Numeric>*>(
                     ptr+sizeof(int32_t)));
 
-        length = sizeof(INT_TYPE);
+        length = sizeof(Numeric);
         value = x[i];
     }
 
     return *this;
+}
+
+template class Fastcgipp::SQL::Parameter<std::vector<int16_t>>;
+template class Fastcgipp::SQL::Parameter<std::vector<int32_t>>;
+template class Fastcgipp::SQL::Parameter<std::vector<int64_t>>;
+template class Fastcgipp::SQL::Parameter<std::vector<float>>;
+template class Fastcgipp::SQL::Parameter<std::vector<double>>;
+
+void Fastcgipp::SQL::Parameter<std::vector<std::string>>::assign(
+        const std::vector<std::string>& x)
+{
+    // Allocate the space
+    {
+        unsigned dataSize = 0;
+        for(const auto& string: x)
+            dataSize += string.size();
+        m_size = sizeof(int32_t)*(5+x.size()) + dataSize;
+        m_data.reset(new char[m_size]);
+        BigEndian<int32_t>& ndim(*reinterpret_cast<BigEndian<int32_t>*>(
+                    m_data.get()+0*sizeof(int32_t)));
+        BigEndian<int32_t>& hasNull(*reinterpret_cast<BigEndian<int32_t>*>(
+                    m_data.get()+1*sizeof(int32_t)));
+        BigEndian<int32_t>& elementType(*reinterpret_cast<BigEndian<int32_t>*>(
+                    m_data.get()+2*sizeof(int32_t)));
+        BigEndian<int32_t>& dim(*reinterpret_cast<BigEndian<int32_t>*>(
+                    m_data.get()+3*sizeof(int32_t)));
+        BigEndian<int32_t>& lBound(*reinterpret_cast<BigEndian<int32_t>*>(
+                    m_data.get()+4*sizeof(int32_t)));
+
+        ndim = 1;
+        hasNull = 0;
+        elementType = Traits<std::string>::oid;
+        dim = x.size();
+        lBound = 0;
+    }
+
+    char* ptr = m_data.get() + 5*sizeof(int32_t);
+    for(const auto& string: x)
+    {
+        BigEndian<int32_t>& length(
+                *reinterpret_cast<BigEndian<int32_t>*>(ptr));
+        length = string.size();
+        ptr = std::copy(string.begin(), string.end(), ptr+sizeof(int32_t));
+    }
+}
+
+std::string Fastcgipp::SQL::Parameter<std::vector<std::string>>::operator[](
+        const unsigned x) const
+{
+    const char* ptr = m_data.get() + 5*sizeof(int32_t);
+    unsigned i = 0;
+    while(true)
+    {
+        const int32_t length(*reinterpret_cast<const BigEndian<int32_t>*>(ptr));
+        ptr += sizeof(int32_t);
+        if(i++ == x)
+            return std::string(ptr, length);
+        ptr += length;
+    }
+}
+
+std::vector<std::string>
+Fastcgipp::SQL::Parameter<std::vector<std::wstring>>::convert(
+        const std::vector<std::wstring>& x)
+{
+    std::vector<std::string> result;
+    result.reserve(x.size());
+
+    std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
+    try
+    {
+        for(const auto& string: x)
+            result.emplace_back(std::move(converter.to_bytes(string)));
+    }
+    catch(const std::range_error& e)
+    {
+        WARNING_LOG("Error in array code conversion to utf8 in SQL parameter")
+    }
+    return result;
+}
+
+std::wstring Fastcgipp::SQL::Parameter<std::vector<std::wstring>>::convert(
+        const std::string& x)
+{
+    std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
+    try
+    {
+        return converter.from_bytes(x);
+    }
+    catch(const std::range_error& e)
+    {
+        WARNING_LOG("Error in array code conversion from utf8 in SQL parameter")
+    }
+    return std::wstring();
 }

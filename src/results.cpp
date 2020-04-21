@@ -2,7 +2,7 @@
  * @file       results.cpp
  * @brief      Defines SQL results types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       April 8, 2020
+ * @date       April 20, 2020
  * @copyright  Copyright &copy; 2020 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -29,166 +29,92 @@
 #include "fastcgi++/sql/results.hpp"
 #include "fastcgi++/endian.hpp"
 #include "fastcgi++/log.hpp"
+#include "sqlTraits.hpp"
 
 #include <locale>
 #include <codecvt>
 #include <cstdio>
 
-#include <postgres.h>
-#include <libpq-fe.h>
-#include <catalog/pg_type.h>
-#undef WARNING
-// I sure would like to know who thought it clever to define the macro WARNING
-// in these postgresql header files
+// Column verification
 
-template<>
-bool Fastcgipp::SQL::Results_base::verifyColumn<int16_t>(int column) const
+template<typename T>
+bool Fastcgipp::SQL::Results_base::verifyColumn(int column) const
 {
-    return PQftype(reinterpret_cast<const PGresult*>(m_res), column) == INT2OID
-        && PQfsize(reinterpret_cast<const PGresult*>(m_res), column) == 2;
+    return Traits<T>::verifyType(m_res, column);
 }
-template<> void Fastcgipp::SQL::Results_base::field<int16_t>(
+template bool Fastcgipp::SQL::Results_base::verifyColumn<int16_t>(
+        int column) const;
+template bool Fastcgipp::SQL::Results_base::verifyColumn<int32_t>(
+        int column) const;
+template bool Fastcgipp::SQL::Results_base::verifyColumn<int64_t>(
+        int column) const;
+template bool Fastcgipp::SQL::Results_base::verifyColumn<float>(
+        int column) const;
+template bool Fastcgipp::SQL::Results_base::verifyColumn<double>(
+        int column) const;
+template bool
+Fastcgipp::SQL::Results_base::verifyColumn<std::chrono::time_point<std::chrono::system_clock>>(
+        int column) const;
+template bool Fastcgipp::SQL::Results_base::verifyColumn<Fastcgipp::Address>(
+        int column) const;
+template bool Fastcgipp::SQL::Results_base::verifyColumn<std::string>(
+        int column) const;
+template bool Fastcgipp::SQL::Results_base::verifyColumn<std::wstring>(
+        int column) const;
+template bool Fastcgipp::SQL::Results_base::verifyColumn<std::vector<char>>(
+        int column) const;
+template bool Fastcgipp::SQL::Results_base::verifyColumn<std::vector<int16_t>>(
+        int column) const;
+template bool Fastcgipp::SQL::Results_base::verifyColumn<std::vector<int32_t>>(
+        int column) const;
+template bool Fastcgipp::SQL::Results_base::verifyColumn<std::vector<int64_t>>(
+        int column) const;
+template bool Fastcgipp::SQL::Results_base::verifyColumn<std::vector<float>>(
+        int column) const;
+template bool Fastcgipp::SQL::Results_base::verifyColumn<std::vector<double>>(
+        int column) const;
+template bool Fastcgipp::SQL::Results_base::verifyColumn<std::vector<std::string>>(
+        int column) const;
+template bool Fastcgipp::SQL::Results_base::verifyColumn<std::vector<std::wstring>>(
+        int column) const;
+
+// Non-array field return
+
+template<typename Numeric> void Fastcgipp::SQL::Results_base::field(
         int row,
         int column,
-        int16_t& value) const
+        Numeric& value) const
 {
-    value = BigEndian<int16_t>::read(
+    static_assert(
+            std::is_integral<Numeric>::value ||
+                std::is_floating_point<Numeric>::value,
+            "Numeric must be a numeric type.");
+    value = BigEndian<Numeric>::read(
             PQgetvalue(reinterpret_cast<const PGresult*>(m_res), row, column));
 }
-
-template<>
-bool Fastcgipp::SQL::Results_base::verifyColumn<std::vector<int16_t>>(
-        int column) const
-{
-    const Oid type = PQftype(reinterpret_cast<const PGresult*>(m_res), column);
-    return type == INT2ARRAYOID;
-}
-template<> void Fastcgipp::SQL::Results_base::field<std::vector<int16_t>>(
+template void Fastcgipp::SQL::Results_base::field<int16_t>(
         int row,
         int column,
-        std::vector<int16_t>& value) const
-{
-    const char* const start = PQgetvalue(
-            reinterpret_cast<const PGresult*>(m_res),
-            row,
-            column);
-
-    const int32_t ndim(*reinterpret_cast<const BigEndian<int32_t>*>(
-                start+0*sizeof(int32_t)));
-    if(ndim != 1)
-    {
-        WARNING_LOG("SQL result array type for std::vector<int16_t> has "\
-                "ndim != 1");
-        return;
-    }
-
-    const int32_t hasNull(*reinterpret_cast<const BigEndian<int32_t>*>(
-                start+1*sizeof(int32_t)));
-    if(hasNull != 0)
-    {
-        WARNING_LOG("SQL result array type for std::vector<int16_t> has "\
-                "ndim != 0");
-        return;
-    }
-
-    const int32_t elementType(*reinterpret_cast<const BigEndian<int32_t>*>(
-                start+2*sizeof(int32_t)));
-    if(elementType != INT2OID)
-    {
-        WARNING_LOG("SQL result array type for std::vector<int16_t> has "\
-                "the wrong element type");
-        return;
-    }
-
-    const int32_t size(*reinterpret_cast<const BigEndian<int32_t>*>(
-                start+3*sizeof(int32_t)));
-
-    value.clear();
-    value.reserve(size);
-    for(int i=0; i<size; ++i)
-    {
-        const int32_t length(
-                *reinterpret_cast<const BigEndian<int32_t>*>(
-                    start + 5*sizeof(int32_t)
-                    + i*(sizeof(int32_t) + sizeof(int16_t))));
-        if(length != sizeof(int16_t))
-        {
-            WARNING_LOG("SQL result array for int16_t has element of wrong size");
-            continue;
-        }
-
-        value.push_back(*reinterpret_cast<const BigEndian<int16_t>*>(
-                    start + 6*sizeof(int32_t)
-                    + i*(sizeof(int32_t) + sizeof(int16_t))));
-    }
-}
-
-template<>
-bool Fastcgipp::SQL::Results_base::verifyColumn<int32_t>(int column) const
-{
-    return PQftype(reinterpret_cast<const PGresult*>(m_res), column) == INT4OID
-        && PQfsize(reinterpret_cast<const PGresult*>(m_res), column) == 4;
-}
-template<> void Fastcgipp::SQL::Results_base::field<int32_t>(
+        int16_t& value) const;
+template void Fastcgipp::SQL::Results_base::field<int32_t>(
         int row,
         int column,
-        int32_t& value) const
-{
-    value = BigEndian<int32_t>::read(
-            PQgetvalue(reinterpret_cast<const PGresult*>(m_res), row, column));
-}
-
-template<>
-bool Fastcgipp::SQL::Results_base::verifyColumn<int64_t>(int column) const
-{
-    return PQftype(reinterpret_cast<const PGresult*>(m_res), column) == INT8OID
-        && PQfsize(reinterpret_cast<const PGresult*>(m_res), column) == 8;
-}
-template<> void Fastcgipp::SQL::Results_base::field<int64_t>(
+        int32_t& value) const;
+template void Fastcgipp::SQL::Results_base::field<int64_t>(
         int row,
         int column,
-        int64_t& value) const
-{
-    value = BigEndian<int64_t>::read(
-            PQgetvalue(reinterpret_cast<const PGresult*>(m_res), row, column));
-}
-
-template<>
-bool Fastcgipp::SQL::Results_base::verifyColumn<float>(int column) const
-{
-    return PQftype(reinterpret_cast<const PGresult*>(m_res), column)==FLOAT4OID
-        && PQfsize(reinterpret_cast<const PGresult*>(m_res), column) == 4;
-}
-template<> void Fastcgipp::SQL::Results_base::field<float>(
+        int64_t& value) const;
+template void Fastcgipp::SQL::Results_base::field<float>(
         int row,
         int column,
-        float& value) const
-{
-    value = BigEndian<float>::read(
-            PQgetvalue(reinterpret_cast<const PGresult*>(m_res), row, column));
-}
-
-template<>
-bool Fastcgipp::SQL::Results_base::verifyColumn<double>(int column) const
-{
-    return PQftype(reinterpret_cast<const PGresult*>(m_res), column)==FLOAT8OID
-        && PQfsize(reinterpret_cast<const PGresult*>(m_res), column) == 8;
-}
-template<> void Fastcgipp::SQL::Results_base::field<double>(
+        float& value) const;
+template void Fastcgipp::SQL::Results_base::field<double>(
         int row,
         int column,
-        double& value) const
-{
-    value = BigEndian<double>::read(
-            PQgetvalue(reinterpret_cast<const PGresult*>(m_res), row, column));
-}
+        double& value) const;
 
-template<>
-bool Fastcgipp::SQL::Results_base::verifyColumn<std::string>(int column) const
-{
-    const Oid type = PQftype(reinterpret_cast<const PGresult*>(m_res), column);
-    return type == TEXTOID || type == VARCHAROID;
-}
+// Non-array field return specializations
+
 template<> void Fastcgipp::SQL::Results_base::field<std::string>(
         int row,
         int column,
@@ -199,12 +125,6 @@ template<> void Fastcgipp::SQL::Results_base::field<std::string>(
             PQgetlength(reinterpret_cast<const PGresult*>(m_res), row, column));
 }
 
-template<>
-bool Fastcgipp::SQL::Results_base::verifyColumn<std::wstring>(int column) const
-{
-    const Oid type = PQftype(reinterpret_cast<const PGresult*>(m_res), column);
-    return type == TEXTOID || type == VARCHAROID;
-}
 template<> void Fastcgipp::SQL::Results_base::field<std::wstring>(
         int row,
         int column,
@@ -229,40 +149,6 @@ template<> void Fastcgipp::SQL::Results_base::field<std::wstring>(
     }
 }
 
-template<>
-bool Fastcgipp::SQL::Results_base::verifyColumn<std::vector<char>>(
-        int column) const
-{
-    const Oid type = PQftype(reinterpret_cast<const PGresult*>(m_res), column);
-    return type == BYTEAOID;
-}
-template<> void Fastcgipp::SQL::Results_base::field<std::vector<char>>(
-        int row,
-        int column,
-        std::vector<char>& value) const
-{
-    const unsigned size = PQgetlength(
-            reinterpret_cast<const PGresult*>(m_res),
-            row,
-            column);
-    const char* const start = PQgetvalue(
-            reinterpret_cast<const PGresult*>(m_res),
-            row,
-            column);
-    const char* const end = start+size;
-
-    value.reserve(size);
-    value.assign(start, end);
-}
-
-template<>
-bool Fastcgipp::SQL::Results_base::verifyColumn<
-    std::chrono::time_point<std::chrono::system_clock>>(int column) const
-{
-    const Oid type = PQftype(reinterpret_cast<const PGresult*>(m_res), column);
-    return type == TIMESTAMPOID
-        && PQfsize(reinterpret_cast<const PGresult*>(m_res), column) == 8;
-}
 template<> void Fastcgipp::SQL::Results_base::field<
   std::chrono::time_point<std::chrono::system_clock>>(
           int row,
@@ -279,11 +165,6 @@ template<> void Fastcgipp::SQL::Results_base::field<
                 duration)+std::chrono::seconds(946706400));
 }
 
-template<> bool Fastcgipp::SQL::Results_base::verifyColumn<Fastcgipp::Address>(
-        int column) const
-{
-    return PQftype(reinterpret_cast<const PGresult*>(m_res), column) == INETOID;
-}
 template<> void Fastcgipp::SQL::Results_base::field<Fastcgipp::Address>(
         int row,
         int column,
@@ -314,6 +195,229 @@ template<> void Fastcgipp::SQL::Results_base::field<Fastcgipp::Address>(
         }
     }
 }
+
+// Array field returns
+
+template<typename Numeric>
+void Fastcgipp::SQL::Results_base::field(
+        int row,
+        int column,
+        std::vector<Numeric>& value) const
+{
+    static_assert(
+            std::is_integral<Numeric>::value ||
+                std::is_floating_point<Numeric>::value,
+            "Numeric must be a numeric type.");
+    const char* const start = PQgetvalue(
+            reinterpret_cast<const PGresult*>(m_res),
+            row,
+            column);
+
+    const int32_t ndim(*reinterpret_cast<const BigEndian<int32_t>*>(
+                start+0*sizeof(int32_t)));
+    if(ndim != 1)
+    {
+        WARNING_LOG("SQL result array type for std::vector<Numeric> has "\
+                "ndim != 1");
+        return;
+    }
+
+    const int32_t hasNull(*reinterpret_cast<const BigEndian<int32_t>*>(
+                start+1*sizeof(int32_t)));
+    if(hasNull != 0)
+    {
+        WARNING_LOG("SQL result array type for std::vector<Numeric> has "\
+                "ndim != 0");
+        return;
+    }
+
+    const int32_t elementType(*reinterpret_cast<const BigEndian<int32_t>*>(
+                start+2*sizeof(int32_t)));
+    if(elementType != Traits<Numeric>::oid)
+    {
+        WARNING_LOG("SQL result array type for std::vector<Numeric> has "\
+                "the wrong element type");
+        return;
+    }
+
+    const int32_t size(*reinterpret_cast<const BigEndian<int32_t>*>(
+                start+3*sizeof(int32_t)));
+
+    value.clear();
+    value.reserve(size);
+    for(int i=0; i<size; ++i)
+    {
+        const int32_t length(
+                *reinterpret_cast<const BigEndian<int32_t>*>(
+                    start + 5*sizeof(int32_t)
+                    + i*(sizeof(int32_t) + sizeof(Numeric))));
+        if(length != sizeof(Numeric))
+        {
+            WARNING_LOG("SQL result array for Numeric has element of wrong size");
+            continue;
+        }
+
+        value.push_back(*reinterpret_cast<const BigEndian<Numeric>*>(
+                    start + 6*sizeof(int32_t)
+                    + i*(sizeof(int32_t) + sizeof(Numeric))));
+    }
+}
+template void Fastcgipp::SQL::Results_base::field<int16_t>(
+        int row,
+        int column,
+        std::vector<int16_t>& value) const;
+template void Fastcgipp::SQL::Results_base::field<int32_t>(
+        int row,
+        int column,
+        std::vector<int32_t>& value) const;
+template void Fastcgipp::SQL::Results_base::field<int64_t>(
+        int row,
+        int column,
+        std::vector<int64_t>& value) const;
+template void Fastcgipp::SQL::Results_base::field<float>(
+        int row,
+        int column,
+        std::vector<float>& value) const;
+template void Fastcgipp::SQL::Results_base::field<double>(
+        int row,
+        int column,
+        std::vector<double>& value) const;
+
+template<> void Fastcgipp::SQL::Results_base::field<char>(
+        int row,
+        int column,
+        std::vector<char>& value) const
+{
+    const unsigned size = PQgetlength(
+            reinterpret_cast<const PGresult*>(m_res),
+            row,
+            column);
+    const char* const start = PQgetvalue(
+            reinterpret_cast<const PGresult*>(m_res),
+            row,
+            column);
+    const char* const end = start+size;
+
+    value.reserve(size);
+    value.assign(start, end);
+}
+
+template<>
+void Fastcgipp::SQL::Results_base::field<std::string>(
+        int row,
+        int column,
+        std::vector<std::string>& value) const
+{
+    const char* ptr = PQgetvalue(
+            reinterpret_cast<const PGresult*>(m_res),
+            row,
+            column);
+
+    const int32_t ndim(*reinterpret_cast<const BigEndian<int32_t>*>(ptr));
+    ptr += sizeof(int32_t);
+    if(ndim != 1)
+    {
+        WARNING_LOG("SQL result array type for std::vector<std::string> has "\
+                "ndim != 1");
+        return;
+    }
+
+    const int32_t hasNull(*reinterpret_cast<const BigEndian<int32_t>*>(ptr));
+    ptr += sizeof(int32_t);
+    if(hasNull != 0)
+    {
+        WARNING_LOG("SQL result array type for std::vector<std::string> has "\
+                "ndim != 0");
+        return;
+    }
+
+    const int32_t elementType(*reinterpret_cast<const BigEndian<int32_t>*>(ptr));
+    ptr += sizeof(int32_t);
+    if(elementType != Traits<std::string>::oid)
+    {
+        WARNING_LOG("SQL result array type for std::vector<std::string> has "\
+                "the wrong element type");
+        return;
+    }
+
+    const int32_t size(*reinterpret_cast<const BigEndian<int32_t>*>(ptr));
+    ptr += 2*sizeof(int32_t);
+
+    value.clear();
+    value.reserve(size);
+    for(int i=0; i<size; ++i)
+    {
+        const int32_t length(*reinterpret_cast<const BigEndian<int32_t>*>(ptr));
+        ptr += sizeof(int32_t);
+
+        value.emplace_back(ptr, length);
+        ptr += length;
+    }
+}
+
+template<>
+void Fastcgipp::SQL::Results_base::field<std::wstring>(
+        int row,
+        int column,
+        std::vector<std::wstring>& value) const
+{
+    const char* ptr = PQgetvalue(
+            reinterpret_cast<const PGresult*>(m_res),
+            row,
+            column);
+
+    const int32_t ndim(*reinterpret_cast<const BigEndian<int32_t>*>(ptr));
+    ptr += sizeof(int32_t);
+    if(ndim != 1)
+    {
+        WARNING_LOG("SQL result array type for std::vector<std::string> has "\
+                "ndim != 1");
+        return;
+    }
+
+    const int32_t hasNull(*reinterpret_cast<const BigEndian<int32_t>*>(ptr));
+    ptr += sizeof(int32_t);
+    if(hasNull != 0)
+    {
+        WARNING_LOG("SQL result array type for std::vector<std::string> has "\
+                "ndim != 0");
+        return;
+    }
+
+    const int32_t elementType(*reinterpret_cast<const BigEndian<int32_t>*>(ptr));
+    ptr += sizeof(int32_t);
+    if(elementType != Traits<std::string>::oid)
+    {
+        WARNING_LOG("SQL result array type for std::vector<std::string> has "\
+                "the wrong element type");
+        return;
+    }
+
+    const int32_t size(*reinterpret_cast<const BigEndian<int32_t>*>(ptr));
+    ptr += 2*sizeof(int32_t);
+
+    value.clear();
+    value.reserve(size);
+    std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
+    try
+    {
+        for(int i=0; i<size; ++i)
+        {
+            const int32_t length(*reinterpret_cast<const BigEndian<int32_t>*>(ptr));
+            ptr += sizeof(int32_t);
+
+            value.emplace_back(std::move(
+                        converter.from_bytes(ptr, ptr+length)));
+            ptr += length;
+        }
+    }
+    catch(const std::range_error& e)
+    {
+        WARNING_LOG("Error in array code conversion to utf8 in SQL parameter")
+    }
+}
+
+// Done result fields
 
 Fastcgipp::SQL::Status Fastcgipp::SQL::Results_base::status() const
 {
