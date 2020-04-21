@@ -2,7 +2,7 @@
  * @file       parameters.cpp
  * @brief      Defines SQL parameters types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       April 20, 2020
+ * @date       April 21, 2020
  * @copyright  Copyright &copy; 2020 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -104,7 +104,7 @@ void Fastcgipp::SQL::Parameter<std::vector<Numeric>>::resize(
     hasNull = 0;
     elementType = Traits<Numeric>::oid;
     dim = size;
-    lBound = 0;
+    lBound = 1;
 }
 
 template<typename Numeric>
@@ -163,7 +163,7 @@ void Fastcgipp::SQL::Parameter<std::vector<std::string>>::assign(
         hasNull = 0;
         elementType = Traits<std::string>::oid;
         dim = x.size();
-        lBound = 0;
+        lBound = 1;
     }
 
     char* ptr = m_data.get() + 5*sizeof(int32_t);
