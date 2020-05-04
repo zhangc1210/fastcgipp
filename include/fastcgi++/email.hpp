@@ -2,12 +2,12 @@
  * @file       email.hpp
  * @brief      Declares types for composing emails
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       December 22, 2018
- * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
+ * @date       May 4, 2020
+ * @copyright  Copyright &copy; 2020 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
 /*******************************************************************************
-* Copyright (C) 2018 Eddie Carle [eddie@isatec.ca]                             *
+* Copyright (C) 2020 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
 * This file is part of fastcgi++.                                              *
 *                                                                              *
@@ -32,7 +32,7 @@
 #include <list>
 #include <ostream>
 
-#include "fastcgi++/webstreambuf.hpp"
+#include "fastcgi++/chunkstreambuf.hpp"
 
 //! Topmost namespace for the fastcgi++ library
 namespace Fastcgipp
@@ -43,27 +43,26 @@ namespace Fastcgipp
 
         //! De-templated base class for Email
         /*!
-         * @date    November 27, 2018
+         * @date    May 4, 2020
          * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
          */
         class Email_base
         {
         public:
-            //! A chunk of email body data
-            struct Chunk
+            //! %Email message data
+            struct DataRef
             {
-                //! Total capacity of a chunk
-                static constexpr unsigned capacity = 4096;
+                //! Linked list of body chunks
+                std::list<ChunkStreamBuf_base::Chunk>& body;
 
-                //! Pointer to chunk data
-                std::unique_ptr<char[]> data;
+                //! Recipient email address
+                std::string to;
 
-                //! Size of chunk data
-                unsigned size;
+                //! From email address
+                std::string from;
 
-                Chunk():
-                    data(new char[capacity]),
-                    size(0)
+                DataRef(std::list<ChunkStreamBuf_base::Chunk>& _body):
+                    body(_body)
                 {}
             };
 
@@ -71,13 +70,22 @@ namespace Fastcgipp
             struct Data
             {
                 //! Linked list of body chunks
-                std::list<Chunk> body;
+                std::list<ChunkStreamBuf_base::Chunk> body;
 
                 //! Recipient email address
                 std::string to;
 
                 //! From email address
                 std::string from;
+
+                Data()
+                {}
+
+                Data(DataRef&& dataRef):
+                    body(std::move(dataRef.body)),
+                    to(std::move(dataRef.to)),
+                    from(std::move(dataRef.from))
+                {}
             };
 
             //! Retrieve email message data. Makes stream EOF.
@@ -88,66 +96,22 @@ namespace Fastcgipp
             }
 
         protected:
-            //! %Email body stream buffer
-            template<class charT> class StreamBuffer;
-
             //! %Email message data
-            Data m_data;
+            DataRef m_data;
 
             //! Flush the buffer and set the stream to EOF.
             virtual void close() =0;
-        };
 
-        //! Specialized email body stream buffer for char
-        template<>
-        class Email_base::StreamBuffer<char>: public WebStreambuf<char>
-        {
-        private:
-            //! Reference to the body chunk list
-            std::list<Email_base::Chunk>& m_body;
-
-            //! Setup the stream buffer pointer
-            inline void setBufferPtr();
-        public:
-            inline StreamBuffer(std::list<Chunk>& body);
-
-            //! Empty/flush the buffer
-            bool emptyBuffer();
-
-            ~StreamBuffer()
-            {
-                emptyBuffer();
-            }
-        };
-
-        //! Specialized email body stream buffer for wchar_t
-        template<>
-        class Email_base::StreamBuffer<wchar_t>: public WebStreambuf<wchar_t>
-        {
-        private:
-            //! Buffer for wide character stuff
-            wchar_t m_buffer[Chunk::capacity];
-
-            //! Reference to the body chunk list
-            std::list<Email_base::Chunk>& m_body;
-        public:
-            inline StreamBuffer(std::list<Chunk>& body);
-
-            //! Empty/flush the buffer
-            bool emptyBuffer();
-
-            ~StreamBuffer()
-            {
-                emptyBuffer();
-            }
+            Email_base(std::list<ChunkStreamBuf_base::Chunk>& body):
+                m_data(body)
+            {}
         };
 
         //! Object for composing email messages
         /*!
          * Use this class to compose email messages from the template character
          * type. This class inherits from std::basic_ostream so the body can be
-         * composed using stream insertion operators. The stream buffer
-         * inherits from WebStreambuf so you can use the Encoding manipulators.
+         * composed using stream insertion operators.
          *
          * Use the to() and from() member functions to set the to/from email
          * addresses.
@@ -162,7 +126,7 @@ namespace Fastcgipp
         {
         private:
             //! Our stream buffer object
-            StreamBuffer<charT> m_streamBuffer;
+            ChunkStreamBuf<charT> m_streamBuffer;
 
             void close();
 

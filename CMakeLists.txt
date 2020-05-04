@@ -17,7 +17,8 @@ set(SRC_FILES
     "src/manager.cpp"
     "src/address.cpp"
     "src/mailer.cpp"
-    "src/email.cpp")
+    "src/email.cpp"
+    "src/chunkstreambuf.cpp")
 set(TESTS
     "protocol"
     "http"
