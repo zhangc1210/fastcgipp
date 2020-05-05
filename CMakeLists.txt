@@ -9,6 +9,7 @@ set(SRC_FILES
     "src/block.cpp"
     "src/http.cpp"
     "src/protocol.cpp"
+    "src/poll.cpp"
     "src/sockets.cpp"
     "src/transceiver.cpp"
     "src/fcgistreambuf.cpp"
