@@ -2,7 +2,7 @@
  * @file       chunkstreambuf.cpp
  * @brief      Defines the ChunkStreamBuf stuff
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 4, 2020
+ * @date       May 6, 2020
  * @copyright  Copyright &copy; 2020 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -37,6 +37,12 @@ Fastcgipp::ChunkStreamBuf<char>::ChunkStreamBuf()
     setBufferPtr();
 }
 
+void Fastcgipp::ChunkStreamBuf<char>::clear()
+{
+    m_body.clear();
+    setBufferPtr();
+}
+
 void Fastcgipp::ChunkStreamBuf<char>::setBufferPtr()
 {
     m_body.emplace_back();
@@ -58,6 +64,12 @@ Fastcgipp::ChunkStreamBuf<wchar_t>::ChunkStreamBuf()
     this->setp(m_buffer, m_buffer+Chunk::capacity);
 }
 
+void Fastcgipp::ChunkStreamBuf<wchar_t>::clear()
+{
+    m_body.clear();
+    this->setp(m_buffer, m_buffer+Chunk::capacity);
+}
+
 bool Fastcgipp::ChunkStreamBuf<wchar_t>::emptyBuffer()
 {
     size_t count = this->pptr() - this->pbase();
@@ -68,7 +80,8 @@ bool Fastcgipp::ChunkStreamBuf<wchar_t>::emptyBuffer()
     std::codecvt_base::result result;
     mbstate_t state = mbstate_t();
     char* toNext;
-    const wchar_t* fromNext;
+    const wchar_t* from=this->pbase();
+    const wchar_t* const fromEnd = this->pptr();
 
     if(m_body.empty() || m_body.back().size == Chunk::capacity)
         m_body.emplace_back();
@@ -77,9 +90,9 @@ bool Fastcgipp::ChunkStreamBuf<wchar_t>::emptyBuffer()
     {
         result = converter.out(
                 state,
-                this->pbase(),
-                this->pptr(),
-                fromNext,
+                from,
+                fromEnd,
+                from,
                 m_body.back().data.get()+m_body.back().size,
                 m_body.back().data.get()+Chunk::capacity,
                 toNext);
@@ -91,17 +104,16 @@ bool Fastcgipp::ChunkStreamBuf<wchar_t>::emptyBuffer()
             pbump(-count);
             return false;
         }
-        pbump(-(fromNext - this->pbase()));
         m_body.back().size = std::distance(
                 m_body.back().data.get(),
                 toNext);
-        count = this->pptr() - this->pbase();
-
+        count = fromEnd - from;
         if(count == 0)
             break;
         else
             m_body.emplace_back();
     }
 
+    this->setp(m_buffer, m_buffer+Chunk::capacity);
     return true;
 }

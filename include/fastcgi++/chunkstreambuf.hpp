@@ -2,7 +2,7 @@
  * @file       chunkstreambuf.hpp
  * @brief      Declares the ChunkStreamBuf stuff
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 4, 2020
+ * @date       May 6, 2020
  * @copyright  Copyright &copy; 2020 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -39,7 +39,7 @@ namespace Fastcgipp
 {
     //! De-templated base class for ChunkStreamBuf
     /*!
-     * @date    May 4, 2020
+     * @date    May 6, 2020
      * @author  Eddie Carle &lt;eddie@isatec.ca&gt;
      */
     class ChunkStreamBuf_base
@@ -81,6 +81,8 @@ namespace Fastcgipp
     public:
         ChunkStreamBuf();
 
+        void clear();
+
         //! Empty/flush the buffer
         bool emptyBuffer();
 
@@ -101,6 +103,8 @@ namespace Fastcgipp
 
     public:
         ChunkStreamBuf();
+
+        void clear();
 
         //! Empty/flush the buffer
         bool emptyBuffer();

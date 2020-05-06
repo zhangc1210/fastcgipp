@@ -2,12 +2,12 @@
  * @file       fcgistreambuf.cpp
  * @brief      Defines the FcgiStreambuf class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       November 27, 2018
- * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
+ * @date       May 6, 2020
+ * @copyright  Copyright &copy; 2020 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
 /*******************************************************************************
-* Copyright (C) 2018 Eddie Carle [eddie@isatec.ca]                             *
+* Copyright (C) 2020 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
 * This file is part of fastcgi++.                                              *
 *                                                                              *
@@ -42,9 +42,10 @@ namespace Fastcgipp
         size_t count;
         mbstate_t state = mbstate_t();
         char* toNext;
-        const wchar_t* fromNext;
+        const wchar_t* from = this->pbase();
+        const wchar_t* const fromEnd = this->pptr();
 
-        while((count = this->pptr() - this->pbase()) != 0)
+        while((count = fromEnd - from) != 0)
         {
             record.reserve(
                     Protocol::getRecordSize(count*converter.max_length()));
@@ -54,9 +55,9 @@ namespace Fastcgipp
 
             result = converter.out(
                     state,
-                    this->pbase(),
-                    this->pptr(),
-                    fromNext,
+                    from,
+                    fromEnd,
+                    from,
                     record.begin()+sizeof(Protocol::Header),
                     &*record.end(),
                     toNext);
@@ -68,7 +69,6 @@ namespace Fastcgipp
                 pbump(-count);
                 return false;
             }
-            pbump(-(fromNext - this->pbase()));
             header.contentLength = std::distance(
                     record.begin()+sizeof(Protocol::Header),
                     toNext);
@@ -83,6 +83,7 @@ namespace Fastcgipp
             send(m_id.m_socket, std::move(record));
         }
 
+        this->setp(m_buffer, m_buffer+s_buffSize);
         return true;
     }
 
@@ -92,7 +93,10 @@ namespace Fastcgipp
         Block record;
         size_t count;
 
-        while((count = this->pptr() - this->pbase()) != 0)
+        const char* from = this->pbase();
+        const char* const fromEnd = this->pptr();
+
+        while((count = fromEnd - from) != 0)
         {
             record.size(Protocol::getRecordSize(count));
 
@@ -103,11 +107,11 @@ namespace Fastcgipp
                     static_cast<size_t>(0xffffU));
 
             std::copy(
-                    this->pbase(),
-                    this->pbase()+header.contentLength,
+                    from,
+                    from+header.contentLength,
                     record.begin()+sizeof(Protocol::Header));
 
-            pbump(-header.contentLength);
+            from += header.contentLength;
 
             header.version = Protocol::version;
             header.type = m_type;
@@ -118,6 +122,7 @@ namespace Fastcgipp
             send(m_id.m_socket, std::move(record));
         }
 
+        this->setp(m_buffer, m_buffer+s_buffSize);
         return true;
     }
 }
