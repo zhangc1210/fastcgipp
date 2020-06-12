@@ -2,7 +2,7 @@
  * @file       parameters.cpp
  * @brief      Defines SQL parameters types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       April 21, 2020
+ * @date       June 11, 2020
  * @copyright  Copyright &copy; 2020 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -26,9 +26,9 @@
 * along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.           *
 *******************************************************************************/
 
+#include "sqlTraits.hpp"
 #include "fastcgi++/sql/parameters.hpp"
 #include "fastcgi++/log.hpp"
-#include "sqlTraits.hpp"
 
 #include <locale>
 #include <codecvt>

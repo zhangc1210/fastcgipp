@@ -2,7 +2,7 @@
  * @file       connection.cpp
  * @brief      Defines the Fastcgipp::SQL::SQL::Connection class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       October 11, 2018
+ * @date       June 11, 2020
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -26,20 +26,18 @@
 * along with fastcgi++.  If not, see <http://www.gnu.org/licenses/>.           *
 *******************************************************************************/
 
-#include "fastcgi++/sql/connection.hpp"
-#include "fastcgi++/log.hpp"
-
-#include <unistd.h>
-#include <cstring>
-
 #include <postgres.h>
 #include <libpq-fe.h>
 #include <catalog/pg_type.h>
 #undef ERROR
 #undef WARNING
 #undef INFO
-// I sure would like to know who thought it clever to define the macros ERROR,
-// WARNING in these postgresql header files
+
+#include "fastcgi++/sql/connection.hpp"
+#include "fastcgi++/log.hpp"
+
+#include <unistd.h>
+#include <cstring>
 
 void Fastcgipp::SQL::Connection::handler()
 {
