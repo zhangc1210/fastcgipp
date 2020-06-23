@@ -2,7 +2,7 @@
  * @file       curl.cpp
  * @brief      Defines types for composing curls
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       May 7, 2020
+ * @date       June 22, 2020
  * @copyright  Copyright &copy; 2020 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -181,6 +181,7 @@ void Fastcgipp::Curl_base::prepare()
     if(headers)
         curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
 
+    curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, m_streamBuf->m_errorBuffer);
     curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, writeCallback);
     curl_easy_setopt(handle, CURLOPT_WRITEDATA, m_streamBuf.get());
     curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, headerCallback);
@@ -199,7 +200,9 @@ Fastcgipp::Curl_base::StreamBuf_base::StreamBuf_base(
     m_handle(curl_easy_init()),
     m_headers(nullptr),
     m_data(data)
-{}
+{
+    m_errorBuffer[0] = 0;
+}
 
 Fastcgipp::Curl_base::StreamBuf_base::~StreamBuf_base()
 {
