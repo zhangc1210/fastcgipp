@@ -129,7 +129,7 @@ endif(UNIX)
 
 include(GNUInstallDirs)
 target_include_directories(fastcgipp PUBLIC
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_LIBDIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
