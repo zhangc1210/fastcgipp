@@ -2,7 +2,7 @@
  * @file       connection.cpp
  * @brief      Defines the Fastcgipp::SQL::SQL::Connection class
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       June 11, 2020
+ * @date       September 10, 2020
  * @copyright  Copyright &copy; 2018 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -163,7 +163,10 @@ void Fastcgipp::SQL::Connection::handler()
                                 query.parameters.reset();
                                 query.results.reset();
                                 if(query.callback)
+                                {
                                     query.callback(m_messageType);
+                                    query.callback=std::function<void(Message)>();
+                                }
                                 break;
                             }
 
