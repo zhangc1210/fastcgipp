@@ -10,7 +10,7 @@
 hoping to get people testing and giving feedback as soon as possible. I'm
 pretty proud of this particular iteration at integrating database functionality
 into fastcgi++ so go easy on me! Check out the [example][15], [unit test][16]
-and [reference documentation][13] for further details.
+and [reference documentation][17] for further details.
 
 **April 5, 2018** - It's been long enough, 3.0 is now official and marked
 stable.
@@ -34,6 +34,7 @@ fastcgi++][1]].
 [1]: https://eddie.isatec.ca/2016/04/10/ten-years-of-fastcgi++.html
 [15]: https://fastcgipp.isatec.ca/sql.html
 [16]: https://github.com/eddic/fastcgipp/blob/master/tests/sql.cpp
+[17]: https://fastcgipp.isatec.ca/namespaceFastcgipp_1_1SQL.html
 
 ## About ##
 
@@ -116,7 +117,7 @@ Then we can build the documentation if we so desire.
 
 Now let's install it all (doc included if it was built).
 
-    make install
+    sudo make install
 
 Maybe we should build the unit tests?
 
