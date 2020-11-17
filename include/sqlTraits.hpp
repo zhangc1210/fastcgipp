@@ -2,7 +2,7 @@
  * @file       sqlTraits.hpp
  * @brief      Defines SQL type traits
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       June 11, 2020
+ * @date       November 16, 2020
  * @copyright  Copyright &copy; 2020 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -140,7 +140,7 @@ namespace Fastcgipp
         };
         template<> struct Traits<std::chrono::time_point<std::chrono::system_clock>>
         {
-            static constexpr unsigned oid = TIMESTAMPOID;
+            static constexpr unsigned oid = TIMESTAMPTZOID;
             static bool verifyType(const void* result, int column)
             {
                 const Oid type = PQftype(

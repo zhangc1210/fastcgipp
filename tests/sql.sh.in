@@ -17,7 +17,7 @@ CREATE TABLE fastcgipp_test (
     five    double precision,
     six     bytea,
     seven   text,
-    eight   timestamp,
+    eight   timestamptz,
     nine    inet,
     ten     smallint ARRAY,
     eleven  text ARRAY,
