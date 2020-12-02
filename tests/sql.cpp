@@ -38,7 +38,8 @@ private:
         Fastcgipp::Address,
         std::vector<int16_t>,
         std::vector<std::string>,
-        std::vector<std::wstring>> m_parameters;
+        std::vector<std::wstring>,
+        bool> m_parameters;
 
     std::shared_ptr<Fastcgipp::SQL::Results<int32_t>> m_insertResult;
 
@@ -55,7 +56,10 @@ private:
         std::vector<int16_t>,
         std::vector<std::string>,
         std::vector<std::wstring>,
+        bool,
         std::wstring>> m_selectResults;
+
+    bool m_boolValue;
 
     std::shared_ptr<Fastcgipp::SQL::Results<>> m_deleteResult;
 
@@ -76,6 +80,7 @@ private:
     static std::uniform_int_distribution<int64_t> int64dist;
     static std::normal_distribution<float> floatdist;
     static std::normal_distribution<double> doubledist;
+    static std::bernoulli_distribution boolDist;
     static const std::array<std::wstring, 6> wstrings;
     static const std::array<std::string, 6> strings;
     static const std::array<std::vector<char>, 6> vectors;
@@ -89,7 +94,8 @@ private:
 
 public:
     TestQuery():
-        m_state(0)
+        m_state(0),
+        m_boolValue(boolDist(device))
     {
     }
 
@@ -131,6 +137,7 @@ std::uniform_int_distribution<int64_t> TestQuery::int64dist(
         std::numeric_limits<int64_t>::max());
 std::normal_distribution<float> TestQuery::floatdist(0, 1000);
 std::normal_distribution<double> TestQuery::doubledist(0, 10000);
+std::bernoulli_distribution TestQuery::boolDist(0.5);
 const std::array<std::wstring, 6> TestQuery::wstrings
 {
     L"Hello World",
@@ -315,11 +322,12 @@ bool TestQuery::handle()
                 addresses[stringdist(device)],
                 int16Vectors[stringdist(device)],
                 stringVectors[stringdist(device)],
-                wstringVectors[stringdist(device)]);
+                wstringVectors[stringdist(device)],
+                m_boolValue);
             m_insertResult.reset(new Fastcgipp::SQL::Results<int32_t>);
 
             Fastcgipp::SQL::Query query;
-            query.statement = "INSERT INTO fastcgipp_test (zero, one, two, three, four, five, six, seven, eight, nine, ten, eleven, twelve) VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING zero;";
+            query.statement = "INSERT INTO fastcgipp_test (zero, one, two, three, four, five, six, seven, eight, nine, ten, eleven, twelve, thirteen) VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING zero;";
             query.parameters = Fastcgipp::SQL::make_Parameters(m_parameters);
             query.results = m_insertResult;
             query.callback = m_callback;
@@ -356,10 +364,11 @@ bool TestQuery::handle()
                     std::vector<int16_t>,
                     std::vector<std::string>,
                     std::vector<std::wstring>,
+                    bool,
                     std::wstring>);
 
             Fastcgipp::SQL::Query query;
-            query.statement = "SELECT one, two, three, four, five, six, seven, eight, nine, ten, eleven, twelve, zero::text || ' ' || one::text || ' ' || two::text || ' ' || three || ' ' || to_char(four, '9.999EEEE') || ' ' || to_char(five, '9.999EEEE') || ' ' || seven || ' ' || to_char(eight, 'YYYY-MM-DD HH24:MI:SS') || ' ' || nine || ' [,' || array_to_string(ten, ',') || '] [,' || array_to_string(eleven, ',') || ']' AS thirteen FROM fastcgipp_test WHERE zero=$1;";
+            query.statement = "SELECT one, two, three, four, five, six, seven, eight, nine, ten, eleven, twelve, thirteen, zero::text || ' ' || one::text || ' ' || two::text || ' ' || three || ' ' || to_char(four, '9.999EEEE') || ' ' || to_char(five, '9.999EEEE') || ' ' || seven || ' ' || to_char(eight, 'YYYY-MM-DD HH24:MI:SS') || ' ' || nine || ' [,' || array_to_string(ten, ',') || '] [,' || array_to_string(eleven, ',') || '] ' || thirteen AS fourteen FROM fastcgipp_test WHERE zero=$1;";
             query.parameters = parameters;
             query.results = m_selectResults;
             query.callback = m_callback;
@@ -409,6 +418,8 @@ bool TestQuery::handle()
                 FAIL_LOG("Fastcgipp::SQL::Connection test fail #26")
             if(std::get<10>(row) != std::get<10>(m_parameters))
                 FAIL_LOG("Fastcgipp::SQL::Connection test fail #27")
+            if(std::get<12>(row) != m_boolValue)
+                FAIL_LOG("Fastcgipp::SQL::Connection test fail #28")
 
             const std::time_t timeStamp = std::chrono::system_clock::to_time_t(
                     std::get<7>(m_parameters));
@@ -431,10 +442,10 @@ bool TestQuery::handle()
             ss << "] [";
             for(const auto& number: std::get<10>(m_parameters))
                 ss << "," << number.c_str();
-            ss << "]";
+            ss << "] " << std::boolalpha << m_boolValue;
 
-            if(ss.str() != std::get<12>(row))
-                FAIL_LOG("Fastcgipp::SQL::Connection test fail #20" << ss.str() << " vs " << std::get<12>(row))
+            if(ss.str() != std::get<13>(row))
+                FAIL_LOG("Fastcgipp::SQL::Connection test fail #20 " << ss.str() << " vs " << std::get<13>(row))
 
             const auto& insertRow = m_insertResult->row(0);
             const int32_t& id = std::get<0>(insertRow);
@@ -442,7 +453,7 @@ bool TestQuery::handle()
             auto parameters = Fastcgipp::SQL::make_Parameters(id);
             m_deleteResult.reset(new Fastcgipp::SQL::Results<>);
 
-            /*Fastcgipp::SQL::Query query;
+            Fastcgipp::SQL::Query query;
             query.statement = "DELETE FROM fastcgipp_test WHERE zero=$1;";
             query.parameters = parameters;
             query.results = m_deleteResult;
@@ -451,8 +462,7 @@ bool TestQuery::handle()
                 FAIL_LOG("Fastcgipp::SQL::Connection test fail #21")
 
             ++m_state;
-            return false;*/
-            return true;
+            return false;
         }
 
         case 3:
@@ -545,6 +555,8 @@ int main()
             0x00, 0x00, 0x00, 12,
             0xe6, 0xad, 0xbb, 0xe7, 0xa5, 0x9e, 0xe6, 0xb0, 0xb8, 0xe7, 0x94, 0x9f
         };
+        static const bool eleven = false;
+        static const bool twelve = true;
 
         auto data(Fastcgipp::SQL::make_Parameters(
                 zero,
@@ -557,7 +569,9 @@ int main()
                 seven,
                 eight,
                 nine,
-                ten));
+                ten,
+                eleven,
+                twelve));
         for(unsigned i=0; i<eight.size(); ++i)
             if(eight[i] != std::get<8>(*data)[i])
                 FAIL_LOG("Fastcgipp::SQL::Parameters failed on column 8 []")
@@ -652,6 +666,16 @@ int main()
                     *(base->raws()+10),
                     *(base->raws()+10)+*(base->sizes()+10)))
             FAIL_LOG("Fastcgipp::SQL::Parameters failed on column 10 ")
+        if(
+                *(base->oids()+11) != BOOLOID ||
+                *(base->sizes()+11) != 1 ||
+                **(base->raws()+11) != eleven)
+            FAIL_LOG("Fastcgipp::SQL::Parameters failed on column 11")
+        if(
+                *(base->oids()+12) != BOOLOID ||
+                *(base->sizes()+12) != 1 ||
+                **(base->raws()+12) != twelve)
+            FAIL_LOG("Fastcgipp::SQL::Parameters failed on column 12")
         for(
                 const int* value = base->formats();
                 value != base->formats() + base->size();

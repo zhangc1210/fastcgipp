@@ -2,7 +2,7 @@
  * @file       parameters.hpp
  * @brief      Declares %SQL parameters types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       November 16, 2020
+ * @date       December 2, 2020
  * @copyright  Copyright &copy; 2020 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -51,6 +51,31 @@ namespace Fastcgipp
          * definition exists for this class so only specializations are valid.
          */
         template<typename T> class Parameter;
+
+        template<>
+        class Parameter<bool>
+        {
+        private:
+            char m_data;
+        public:
+            static const unsigned oid;
+            constexpr Parameter(bool x) noexcept:
+                m_data(static_cast<char>(x))
+            {}
+            constexpr Parameter& operator=(bool x) noexcept
+            {
+                m_data = static_cast<char>(x);
+                return *this;
+            }
+            constexpr const char* data() const
+            {
+                return &m_data;
+            }
+            constexpr unsigned size() const
+            {
+                return 1;
+            }
+        };
 
         template<>
         struct Parameter<int16_t>: public BigEndian<int16_t>

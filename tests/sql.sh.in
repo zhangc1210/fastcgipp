@@ -9,19 +9,20 @@ PGPASSWORDOLD="$PGPASSWORD"
 export PGPASSWORD="fastcgipp_test"
 psql -U fastcgipp_test -d fastcgipp_test -c "
 CREATE TABLE fastcgipp_test (
-    zero    serial PRIMARY KEY,
-    one     smallint,
-    two     bigint,
-    three   text,
-    four    real,
-    five    double precision,
-    six     bytea,
-    seven   text,
-    eight   timestamptz,
-    nine    inet,
-    ten     smallint ARRAY,
-    eleven  text ARRAY,
-    twelve  text ARRAY
+    zero     serial PRIMARY KEY,
+    one      smallint,
+    two      bigint,
+    three    text,
+    four     real,
+    five     double precision,
+    six      bytea,
+    seven    text,
+    eight    timestamptz,
+    nine     inet,
+    ten      smallint ARRAY,
+    eleven   text ARRAY,
+    twelve   text ARRAY,
+    thirteen BOOL
 );" &&
 @CMAKE_CURRENT_BINARY_DIR@/sql_test
 

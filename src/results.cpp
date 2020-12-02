@@ -2,7 +2,7 @@
  * @file       results.cpp
  * @brief      Defines SQL results types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       November 16, 2020
+ * @date       December 2, 2020
  * @copyright  Copyright &copy; 2020 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -42,6 +42,8 @@ bool Fastcgipp::SQL::Results_base::verifyColumn(int column) const
 {
     return Traits<T>::verifyType(m_res, column);
 }
+template bool Fastcgipp::SQL::Results_base::verifyColumn<bool>(
+        int column) const;
 template bool Fastcgipp::SQL::Results_base::verifyColumn<int16_t>(
         int column) const;
 template bool Fastcgipp::SQL::Results_base::verifyColumn<int32_t>(
@@ -114,6 +116,15 @@ template void Fastcgipp::SQL::Results_base::field<double>(
         double& value) const;
 
 // Non-array field return specializations
+
+template<> void Fastcgipp::SQL::Results_base::field<bool>(
+        int row,
+        int column,
+        bool& value) const
+{
+    value = static_cast<bool>(
+            *PQgetvalue(reinterpret_cast<const PGresult*>(m_res), row, column));
+}
 
 template<> void Fastcgipp::SQL::Results_base::field<std::string>(
         int row,

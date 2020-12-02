@@ -2,7 +2,7 @@
  * @file       sqlTraits.hpp
  * @brief      Defines SQL type traits
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       November 16, 2020
+ * @date       December 2, 2020
  * @copyright  Copyright &copy; 2020 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -46,6 +46,20 @@ namespace Fastcgipp
     namespace SQL
     {
         template<typename T> struct Traits {};
+        template<> struct Traits<bool>
+        {
+            static constexpr unsigned oid = BOOLOID;
+            static bool verifyType(const void* result, int column)
+            {
+                const Oid type = PQftype(
+                        reinterpret_cast<const PGresult*>(result),
+                        column);
+                const auto size = PQfsize(
+                        reinterpret_cast<const PGresult*>(result),
+                        column);
+                return type == oid && size == 1;
+            }
+        };
         template<> struct Traits<int16_t>
         {
             static constexpr unsigned oid = INT2OID;

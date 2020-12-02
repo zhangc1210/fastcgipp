@@ -2,7 +2,7 @@
  * @file       parameters.cpp
  * @brief      Defines SQL parameters types
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       June 11, 2020
+ * @date       December 2, 2020
  * @copyright  Copyright &copy; 2020 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
@@ -58,6 +58,7 @@ Fastcgipp::SQL::Parameter<std::wstring>::convert(const std::wstring& x)
     return std::string();
 }
 
+const unsigned Fastcgipp::SQL::Parameter<bool>::oid = Traits<bool>::oid;
 const unsigned Fastcgipp::SQL::Parameter<int16_t>::oid = Traits<int16_t>::oid;
 const unsigned Fastcgipp::SQL::Parameter<int32_t>::oid = Traits<int32_t>::oid;
 const unsigned Fastcgipp::SQL::Parameter<int64_t>::oid = Traits<int64_t>::oid;
