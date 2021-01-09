@@ -2,12 +2,12 @@
  * @file       curl.cpp
  * @brief      Defines types for composing curls
  * @author     Eddie Carle &lt;eddie@isatec.ca&gt;
- * @date       June 22, 2020
- * @copyright  Copyright &copy; 2020 Eddie Carle. This project is released under
+ * @date       January 8, 2021
+ * @copyright  Copyright &copy; 2021 Eddie Carle. This project is released under
  *             the GNU Lesser General Public License Version 3.
  */
 /*******************************************************************************
-* Copyright (C) 2020 Eddie Carle [eddie@isatec.ca]                             *
+* Copyright (C) 2021 Eddie Carle [eddie@isatec.ca]                             *
 *                                                                              *
 * This file is part of fastcgi++.                                              *
 *                                                                              *
@@ -386,7 +386,7 @@ void Fastcgipp::Curl_base::StreamBuf<char>::injectHeader(
 {
     std::string key(keyStart, keyEnd);
     std::string value(valueStart, valueEnd);
-    if(key == "Content-Length")
+    if(key == "Content-Length" || key == "content-length")
     {
         m_responseDataReserve = std::stoi(value);
         m_responseData.reset(new char[m_responseDataReserve]);
@@ -409,7 +409,7 @@ void Fastcgipp::Curl_base::StreamBuf<wchar_t>::injectHeader(
     {
         std::wstring key = converter.from_bytes(keyStart, keyEnd);
         std::wstring value = converter.from_bytes(valueStart, valueEnd);
-        if(key == L"Content-Length")
+        if(key == L"Content-Length" || key == L"content-length")
         {
             m_responseDataReserve = std::stoi(value);
             m_responseData.reset(new wchar_t[m_responseDataReserve]);
