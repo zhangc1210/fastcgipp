@@ -91,7 +91,7 @@ configure_file(
 # Are we worrying about SQL?
 option(SQL "Set to ON to build and install the SQL components" OFF)
 if(SQL)
-    find_package(PostgreSQL REQUIRED)
+    find_package(PostgreSQL 11.0 REQUIRED)
     list(APPEND SRC_FILES "src/parameters.cpp")
     list(APPEND SRC_FILES "src/results.cpp")
     list(APPEND SRC_FILES "src/connection.cpp")
