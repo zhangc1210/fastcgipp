@@ -220,6 +220,9 @@ namespace Fastcgipp
         {
             return m_streamBuf->m_errorBuffer;
         }
+
+        virtual ~Curl_base()
+        {};
     };
 
     //! Object for composing curl messages
