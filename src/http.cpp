@@ -308,6 +308,12 @@ template<class charT> void Fastcgipp::Http::Environment<charT>::fill(
                                 requestMethodLabels[static_cast<int>(
                                     RequestMethod::TRACE)]))
                         requestMethod = RequestMethod::TRACE;
+                    else if(std::equal(
+                                value,
+                                end,
+                                requestMethodLabels[static_cast<int>(
+                                    RequestMethod::PATCH)]))
+                        requestMethod = RequestMethod::PATCH;
                     break;
                 case 6:
                     if(std::equal(
@@ -328,7 +334,7 @@ template<class charT> void Fastcgipp::Http::Environment<charT>::fill(
                                 value,
                                 end,
                                 requestMethodLabels[static_cast<int>(
-                                    RequestMethod::OPTIONS)]))
+                                    RequestMethod::CONNECT)]))
                         requestMethod = RequestMethod::CONNECT;
                     break;
                 }
@@ -764,7 +770,7 @@ extern const std::array<const char, 64> Fastcgipp::Http::base64Characters =
     '5','6','7','8','9','+','/'
 }};
 
-const std::array<const char* const, 9> Fastcgipp::Http::requestMethodLabels =
+const std::array<const char* const, 10> Fastcgipp::Http::requestMethodLabels =
 {{
     "ERROR",
     "HEAD",
@@ -774,5 +780,6 @@ const std::array<const char* const, 9> Fastcgipp::Http::requestMethodLabels =
     "DELETE",
     "TRACE",
     "OPTIONS",
-    "CONNECT"
+    "CONNECT",
+    "PATCH"
 }};
