@@ -106,7 +106,7 @@ if(CURL_FOUND)
 endif(CURL_FOUND)
 
 # Build the library itself
-option(BUILD_STATIC_LIBS "Set to ON to build and install only the static library" OFF)
+option(BUILD_STATIC_LIBS "Set to ON to build and install only the static library" ON)
 if(BUILD_STATIC_LIBS)
     add_library(fastcgipp STATIC ${SRC_FILES})
 else(BUILD_STATIC_LIBS)
