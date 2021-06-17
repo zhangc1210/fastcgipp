@@ -62,7 +62,7 @@ namespace Fastcgipp
 
         //! Initialize a block with equal size and reserve from source data
         Block(const char* const data, const size_t size_);
-
+		~Block();
         //! Assign a sequence a data to the block
         /*!
          * If the reserve if smaller the requested size then reallocation

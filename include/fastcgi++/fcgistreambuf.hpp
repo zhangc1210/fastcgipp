@@ -78,11 +78,14 @@ namespace Fastcgipp
                 const Protocol::RequestId& id,
                 const Protocol::RecordType& type,
                 const std::function<void(const Socket&, Block&&)>
-                    send_)
+                    send_,
+                const std::function<void(const Socket&, Block&&)>
+                    send_2)
         {
             m_id = id;
             m_type = type;
             send = send_;
+            send2=send_2;
         }
 
         //! Dumps raw data directly into the FastCGI protocol
@@ -107,6 +110,7 @@ namespace Fastcgipp
          *                   transmitted.
          */
         void dump(std::basic_istream<char>& stream);
+        void dump2(const char* data, size_t size);
 
     private:
         //! Code converts, packages and transmits all data in the stream buffer
@@ -126,6 +130,7 @@ namespace Fastcgipp
 
         //! Function to actually send the record
         std::function<void(const Socket&, Block&&)> send;
+        std::function<void(const Socket&, Block&&)> send2;
     };
 }
 

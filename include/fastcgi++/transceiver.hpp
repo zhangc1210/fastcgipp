@@ -31,7 +31,7 @@
 
 #include <map>
 #include <list>
-#include <queue>
+//#include <queue>
 #include <algorithm>
 #include <map>
 #include <functional>
@@ -41,6 +41,7 @@
 #include <thread>
 
 #include <fastcgi++/protocol.hpp>
+#include <fastcgi++/poll.hpp>
 #include "fastcgi++/block.hpp"
 
 //! Topmost namespace for the fastcgi++ library
@@ -104,6 +105,7 @@ namespace Fastcgipp
          *                 is sent.
          */
         void send(const Socket& socket, Block&& data, bool kill);
+        void send2(const Socket& socket, Block&& data, bool kill);
 
         //! Constructor
         /*!
@@ -207,7 +209,7 @@ namespace Fastcgipp
         };
 
         //! %Buffer for transmitting data
-        std::deque<std::unique_ptr<Record>> m_sendBuffer;
+        std::map<socket_t,std::list<std::unique_ptr<Record>> > m_sendBuffer;
 
         //! Thread safe the send buffer
         std::mutex m_sendBufferMutex;

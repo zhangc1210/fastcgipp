@@ -51,7 +51,37 @@ template<class charT> void Fastcgipp::Request<charT>::complete()
 
     m_send(m_id.m_socket, std::move(record), m_kill);
 }
+template<class charT>
+bool Fastcgipp::Request<charT>::inputRecordProcess(Message &message)
+{
+	const Protocol::Header& header =
+		*reinterpret_cast<Protocol::Header*>(message.data.begin());
+	const auto body = message.data.begin()+sizeof(header);
+	const auto bodyEnd = body+header.contentLength;
+	if(header.contentLength==0)
+	{
+		if(!inProcessor() && !m_environment.parsePostBuffer())
+		{
+			WARNING_LOG("Unknown content type from client")
+			unknownContentErrorHandler();
+			return false;
+		}
+		//m_state = Protocol::RecordType::OUT; change state by handler
+		m_environment.clearPostBuffer();
+		return true;
+	}
 
+	if(m_environment.postBuffer().size()+(bodyEnd-body)
+			> environment().contentLength)
+	{
+		bigPostErrorHandler();
+		return false;
+	}
+
+	m_environment.fillPostBuffer(body, bodyEnd);
+	inHandler(header.contentLength);
+	return true;
+}
 template<class charT>
 std::unique_lock<std::mutex>Fastcgipp::Request<charT>::handler()
 {
@@ -87,9 +117,8 @@ std::unique_lock<std::mutex>Fastcgipp::Request<charT>::handler()
             {
                 case Protocol::RecordType::PARAMS:
                 {
-                    if(!(
-                                role()==Protocol::Role::RESPONDER
-                                || role()==Protocol::Role::AUTHORIZER))
+                    if(!(role()==Protocol::Role::RESPONDER
+							|| role()==Protocol::Role::AUTHORIZER))
                     {
                         m_status = Protocol::ProtocolStatus::UNKNOWN_ROLE;
                         WARNING_LOG("We got asked to do an unknown role")
@@ -107,41 +136,31 @@ std::unique_lock<std::mutex>Fastcgipp::Request<charT>::handler()
                             goto exit;
                         }
                         m_state = Protocol::RecordType::IN;
+						if(paramsEndProcess() != PR_CONTINUE_PROCESS)
+						{
+                            complete();
+                            goto exit;
+						}
                         lock.lock();
                         continue;
                     }
-                    m_environment.fill(body,  bodyEnd);
+                    m_environment.fill(body,bodyEnd);
                     lock.lock();
                     continue;
                 }
 
                 case Protocol::RecordType::IN:
                 {
-                    if(header.contentLength==0)
-                    {
-                        if(!inProcessor() && !m_environment.parsePostBuffer())
-                        {
-                            WARNING_LOG("Unknown content type from client")
-                            unknownContentErrorHandler();
-                            complete();
-                            goto exit;
-                        }
-
-                        m_environment.clearPostBuffer();
-                        m_state = Protocol::RecordType::OUT;
-                        break;
-                    }
-
-                    if(m_environment.postBuffer().size()+(bodyEnd-body)
-                            > environment().contentLength)
-                    {
-                        bigPostErrorHandler();
-                        complete();
-                        goto exit;
-                    }
-
-                    m_environment.fillPostBuffer(body, bodyEnd);
-                    inHandler(header.contentLength);
+					if(!inputRecordProcess(message))
+					{
+						complete();
+						goto exit;
+					}
+					if(header.contentLength == 0)
+					{
+						m_state = Protocol::RecordType::OUT;
+						break;
+					}
                     lock.lock();
                     continue;
                 }
@@ -221,6 +240,7 @@ template<class charT> void Fastcgipp::Request<charT>::configure(
         const Protocol::Role& role,
         bool kill,
         const std::function<void(const Socket&, Block&&, bool)> send,
+		const std::function<void(const Socket&, Block&&, bool)> send2,
         const std::function<void(Message)> callback)
 {
     using namespace std::placeholders;
@@ -234,11 +254,13 @@ template<class charT> void Fastcgipp::Request<charT>::configure(
     m_outStreamBuffer.configure(
             id,
             Protocol::RecordType::OUT,
-            std::bind(send, _1, _2, false));
+            std::bind(send, _1, _2, false),
+            std::bind(send2, _1, _2, false));
     m_errStreamBuffer.configure(
             id,
             Protocol::RecordType::ERR,
-            std::bind(send, _1, _2, false));
+            std::bind(send, _1, _2, false),
+            std::bind(send2, _1, _2, false));
 }
 
 template<class charT> unsigned Fastcgipp::Request<charT>::pickLocale(

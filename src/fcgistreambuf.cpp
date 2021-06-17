@@ -160,6 +160,39 @@ void Fastcgipp::FcgiStreambuf<charT, traits>::dump(
         send(m_id.m_socket, std::move(record));
     }
 }
+template <class charT, class traits>
+void Fastcgipp::FcgiStreambuf<charT, traits>::dump2(
+        const char* data,
+        size_t size)
+{
+    emptyBuffer();
+    Block record;
+
+    while(size != 0)
+    {
+        record.size(Protocol::getRecordSize(size));
+
+        Protocol::Header& header
+            = *reinterpret_cast<Protocol::Header*>(record.begin());
+        header.contentLength = std::min(size, static_cast<size_t>(0xffffU));
+
+        std::copy(
+                data,
+                data+header.contentLength,
+                record.begin()+sizeof(Protocol::Header));
+
+        size -= header.contentLength;
+        data += header.contentLength;
+
+        header.version = Protocol::version;
+        header.type = m_type;
+        header.fcgiId = m_id.m_id;
+        header.paddingLength =
+            record.size()-header.contentLength-sizeof(Protocol::Header);
+
+        send2(m_id.m_socket, std::move(record));
+    }
+}
 
 template <class charT, class traits>
 void Fastcgipp::FcgiStreambuf<charT, traits>::dump(

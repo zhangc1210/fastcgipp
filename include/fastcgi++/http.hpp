@@ -94,12 +94,11 @@ namespace Fastcgipp
             DELETE=5,
             TRACE=6,
             OPTIONS=7,
-            CONNECT=8,
-            PATCH=9
+            CONNECT=8
         };
 
         //! Some textual labels for RequestMethod
-        extern const std::array<const char* const, 10> requestMethodLabels;
+        extern const std::array<const char* const, 9> requestMethodLabels;
 
         template<class charT, class Traits>
         inline std::basic_ostream<charT, Traits>& operator<<(
@@ -139,10 +138,10 @@ namespace Fastcgipp
 
             //! Character sets the clients accepts
             std::basic_string<charT> acceptCharsets;
-
+	  
             //! Http authorization string
             std::basic_string<charT> authorization;
-
+	  
             //! Referral URL
             std::basic_string<charT> referer;
 

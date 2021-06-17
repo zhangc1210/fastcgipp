@@ -136,6 +136,10 @@ Fastcgipp::Socket::~Socket()
         m_data->m_valid = false;
     }
 }
+Fastcgipp::socket_t Fastcgipp::Socket::getHandle()const
+{
+	return m_data->m_socket;
+}
 
 Fastcgipp::SocketGroup::SocketGroup():
     m_waking(false),

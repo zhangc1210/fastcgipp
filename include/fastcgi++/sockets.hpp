@@ -247,6 +247,7 @@ namespace Fastcgipp
 
         //! Creates an invalid socket with no original.
         Socket();
+        socket_t getHandle()const;
     };
 
     //! Class for representing an OS level socket that listens for connections.

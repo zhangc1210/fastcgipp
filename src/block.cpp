@@ -74,7 +74,9 @@ Fastcgipp::Block::Block(Block&& x):
     x.m_reserve = 0;
     x.m_size = 0;
 }
-
+Fastcgipp::Block::~Block()
+{
+}
 Fastcgipp::Block& Fastcgipp::Block::operator=(Block&& x)
 {
     m_reserve = x.m_reserve;

@@ -79,6 +79,12 @@ namespace Fastcgipp
         std::mutex m_messagesMutex;
     };
 
+	enum ProcessResult
+	{
+		PR_ERROR=0
+		,PR_FINISH=1
+		,PR_CONTINUE_PROCESS=2
+	};
     //! %Request handling class
     /*!
      * Derivations of this class will handle requests. This includes building
@@ -142,13 +148,16 @@ namespace Fastcgipp
                 bool kill,
                 const std::function<void(const Socket&, Block&&, bool)>
                     send,
+                const std::function<void(const Socket&, Block&&, bool)>
+                    send2,
                 const std::function<void(Message)> callback);
 
         std::unique_lock<std::mutex> handler();
 
         virtual ~Request() {}
-
-    protected:
+    //protected:
+    //modify by zhangchao 2021.02.19 use outside request handler need call this function
+    public:
         //! Const accessor for the HTTP environment data
         const Http::Environment<charT>& environment() const
         {
@@ -318,6 +327,10 @@ namespace Fastcgipp
         {
             m_outStreamBuffer.dump(stream);
         }
+        void dump2(const char* data, size_t size)
+        {
+            m_outStreamBuffer.dump2(data, size);
+        }
 
         //! Pick a locale
         /*!
@@ -330,7 +343,13 @@ namespace Fastcgipp
 
         //! Set the output stream's locale
         void setLocale(const std::string& locale);
-
+	protected:
+		//process after para total received
+		virtual ProcessResult paramsEndProcess()
+		{
+			return PR_CONTINUE_PROCESS;
+		}
+		virtual bool inputRecordProcess(Message &message);
     private:
         //! The callback function for dealings outside the fastcgi++ library
         /*!
