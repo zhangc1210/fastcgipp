@@ -82,12 +82,14 @@
 }*/
 bool Fastcgipp::Transceiver::transmit()
 {
-    std::unique_ptr<Record> record;
 	bool bSleep=false;
 	int nCountDDD=0;
 	socket_t lastSocket=-1;
+	bool bTestFlag=false;
+	int nCountF=0;
     while(!m_sendBuffer.empty())
     {
+		std::unique_ptr<Record> record;
         {
 			nCountDDD=m_sendBuffer.size();
             std::lock_guard<std::mutex> lock(m_sendBufferMutex);
@@ -116,23 +118,6 @@ bool Fastcgipp::Transceiver::transmit()
 				}
             }
 			lastSocket=iter->first;
-            /*socket_t socketLoopEnd=iter->first;
-            while(1)
-            {
-				if(!iter->second.empty())
-				{
-					lastSocket=iter->first;
-					break;
-				}
-				m_sendBuffer.erase(iter++);
-				if(iter == m_sendBuffer.end())
-                {
-					iter=m_sendBuffer.begin();
-                }
-                if(iter == iterLast)//
-                {
-
-			}*/
             record = std::move(m_sendBuffer[lastSocket].front());
             m_sendBuffer[lastSocket].pop_front();
             if(m_sendBuffer[lastSocket].empty())
@@ -140,10 +125,23 @@ bool Fastcgipp::Transceiver::transmit()
 				m_sendBuffer.erase(lastSocket);
             }
         }
-
-        const ssize_t sent = record->socket.write(
+        ssize_t sent =-1;
+        if(record->bSend2)
+        {
+			sent = record->socket.write2(
                 record->read,
                 record->data.end()-record->read);
+        }
+        else
+        {
+			sent = record->socket.write(
+                record->read,
+                record->data.end()-record->read);
+        }
+		if(bTestFlag)
+		{
+			++nCountF;
+		}
         if(sent>=0)
         {
             record->read += sent;
@@ -313,7 +311,7 @@ void Fastcgipp::Transceiver::send(
     std::unique_ptr<Record> record(new Record(
                 socket,
                 std::move(data),
-                kill));
+                kill,false));
 	int nres=0;
 	int nCount=0;
 	/*old{
@@ -331,26 +329,6 @@ void Fastcgipp::Transceiver::send(
 	{
 		++nres;
 	}
-	/*while(1)
-    {
-		bool bSleep=false;
-		{
-			std::lock_guard<std::mutex> lock(m_sendBufferMutex);
-			if(m_sendBuffer.size() > 20)
-			{
-				bSleep=true;
-			}
-			else
-			{
-				m_sendBuffer.push_back(std::move(record));
-				break;
-			}
-		}
-		if(bSleep)
-		{
-			sleep(1);
-		}
-    }*/
     m_sockets.wake();
 #if FASTCGIPP_LOG_LEVEL > 3
     ++m_recordsQueued;
@@ -364,7 +342,7 @@ void Fastcgipp::Transceiver::send2(
     std::unique_ptr<Record> record(new Record(
                 socket,
                 std::move(data),
-                kill));
+                kill,true));
 	int nres=0;
 	int nCount=0;
 	/*old{
@@ -382,26 +360,6 @@ void Fastcgipp::Transceiver::send2(
 	{
 		++nres;
 	}
-	/*while(1)
-    {
-		bool bSleep=false;
-		{
-			std::lock_guard<std::mutex> lock(m_sendBufferMutex);
-			if(m_sendBuffer.size() > 20)
-			{
-				bSleep=true;
-			}
-			else
-			{
-				m_sendBuffer.push_back(std::move(record));
-				break;
-			}
-		}
-		if(bSleep)
-		{
-			sleep(1);
-		}
-    }*/
     m_sockets.wake();
 #if FASTCGIPP_LOG_LEVEL > 3
     ++m_recordsQueued;

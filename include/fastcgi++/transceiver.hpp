@@ -196,15 +196,16 @@ namespace Fastcgipp
             const Block data;
             const char* read;
             const bool kill;
-
+			bool bSend2;
             Record(
                     const Socket& socket_,
                     Block&& data_,
-                    bool kill_):
+                    bool kill_,bool send2):
                 socket(socket_),
                 data(std::move(data_)),
                 read(data.begin()),
                 kill(kill_)
+                ,bSend2(send2)
             {}
         };
 
