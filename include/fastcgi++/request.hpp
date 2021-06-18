@@ -331,7 +331,7 @@ namespace Fastcgipp
         {
             m_outStreamBuffer.dump2(data, size);
         }
-
+		bool socketValid()const;
         //! Pick a locale
         /*!
          * Basically this finds the first language in

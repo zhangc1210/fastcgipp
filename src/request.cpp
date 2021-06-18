@@ -186,7 +186,10 @@ std::unique_lock<std::mutex>Fastcgipp::Request<charT>::handler()
 exit:
     return lock;
 }
-
+template<class charT> bool Fastcgipp::Request<charT>::socketValid()const
+{
+	return m_id.m_socket.valid();
+}
 template<class charT> void Fastcgipp::Request<charT>::errorHandler()
 {
     out << \
