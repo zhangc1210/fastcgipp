@@ -177,6 +177,7 @@ namespace Fastcgipp
          *         you can't actually write data to the socket anymore.
          */
         ssize_t write(const char* buffer, size_t size) const;
+        ssize_t write2(const char* buffer, size_t size) const;
 
         //! We need this to allow the socket objects to be in sorted containers.
         inline bool operator<(const Socket& x) const noexcept

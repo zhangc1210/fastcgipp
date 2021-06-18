@@ -109,6 +109,30 @@ ssize_t Fastcgipp::Socket::write(const char* buffer, size_t size) const
 
     return count;
 }
+ssize_t Fastcgipp::Socket::write2(const char* buffer, size_t size) const
+{
+    if(!valid() || m_data->m_closing)
+        return -1;
+
+    //const ssize_t count = ::send(m_data->m_socket, buffer, size, MSG_NOSIGNAL);
+    const ssize_t count = ::write(m_data->m_socket, buffer, size);
+    if(count<0)
+    {
+        if(errno == EAGAIN || errno == EWOULDBLOCK)
+            return 0;
+        WARNING_LOG("Socket write() error on fd " \
+                << m_data->m_socket << ": " << strerror(errno))
+        close();
+        return -1;
+    }
+
+#if FASTCGIPP_LOG_LEVEL > 3
+    m_data->m_group.m_bytesSent += count;
+#endif
+
+    return count;
+    //return size;
+}
 
 void Fastcgipp::Socket::close() const
 {
