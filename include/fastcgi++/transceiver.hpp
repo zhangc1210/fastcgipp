@@ -184,7 +184,10 @@ namespace Fastcgipp
         {
             m_sockets.reuseAddress(value);
         }
-
+        void SetMaxSendBufferSize(int nSize)
+        {
+            m_maxSendBufferSize=nSize;
+        }
     private:
         //! Container associating sockets with their receive buffers
         std::map<Socket, Block> m_receiveBuffers;
@@ -211,7 +214,8 @@ namespace Fastcgipp
 
         //! %Buffer for transmitting data
         std::map<socket_t,std::list<std::unique_ptr<Record>> > m_sendBuffer;
-
+        std::atomic_int m_sendBufferSize;
+        std::atomic_int m_maxSendBufferSize;
         //! Thread safe the send buffer
         std::mutex m_sendBufferMutex;
 

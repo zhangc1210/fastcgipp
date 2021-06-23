@@ -82,76 +82,81 @@
 }*/
 bool Fastcgipp::Transceiver::transmit()
 {
-	bool bSleep=false;
+	//bool bSleep=false;
 	int nCountDDD=0;
 	socket_t lastSocket=-1;
-	bool bTestFlag=false;
-	int nCountF=0;
     while(!m_sendBuffer.empty())
     {
-		std::unique_ptr<Record> record;
+        if(m_sendBufferSize < m_maxSendBufferSize)
         {
-			nCountDDD=m_sendBuffer.size();
-            std::lock_guard<std::mutex> lock(m_sendBufferMutex);
-            std::map<socket_t,std::list<std::unique_ptr<Record>> >::const_iterator iter;
-            if(lastSocket == -1)
+            std::unique_ptr<Record> record;
             {
-				iter=m_sendBuffer.begin();
-            }
-            else
-            {
-				iter=m_sendBuffer.lower_bound(lastSocket);
-				if(iter == m_sendBuffer.end())
-				{
-					iter=m_sendBuffer.begin();
-				}
-				else
-				{
-					if(iter->first == lastSocket)//if not equal,direct use nextsocket
-					{
-						++iter;
-					}
-					if(iter == m_sendBuffer.end())
-					{
-						iter=m_sendBuffer.begin();
-					}
-				}
-            }
-			lastSocket=iter->first;
-            record = std::move(m_sendBuffer[lastSocket].front());
-            m_sendBuffer[lastSocket].pop_front();
-            if(m_sendBuffer[lastSocket].empty())
-            {
-				m_sendBuffer.erase(lastSocket);
-            }
-        }
-        ssize_t sent =-1;
-        if(record->bSend2)
-        {
-			sent = record->socket.write2(
-                record->read,
-                record->data.end()-record->read);
-        }
-        else
-        {
-			sent = record->socket.write(
-                record->read,
-                record->data.end()-record->read);
-        }
-		if(bTestFlag)
-		{
-			++nCountF;
-		}
-        if(sent>=0)
-        {
-            record->read += sent;
-            if(record->read != record->data.end())
-            {
+                std::lock_guard<std::mutex> lock(m_sendBufferMutex);
+                std::map<socket_t,std::list<std::unique_ptr<Record>>>::const_iterator iter;
+                if(lastSocket == -1)
                 {
-                    std::lock_guard<std::mutex> lock(m_sendBufferMutex);
-                    m_sendBuffer[lastSocket].push_front(std::move(record));
+                    iter=m_sendBuffer.begin();
                 }
-                return false;
+                else
+                {
+                    iter=m_sendBuffer.lower_bound(lastSocket);
+                    if(iter == m_sendBuffer.end())
+                    {
+                        iter=m_sendBuffer.begin();
+                    }
+                    else
+                    {
+                        if(iter->first == lastSocket)//if not equal,direct use nextsocket
+                        {
+                            ++iter;
+                        }
+                        if(iter == m_sendBuffer.end())
+                        {
+                            iter=m_sendBuffer.begin();
+                        }
+                    }
+                }
+                lastSocket=iter->first;
+                nCountDDD=iter->second.size();
+                ++nCountDDD;
+                --nCountDDD;
+                record = std::move(m_sendBuffer[lastSocket].front());
+                m_sendBuffer[lastSocket].pop_front();
+                if(m_sendBuffer[lastSocket].empty())
+                {
+                    m_sendBuffer.erase(lastSocket);
+                }
+            }
+            ssize_t sent =-1;
+            int dataSize = record->data.end()-record->read;
+            while(record->read != record->data.end())
+            {
+                sent = record->socket.write(
+                    record->read,
+                    record->data.end()-record->read);
+                if(sent < 0)
+                {
+                    break;
+                }
+                if(sent == 0)
+                {
+                    continue;
+                }
+                record->read+=sent;
+            }
+            m_sendBufferSize-=dataSize;
+            if(sent < 0)
+            {
+                record->socket.close();
+                std::lock_guard<std::mutex> lock(m_sendBufferMutex);
+                std::list<std::unique_ptr<Record>> &listRecord=m_sendBuffer[lastSocket];
+                for(auto iterList=listRecord.begin();iterList != listRecord.end();++iterList)
+                {
+                    m_sendBufferSize-=(*iterList)->data.end()-(*iterList)->read;
+                }
+                m_sendBuffer.erase(lastSocket);
+                m_receiveBuffers.erase(record->socket);
+                continue;
             }
 #if FASTCGIPP_LOG_LEVEL > 3
             ++m_recordsSent;
@@ -159,17 +164,127 @@ bool Fastcgipp::Transceiver::transmit()
             if(record->kill)
             {
                 record->socket.close();
+                std::lock_guard<std::mutex> lock(m_sendBufferMutex);
+                std::list<std::unique_ptr<Record>> &listRecord=m_sendBuffer[lastSocket];
+                for(auto iterList=listRecord.begin();iterList != listRecord.end();++iterList)
+                {
+                    m_sendBufferSize-=(*iterList)->data.end()-(*iterList)->read;
+                }
+                m_sendBuffer.erase(lastSocket);
                 m_receiveBuffers.erase(record->socket);
 #if FASTCGIPP_LOG_LEVEL > 3
                 ++m_connectionKillCount;
 #endif
             }
         }
+        else
+        {
+            std::lock_guard<std::mutex> lock(m_sendBufferMutex);
+            int nn=m_sendBufferSize;
+            ++nn;
+            --nn;
+            lastSocket = -1;
+            while(!m_sendBuffer.empty())
+            {
+                std::unique_ptr<Record> record;
+                {
+                    std::map<socket_t,std::list<std::unique_ptr<Record>>>::const_iterator iter;
+                    if(lastSocket == -1)
+                    {
+                        iter=m_sendBuffer.begin();
+                    }
+                    else
+                    {
+                        iter=m_sendBuffer.lower_bound(lastSocket);
+                        if(iter == m_sendBuffer.end())
+                        {
+                            iter=m_sendBuffer.begin();
+                        }
+                        else
+                        {
+                            if(iter->first == lastSocket)//if not equal,direct use nextsocket
+                            {
+                                ++iter;
+                            }
+                            if(iter == m_sendBuffer.end())
+                            {
+                                iter=m_sendBuffer.begin();
+                            }
+                        }
+                    }
+                    lastSocket=iter->first;
+                    nCountDDD=iter->second.size();
+                    ++nCountDDD;
+                    --nCountDDD;
+                    record = std::move(m_sendBuffer[lastSocket].front());
+                    m_sendBuffer[lastSocket].pop_front();
+                    if(m_sendBuffer[lastSocket].empty())
+                    {
+                        m_sendBuffer.erase(lastSocket);
+                    }
+                }
+                ssize_t sent =-1;
+                int dataSize= record->data.end()-record->read;
+                while(record->read != record->data.end())
+                {
+                    sent = record->socket.write(
+                        record->read,
+                        record->data.end()-record->read);
+                    if(sent < 0)
+                    {
+                        break;
+                    }
+                    if(sent == 0)
+                    {
+                        continue;
+                    }
+                    record->read+=sent;
+                }
+                m_sendBufferSize-=dataSize;
+                if(sent < 0)
+                {
+                    record->socket.close();
+                    std::list<std::unique_ptr<Record>> &listRecord=m_sendBuffer[lastSocket];
+                    for(auto iterList=listRecord.begin();iterList != listRecord.end();++iterList)
+                    {
+                        m_sendBufferSize-=(*iterList)->data.end()-(*iterList)->read;
+                    }
+                    m_sendBuffer.erase(lastSocket);
+                    m_receiveBuffers.erase(record->socket);
+                    continue;
+                }
+#if FASTCGIPP_LOG_LEVEL > 3
+                ++m_recordsSent;
+#endif
+                if(record->kill)
+                {
+                    record->socket.close();
+                    std::list<std::unique_ptr<Record>> &listRecord=m_sendBuffer[lastSocket];
+                    for(auto iterList=listRecord.begin();iterList != listRecord.end();++iterList)
+                    {
+                        m_sendBufferSize-=(*iterList)->data.end()-(*iterList)->read;
+                    }
+                    m_sendBuffer.erase(lastSocket);
+                    m_receiveBuffers.erase(record->socket);
+#if FASTCGIPP_LOG_LEVEL > 3
+                    ++m_connectionKillCount;
+#endif
+                }
+                if(m_sendBuffer.empty())
+                {
+                    ++nCountDDD;
+                    --nCountDDD;
+                    int nn=m_sendBufferSize;
+                    ++nn;
+                    --nn;
+                }
+            }
+        }
     }
-	if(bSleep)
-	{
-		++nCountDDD;
-	}
+
+    int nn=m_sendBufferSize;
+    ++nn;
+    --nn;
     return true;
 }
 
@@ -220,7 +335,10 @@ void Fastcgipp::Transceiver::join()
 
 Fastcgipp::Transceiver::Transceiver(
         const std::function<void(Protocol::RequestId, Message&&)> sendMessage):
-    m_sendMessage(sendMessage)
+    m_sendBuffer()
+    ,m_sendBufferSize(0)
+    ,m_maxSendBufferSize(10*1024*1024)
+    ,m_sendMessage(sendMessage)
 #if FASTCGIPP_LOG_LEVEL > 3
     ,m_connectionKillCount(0),
     m_connectionRDHupCount(0),
@@ -312,7 +430,6 @@ void Fastcgipp::Transceiver::send(
                 socket,
                 std::move(data),
                 kill,false));
-	int nres=0;
 	int nCount=0;
 	/*old{
 		std::lock_guard<std::mutex> lock(m_sendBufferMutex);
@@ -320,15 +437,18 @@ void Fastcgipp::Transceiver::send(
 		m_sendBuffer.push_back(std::move(record));
 	}*/
 	//new
+    int sendDataSize=record->data.size();
 	{
 		std::lock_guard<std::mutex> lock(m_sendBufferMutex);
-		nCount=m_sendBuffer.size();
 		m_sendBuffer[socket.getHandle()].push_back(std::move(record));
+        for(auto iterMap=m_sendBuffer.begin();iterMap != m_sendBuffer.end();++iterMap)
+        {
+            nCount+=iterMap->second.size();
+        }
 	}
-	if(nCount)
-	{
-		++nres;
-	}
+	m_sendBufferSize+=sendDataSize;
+	++nCount;
+	--nCount;
     m_sockets.wake();
 #if FASTCGIPP_LOG_LEVEL > 3
     ++m_recordsQueued;
@@ -339,31 +459,7 @@ void Fastcgipp::Transceiver::send2(
         Block&& data,
         bool kill)
 {
-    std::unique_ptr<Record> record(new Record(
-                socket,
-                std::move(data),
-                kill,true));
-	int nres=0;
-	int nCount=0;
-	/*old{
-		std::lock_guard<std::mutex> lock(m_sendBufferMutex);
-		nCount=m_sendBuffer.size();
-		m_sendBuffer.push_back(std::move(record));
-	}*/
-	//new
-	{
-		std::lock_guard<std::mutex> lock(m_sendBufferMutex);
-		nCount=m_sendBuffer.size();
-		m_sendBuffer[socket.getHandle()].push_back(std::move(record));
-	}
-	if(nCount)
-	{
-		++nres;
-	}
-    m_sockets.wake();
-#if FASTCGIPP_LOG_LEVEL > 3
-    ++m_recordsQueued;
-#endif
+    send(socket,std::move(data),kill);
 }
 
 

@@ -113,7 +113,7 @@ else(BUILD_STATIC_LIBS)
     add_library(fastcgipp SHARED ${SRC_FILES})
 endif(BUILD_STATIC_LIBS)
 
-add_compile_definitions(_GLIBCXX_USE_CXX11_ABI=0)
+#add_compile_definitions(_GLIBCXX_USE_CXX11_ABI=0)
 
 add_library(Fastcgipp::fastcgipp ALIAS fastcgipp)
 

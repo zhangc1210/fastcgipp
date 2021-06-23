@@ -102,7 +102,6 @@ ssize_t Fastcgipp::Socket::write(const char* buffer, size_t size) const
         close();
         return -1;
     }
-
 #if FASTCGIPP_LOG_LEVEL > 3
     m_data->m_group.m_bytesSent += count;
 #endif
@@ -111,11 +110,11 @@ ssize_t Fastcgipp::Socket::write(const char* buffer, size_t size) const
 }
 ssize_t Fastcgipp::Socket::write2(const char* buffer, size_t size) const
 {
-    if(!valid() || m_data->m_closing)
+    return write(buffer,size);
+    /*if(!valid() || m_data->m_closing)
         return -1;
 
-    //const ssize_t count = ::send(m_data->m_socket, buffer, size, MSG_NOSIGNAL);
-    const ssize_t count = ::write(m_data->m_socket, buffer, size);
+    const ssize_t count = ::send(m_data->m_socket, buffer, size, MSG_NOSIGNAL);
     if(count<0)
     {
         if(errno == EAGAIN || errno == EWOULDBLOCK)
@@ -130,8 +129,7 @@ ssize_t Fastcgipp::Socket::write2(const char* buffer, size_t size) const
     m_data->m_group.m_bytesSent += count;
 #endif
 
-    return count;
-    //return size;
+    return count;*/
 }
 
 void Fastcgipp::Socket::close() const
