@@ -61,8 +61,11 @@ ssize_t Fastcgipp::Socket::read(char* buffer, size_t size) const
     if(!valid())
         return -1;
     //add by zhangc for transmit send and recv concurrent
-    std::lock_guard<std::mutex> lock(m_sockDataMutex);
-    const ssize_t count = ::read(m_data->m_socket, buffer, size);
+    ssize_t count = 0;
+    {
+        std::lock_guard<std::mutex> lock(m_sockDataMutex);
+        count=::read(m_data->m_socket, buffer, size);
+    }
     if(count<0)
     {
         WARNING_LOG("Socket read() error on fd " \
@@ -94,8 +97,11 @@ ssize_t Fastcgipp::Socket::write(const char* buffer, size_t size) const
         return -1;
 
     //add by zhangc for transmit send and recv concurrent
-    std::lock_guard<std::mutex> lock(m_sockDataMutex);
-    const ssize_t count = ::send(m_data->m_socket, buffer, size, MSG_NOSIGNAL);
+    ssize_t count =0;
+    {
+        std::lock_guard<std::mutex> lock(m_sockDataMutex);
+        count=::send(m_data->m_socket, buffer, size, MSG_NOSIGNAL);
+    }
     if(count<0)
     {
         if(errno == EAGAIN || errno == EWOULDBLOCK)
