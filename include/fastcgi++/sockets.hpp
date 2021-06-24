@@ -114,6 +114,7 @@ namespace Fastcgipp
         //! This is only true for a non-copy constructed object.
         bool m_original;
 
+        mutable std::mutex m_sockDataMutex;
         //! Sole non-copy/move constructor
         /*!
          * This constructor is only accessible to the SocketGroup class to create

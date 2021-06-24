@@ -60,7 +60,8 @@ ssize_t Fastcgipp::Socket::read(char* buffer, size_t size) const
 {
     if(!valid())
         return -1;
-
+    //add by zhangc for transmit send and recv concurrent
+    std::lock_guard<std::mutex> lock(m_sockDataMutex);
     const ssize_t count = ::read(m_data->m_socket, buffer, size);
     if(count<0)
     {
@@ -92,6 +93,8 @@ ssize_t Fastcgipp::Socket::write(const char* buffer, size_t size) const
     if(!valid() || m_data->m_closing)
         return -1;
 
+    //add by zhangc for transmit send and recv concurrent
+    std::lock_guard<std::mutex> lock(m_sockDataMutex);
     const ssize_t count = ::send(m_data->m_socket, buffer, size, MSG_NOSIGNAL);
     if(count<0)
     {
@@ -136,6 +139,8 @@ void Fastcgipp::Socket::close() const
 {
     if(valid())
     {
+        //add by zhangc for transmit send and recv concurrent
+        std::lock_guard<std::mutex> lock(m_sockDataMutex);
         ::shutdown(m_data->m_socket, SHUT_RDWR);
         m_data->m_group.m_poll.del(m_data->m_socket);
         ::close(m_data->m_socket);
@@ -152,6 +157,8 @@ Fastcgipp::Socket::~Socket()
 {
     if(m_original && valid())
     {
+        //add by zhangc for transmit send and recv concurrent
+        std::lock_guard<std::mutex> lock(m_sockDataMutex);
         ::shutdown(m_data->m_socket, SHUT_RDWR);
         m_data->m_group.m_poll.del(m_data->m_socket);
         ::close(m_data->m_socket);
