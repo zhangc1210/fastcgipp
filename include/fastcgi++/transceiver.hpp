@@ -38,6 +38,7 @@
 #include <memory>
 #include <atomic>
 #include <mutex>
+#include <condition_variable>
 #include <thread>
 
 #include <fastcgi++/protocol.hpp>
@@ -67,7 +68,7 @@ namespace Fastcgipp
          * it to do.
          */
         void handler();
-
+        void recvHandler();
         //! Call from any thread to stop the handler() thread
         /*!
          * Calling this thread will signal the handler() thread to cleanly stop
@@ -190,7 +191,8 @@ namespace Fastcgipp
         }
     private:
         //! Container associating sockets with their receive buffers
-        std::map<Socket, Block> m_receiveBuffers;
+        std::map<Socket, std::shared_ptr<Block> >m_receiveBuffers;
+        std::mutex m_recvBufferMutex;
 
         //! Simple FastCGI record to queue up for transmission
         struct Record
@@ -218,6 +220,8 @@ namespace Fastcgipp
         std::atomic_int m_maxSendBufferSize;
         //! Thread safe the send buffer
         std::mutex m_sendBufferMutex;
+        std::mutex m_wakeMutex;
+		std::condition_variable m_wakeSend;
 
         //! Function to call to pass messages to requests
         const std::function<void(Protocol::RequestId, Message&&)> m_sendMessage;
@@ -242,6 +246,7 @@ namespace Fastcgipp
 
         //! Thread our handler is running in
         std::thread m_thread;
+        std::thread m_threadRecv;
 
         //! Cleanup a dead socket
         void cleanupSocket(const Socket& socket);
