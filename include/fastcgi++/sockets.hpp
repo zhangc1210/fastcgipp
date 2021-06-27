@@ -28,7 +28,7 @@
 
 #ifndef FASTCGIPP_SOCKETS_HPP
 #define FASTCGIPP_SOCKETS_HPP
-
+#include "fastcgi++/config.hpp"
 #include <memory>
 #include <map>
 #include <mutex>
@@ -36,6 +36,10 @@
 #include <atomic>
 #include <deque>
 #include <string>
+#if defined(FASTCGIPP_WINDOWS)
+#include <WinSock2.h>
+typedef int ssize_t;
+#endif
 
 #include "fastcgi++/poll.hpp"
 
@@ -281,6 +285,7 @@ namespace Fastcgipp
          */
         bool listen();
 
+#if ! defined(FASTCGIPP_WINDOWS)
         //! Listen to a named socket
         /*!
          * Listen on a named socket. In the Unix world this would be a path. In
@@ -301,7 +306,7 @@ namespace Fastcgipp
                 uint32_t permissions = 0xffffffffUL,
                 const char* owner = nullptr,
                 const char* group = nullptr);
-
+#endif
         //! Listen to a TCP port
         /*!
          * Listen on a specific interface and TCP port.
@@ -315,9 +320,9 @@ namespace Fastcgipp
          * @return True on success. False on failure.
          */
         bool listen(
-                const char* interface,
+                const char* ifName,
                 const char* service);
-
+#if ! defined(FASTCGIPP_WINDOWS)
         //! Connect to a named socket
         /*!
          * Connect to a named socket. In the Unix world this would be a path.
@@ -329,7 +334,7 @@ namespace Fastcgipp
          *         false).
          */
         Socket connect(const char* name);
-
+#endif
         //! Connect to a host on a TCP port/serivce
         /*!
          * @param [in] host Host to connect to. This could be an IP address

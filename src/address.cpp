@@ -50,7 +50,7 @@ template void Fastcgipp::Address::assign<char>(
 template void Fastcgipp::Address::assign<wchar_t>(
         const wchar_t* start,
         const wchar_t* end);
-template<class charT> void Fastcgipp::Address::assign(
+/*template<class charT> void Fastcgipp::Address::assign(
         const charT* start,
         const charT* end)
 {
@@ -165,7 +165,7 @@ template<class charT> void Fastcgipp::Address::assign(
             std::fill(pad, padEnd, 0);
         }
     }
-}
+}*/
 
 template std::basic_ostream<char, std::char_traits<char>>&
 Fastcgipp::operator<< <char, std::char_traits<char>>(

@@ -86,12 +86,12 @@ namespace Fastcgipp
         //! The HTTP request method as an enumeration
         enum class RequestMethod
         {
-            ERROR=0,
+            ERR=0,
             HEAD=1,
             GET=2,
             POST=3,
             PUT=4,
-            DELETE=5,
+            DEL=5,
             TRACE=6,
             OPTIONS=7,
             CONNECT=8
@@ -262,7 +262,7 @@ namespace Fastcgipp
             }
 
             Environment():
-                requestMethod(RequestMethod::ERROR),
+                requestMethod(RequestMethod::ERR),
                 etag(0),
                 keepAlive(0),
                 contentLength(0),

@@ -135,7 +135,7 @@ std::unique_lock<std::mutex>Fastcgipp::Request<charT>::handler()
                             complete();
                             goto exit;
                         }
-                        m_state = Protocol::RecordType::IN;
+                        m_state = Protocol::RecordType::INPUT;
 						if(paramsEndProcess() != PR_CONTINUE_PROCESS)
 						{
                             complete();
@@ -149,7 +149,7 @@ std::unique_lock<std::mutex>Fastcgipp::Request<charT>::handler()
                     continue;
                 }
 
-                case Protocol::RecordType::IN:
+                case Protocol::RecordType::INPUT:
                 {
 					if(!inputRecordProcess(message))
 					{
@@ -158,7 +158,7 @@ std::unique_lock<std::mutex>Fastcgipp::Request<charT>::handler()
 					}
 					if(header.contentLength == 0)
 					{
-						m_state = Protocol::RecordType::OUT;
+						m_state = Protocol::RecordType::OUTPUT;
 						break;
 					}
                     lock.lock();
@@ -167,7 +167,7 @@ std::unique_lock<std::mutex>Fastcgipp::Request<charT>::handler()
 
                 default:
                 {
-                    ERROR_LOG("Our request is in a weird state.")
+                    ERR_LOG("Our request is in a weird state.")
                     errorHandler();
                     complete();
                     goto exit;
@@ -256,7 +256,7 @@ template<class charT> void Fastcgipp::Request<charT>::configure(
 
     m_outStreamBuffer.configure(
             id,
-            Protocol::RecordType::OUT,
+            Protocol::RecordType::OUTPUT,
             std::bind(send, _1, _2, false),
             std::bind(send2, _1, _2, false));
     m_errStreamBuffer.configure(
@@ -306,7 +306,7 @@ template<class charT> void Fastcgipp::Request<charT>::setLocale(
     }
     catch(...)
     {
-        ERROR_LOG("Unable to set locale")
+        ERR_LOG("Unable to set locale")
         out.imbue(std::locale("C"));
     }
 }

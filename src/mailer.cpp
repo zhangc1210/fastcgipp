@@ -35,7 +35,7 @@ void Fastcgipp::Mail::Mailer::handler()
     std::unique_lock<std::mutex> lock(m_mutex);
     while(!m_terminate && !(m_stop && m_queue.empty() && !inEmail()))
     {
-        if(m_state == ERROR)
+        if(m_state == ERR)
         {
             using namespace std::chrono_literals;
             m_wake.wait_for(lock, m_retry*1s);
@@ -59,8 +59,8 @@ void Fastcgipp::Mail::Mailer::handler()
             m_socket = m_socketGroup.connect(m_host.c_str(), m_port.c_str());
             if(!m_socket.valid())
             {
-                ERROR_LOG("Error connecting to SMTP server.")
-                m_state = ERROR;
+                ERR_LOG("Error connecting to SMTP server.")
+                m_state = ERR;
                 m_socket.close();
                 lock.lock();
                 continue;
@@ -95,7 +95,7 @@ void Fastcgipp::Mail::Mailer::handler()
                             if(m_socket.write(m_line.data(), m_line.size())
                                     != static_cast<ssize_t>(m_line.size()))
                             {
-                                ERROR_LOG("Error sending EHLO command to SMTP "\
+                                ERR_LOG("Error sending EHLO command to SMTP "\
                                         "server.")
                             }
                             else
@@ -106,11 +106,11 @@ void Fastcgipp::Mail::Mailer::handler()
                         }
                         else
                         {
-                            ERROR_LOG("Bad reply from SMTP server after "\
+                            ERR_LOG("Bad reply from SMTP server after "\
                                     "connecting: " << m_line.c_str())
                         }
                         m_socket.close();
-                        m_state = ERROR;
+                        m_state = ERR;
                         break;
                     }
 
@@ -125,21 +125,21 @@ void Fastcgipp::Mail::Mailer::handler()
                         {
                             if(m_line[3] == ' ')
                             {
-                                ERROR_LOG("SMTP server does not support 8BITMIME.")
+                                ERR_LOG("SMTP server does not support 8BITMIME.")
                             }
                             else if(m_line[3] == '-')
                                 break;
                             else
-                                ERROR_LOG("Bad reply from SMTP server after "\
+                                ERR_LOG("Bad reply from SMTP server after "\
                                         "EHLO: " << m_line.c_str())
                         }
                         else
                         {
-                            ERROR_LOG("Bad reply from SMTP server after EHLO: "\
+                            ERR_LOG("Bad reply from SMTP server after EHLO: "\
                                     << m_line.c_str())
                         }
                         m_socket.close();
-                        m_state = ERROR;
+                        m_state = ERR;
                         break;
                     }
 
@@ -154,7 +154,7 @@ void Fastcgipp::Mail::Mailer::handler()
                                 if(m_socket.write(m_line.data(), m_line.size())
                                         != static_cast<ssize_t>(m_line.size()))
                                 {
-                                    ERROR_LOG("Error sending MAIL command to "\
+                                    ERR_LOG("Error sending MAIL command to "\
                                             "SMTP server.")
                                 }
                                 else
@@ -168,11 +168,11 @@ void Fastcgipp::Mail::Mailer::handler()
                         }
                         else
                         {
-                            ERROR_LOG("Bad reply from SMTP server after EHLO: "\
+                            ERR_LOG("Bad reply from SMTP server after EHLO: "\
                                     << m_line.c_str())
                         }
                         m_socket.close();
-                        m_state = ERROR;
+                        m_state = ERR;
                         break;
                     }
 
@@ -185,7 +185,7 @@ void Fastcgipp::Mail::Mailer::handler()
                             if(m_socket.write(m_line.data(), m_line.size())
                                     != static_cast<ssize_t>(m_line.size()))
                             {
-                                ERROR_LOG("Error sending RCPT command to SMTP "\
+                                ERR_LOG("Error sending RCPT command to SMTP "\
                                         "server.")
                             }
                             else
@@ -196,11 +196,11 @@ void Fastcgipp::Mail::Mailer::handler()
                         }
                         else
                         {
-                            ERROR_LOG("Bad reply from SMTP server after MAIL: "\
+                            ERR_LOG("Bad reply from SMTP server after MAIL: "\
                                     << m_line.c_str())
                         }
                         m_socket.close();
-                        m_state = ERROR;
+                        m_state = ERR;
                         break;
                     }
 
@@ -210,7 +210,7 @@ void Fastcgipp::Mail::Mailer::handler()
                         {
                             if(m_socket.write("DATA\n", 5) != 5)
                             {
-                                ERROR_LOG("Error sending DATA command to SMTP "\
+                                ERR_LOG("Error sending DATA command to SMTP "\
                                         "server.")
                             }
                             else
@@ -221,11 +221,11 @@ void Fastcgipp::Mail::Mailer::handler()
                         }
                         else
                         {
-                            ERROR_LOG("Bad reply from SMTP server after RCPT: "\
+                            ERR_LOG("Bad reply from SMTP server after RCPT: "\
                                     << m_line.c_str())
                         }
                         m_socket.close();
-                        m_state = ERROR;
+                        m_state = ERR;
                         break;
                     }
 
@@ -240,7 +240,7 @@ void Fastcgipp::Mail::Mailer::handler()
                                             chunk.size) != static_cast<ssize_t>(
                                                 chunk.size))
                                 {
-                                    ERROR_LOG("Error sending data chunk "\
+                                    ERR_LOG("Error sending data chunk "\
                                             "to SMTP server.")
                                     success=false;
                                     break;
@@ -249,7 +249,7 @@ void Fastcgipp::Mail::Mailer::handler()
                             {
                                 if(m_socket.write("\r\n.\r\n", 5) != 5)
                                 {
-                                    ERROR_LOG("Error sending CRLF.CRLF to "\
+                                    ERR_LOG("Error sending CRLF.CRLF to "\
                                             "SMTP server.")
                                 }
                                 else
@@ -261,11 +261,11 @@ void Fastcgipp::Mail::Mailer::handler()
                         }
                         else
                         {
-                            ERROR_LOG("Bad reply from SMTP server after RCPT: "\
+                            ERR_LOG("Bad reply from SMTP server after RCPT: "\
                                     << m_line.c_str())
                         }
                         m_socket.close();
-                        m_state = ERROR;
+                        m_state = ERR;
                         break;
                     }
 
@@ -276,7 +276,7 @@ void Fastcgipp::Mail::Mailer::handler()
                             purgeEmail();
                             if(m_socket.write("QUIT\n", 5) != 5)
                             {
-                                ERROR_LOG("Error sending QUIT command to SMTP "\
+                                ERR_LOG("Error sending QUIT command to SMTP "\
                                         "server.")
                             }
                             else
@@ -287,11 +287,11 @@ void Fastcgipp::Mail::Mailer::handler()
                         }
                         else
                         {
-                            ERROR_LOG("Bad reply from SMTP server after data "\
+                            ERR_LOG("Bad reply from SMTP server after data "\
                                     "insertion: " << m_line.c_str())
                         }
                         m_socket.close();
-                        m_state = ERROR;
+                        m_state = ERR;
                         break;
                     }
 
@@ -299,9 +299,9 @@ void Fastcgipp::Mail::Mailer::handler()
                     {
                         if(!(m_line.size() >= 4 && m_line.substr(0,4) == "221 "))
                         {
-                            ERROR_LOG("Bad reply from SMTP server after QUIT: "\
+                            ERR_LOG("Bad reply from SMTP server after QUIT: "\
                                     << m_line.c_str())
-                            m_state = ERROR;
+                            m_state = ERR;
                         }
                         else
                             m_state = DISCONNECTED;
@@ -309,7 +309,7 @@ void Fastcgipp::Mail::Mailer::handler()
                         break;
                     }
 
-                    case ERROR:
+                    case ERR:
                     case DISCONNECTED:
                         ;// DO NOTHING
                 }

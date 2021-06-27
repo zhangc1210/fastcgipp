@@ -65,7 +65,7 @@ namespace Fastcgipp
             if(result == std::codecvt_base::error
                     || result == std::codecvt_base::noconv)
             {
-                ERROR_LOG("FcgiStreambuf code conversion failed")
+                ERR_LOG("FcgiStreambuf code conversion failed")
                 pbump(-count);
                 return false;
             }

@@ -39,6 +39,9 @@
 #ifdef FASTCGIPP_UNIX
 #include <vector>
 #include <poll.h>
+#elif defined(FASTCGIPP_WINDOWS)
+#include <vector>
+#include <WinSock2.h>
 #endif
 
 //! Topmost namespace for the fastcgi++ library
@@ -65,6 +68,8 @@ namespace Fastcgipp
 #elif defined FASTCGIPP_UNIX
         //! Our polling type using generic Unix is an array of pollfds
         typedef std::vector<pollfd> poll_t;
+#elif defined(FASTCGIPP_WINDOWS)
+		typedef std::vector<pollfd> poll_t;
 #endif
 
         //! The OS level polling object

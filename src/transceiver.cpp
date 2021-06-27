@@ -29,7 +29,9 @@
 #include "fastcgi++/transceiver.hpp"
 
 #include "fastcgi++/log.hpp"
+#if ! defined(FASTCGIPP_WINDOWS)
 #include <unistd.h>
+#endif
 /*bool Fastcgipp::Transceiver::transmit()
 {
     std::unique_ptr<Record> record;

@@ -31,15 +31,18 @@
 
 #include "fastcgi++/poll.hpp"
 #include "fastcgi++/log.hpp"
-
 #ifdef FASTCGIPP_LINUX
 #include <sys/epoll.h>
+#include <unistd.h>
+#include <cstring>
 #elif defined FASTCGIPP_UNIX
+#include <algorithm>
+#include <unistd.h>
+#include <cstring>
+#elif defined FASTCGIPP_WINDOWS
 #include <algorithm>
 #endif
 
-#include <unistd.h>
-#include <cstring>
 
 #ifdef FASTCGIPP_LINUX
 const unsigned Fastcgipp::Poll::Result::pollIn = EPOLLIN;
@@ -51,6 +54,11 @@ const unsigned Fastcgipp::Poll::Result::pollIn = POLLIN;
 const unsigned Fastcgipp::Poll::Result::pollErr = POLLERR;
 const unsigned Fastcgipp::Poll::Result::pollHup = POLLHUP;
 const unsigned Fastcgipp::Poll::Result::pollRdHup = POLLRDHUP;
+#elif defined FASTCGIPP_WINDOWS
+const unsigned Fastcgipp::Poll::Result::pollIn = POLLIN;
+const unsigned Fastcgipp::Poll::Result::pollErr = POLLERR;
+const unsigned Fastcgipp::Poll::Result::pollHup = POLLHUP;
+const unsigned Fastcgipp::Poll::Result::pollRdHup = POLLHUP;
 #endif
 
 Fastcgipp::Poll::Poll()
@@ -81,6 +89,11 @@ Fastcgipp::Poll::Result Fastcgipp::Poll::poll(int timeout)
             m_poll.data(),
             m_poll.size(),
             timeout);
+#elif defined FASTCGIPP_WINDOWS
+	pollResult = ::WSAPoll(
+		m_poll.data(),
+		m_poll.size(),
+		timeout);
 #endif
 
     Result result;
@@ -105,6 +118,18 @@ Fastcgipp::Poll::Result Fastcgipp::Poll::poll(int timeout)
             FAIL_LOG("poll() gave a result >0 but no revents are non-zero")
         result.m_socket = fd->fd;
         result.m_events = fd->revents;
+#elif defined FASTCGIPP_WINDOWS
+		const auto fd = std::find_if(
+			m_poll.begin(),
+			m_poll.end(),
+			[](const pollfd& x)
+			{
+				return x.revents != 0;
+			});
+		if (fd == m_poll.end())
+			FAIL_LOG("poll() gave a result >0 but no revents are non-zero")
+			result.m_socket = fd->fd;
+		result.m_events = fd->revents;
 #endif
     }
 
@@ -133,6 +158,21 @@ bool Fastcgipp::Poll::add(const socket_t socket)
     m_poll.back().fd = socket;
     m_poll.back().events = POLLIN | POLLRDHUP | POLLERR | POLLHUP;
     return true;
+#elif defined FASTCGIPP_WINDOWS
+	const auto fd = std::find_if(
+		m_poll.begin(),
+		m_poll.end(),
+		[&socket](const pollfd& x)
+		{
+			return x.fd == socket;
+		});
+	if (fd != m_poll.end())
+		return false;
+
+	m_poll.emplace_back();
+	m_poll.back().fd = socket;
+	m_poll.back().events = POLLIN | POLLERR | POLLHUP;
+	return true;
 #endif
 }
 
@@ -153,5 +193,18 @@ bool Fastcgipp::Poll::del(const socket_t socket)
 
     m_poll.erase(fd);
     return true;
+#elif defined FASTCGIPP_WINDOWS
+	const auto fd = std::find_if(
+		m_poll.begin(),
+		m_poll.end(),
+		[&socket](const pollfd& x)
+		{
+			return x.fd == socket;
+		});
+	if (fd == m_poll.end())
+		return false;
+
+	m_poll.erase(fd);
+	return true;
 #endif
 }

@@ -100,7 +100,7 @@ bool Fastcgipp::ChunkStreamBuf<wchar_t>::emptyBuffer()
         if(result == std::codecvt_base::error
                 || result == std::codecvt_base::noconv)
         {
-            ERROR_LOG("Email::Streambuf code conversion failed")
+            ERR_LOG("Email::Streambuf code conversion failed")
             pbump(-count);
             return false;
         }

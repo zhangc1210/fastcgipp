@@ -96,6 +96,7 @@ void Fastcgipp::Manager_base::join()
     m_transceiver.join();
 }
 
+#if ! defined(FASTCGIPP_WINDOWS)
 #include <signal.h>
 void Fastcgipp::Manager_base::setupSignals()
 {
@@ -108,7 +109,6 @@ void Fastcgipp::Manager_base::setupSignals()
     sigaction(SIGUSR1, &sigAction, NULL);
     sigaction(SIGTERM, &sigAction, NULL);
 }
-
 void Fastcgipp::Manager_base::signalHandler(int signum)
 {
     switch(signum)
@@ -139,7 +139,7 @@ void Fastcgipp::Manager_base::signalHandler(int signum)
         }
     }
 }
-
+#endif
 void Fastcgipp::Manager_base::localHandler()
 {
     Message message;
@@ -248,7 +248,7 @@ void Fastcgipp::Manager_base::localHandler()
         }
     }
     else
-        ERROR_LOG("Got a non-FastCGI record destined for the manager")
+        ERR_LOG("Got a non-FastCGI record destined for the manager")
 }
 
 void Fastcgipp::Manager_base::handler()

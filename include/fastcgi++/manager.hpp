@@ -127,6 +127,7 @@ namespace Fastcgipp
             return m_transceiver.listen();
         }
 
+#if ! defined(FASTCGIPP_WINDOWS)
         //! Listen to a named socket
         /*!
          * Listen on a named socket. In the Unix world this would be a path. In
@@ -150,7 +151,7 @@ namespace Fastcgipp
         {
             return m_transceiver.listen(name, permissions, owner, group);
         }
-
+#endif
         //! Listen to a TCP port
         /*!
          * Listen on a specific interface and TCP port.
@@ -164,10 +165,10 @@ namespace Fastcgipp
          * @return True on success. False on failure.
          */
         bool listen(
-                const char* interface,
+                const char* ifName,
                 const char* service)
         {
-            return m_transceiver.listen(interface, service);
+            return m_transceiver.listen(ifName, service);
         }
 
         //! Pass a message to a request
@@ -249,8 +250,9 @@ namespace Fastcgipp
         std::condition_variable m_wake;
 
         //! General function to handler POSIX signals
+#if ! defined(FASTCGIPP_WINDOWS)
         static void signalHandler(int signum);
-
+#endif
         //! Pointer to the %Manager object
         static Manager_base* instance;
 

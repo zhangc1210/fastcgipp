@@ -51,7 +51,7 @@ std::basic_ostream<charT, traits>& Fastcgipp::operator<<(
     }
     catch(std::bad_cast& e)
     {
-        ERROR_LOG("Trying to set encoding on a stream buffer that isn't a "\
+        ERR_LOG("Trying to set encoding on a stream buffer that isn't a "\
                 "WebStreambuf")
     }
     return os;

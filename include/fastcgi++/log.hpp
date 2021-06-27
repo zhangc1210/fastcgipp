@@ -62,7 +62,7 @@ namespace Fastcgipp
         {
             INFO = 0,
             FAIL = 1,
-            ERROR = 2,
+            ERR = 2,
             WARNING = 3,
             DEBUG = 4,
             DIAG = 5,
@@ -104,14 +104,14 @@ namespace Fastcgipp
  * what the external conditions are. This also presumes that there is a
  * mechanism to recover from said error.
  */
-#define ERROR_LOG(data) \
+#define ERR_LOG(data) \
     { \
         std::lock_guard<std::mutex> lock(::Fastcgipp::Logging::mutex);\
-        ::Fastcgipp::Logging::header(::Fastcgipp::Logging::ERROR);\
+        ::Fastcgipp::Logging::header(::Fastcgipp::Logging::ERR);\
         *::Fastcgipp::Logging::logstream << data << std::endl;\
     }
 #else
-#define ERROR_LOG(data) {}
+#define ERR_LOG(data) {}
 #endif
 
 #if FASTCGIPP_LOG_LEVEL > 1

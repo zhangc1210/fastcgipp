@@ -132,6 +132,7 @@ namespace Fastcgipp
             return m_sockets.listen();
         }
 
+#if ! defined(FASTCGIPP_WINDOWS)
         //! Listen to a named socket
         /*!
          * Listen on a named socket. In the Unix world this would be a path. In
@@ -155,7 +156,7 @@ namespace Fastcgipp
         {
             return m_sockets.listen(name, permissions, owner, group);
         }
-
+#endif
         //! Listen to a TCP port
         /*!
          * Listen on a specific interface and TCP port.
@@ -169,10 +170,10 @@ namespace Fastcgipp
          * @return True on success. False on failure.
          */
         bool listen(
-                const char* interface,
+                const char* ifName,
                 const char* service)
         {
-            return m_sockets.listen(interface, service);
+            return m_sockets.listen(ifName, service);
         }
 
         //! Should we set socket option to reuse address

@@ -186,7 +186,7 @@ namespace Fastcgipp
                 DATA,
                 DUMP,
                 QUIT,
-                ERROR
+                ERR
             };
 
             //! Current state

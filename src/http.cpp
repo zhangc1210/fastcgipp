@@ -46,7 +46,7 @@ void Fastcgipp::Http::vecToString(
     {
         string = converter.from_bytes(&*start, &*end);
     }
-    catch(const std::range_error& e)
+    catch(const std::range_error& /*e*/)
     {
         WARNING_LOG("Error in code conversion from utf8")
     }
@@ -270,7 +270,7 @@ template<class charT> void Fastcgipp::Http::Environment<charT>::fill(
         case 14:
             if(std::equal(name, value, "REQUEST_METHOD"))
             {
-                requestMethod = RequestMethod::ERROR;
+                requestMethod = RequestMethod::ERR;
                 switch(end-value)
                 {
                 case 3:
@@ -314,8 +314,8 @@ template<class charT> void Fastcgipp::Http::Environment<charT>::fill(
                                 value,
                                 end,
                                 requestMethodLabels[static_cast<int>(
-                                    RequestMethod::DELETE)]))
-                        requestMethod = RequestMethod::DELETE;
+                                    RequestMethod::DEL)]))
+                        requestMethod = RequestMethod::DEL;
                     break;
                 case 7:
                     if(std::equal(
@@ -407,7 +407,7 @@ template<class charT> void Fastcgipp::Http::Environment<charT>::fill(
                 dateStream >> std::get_time(
                         &time,
                         "%a, %d %b %Y %H:%M:%S GMT");
-                ifModifiedSince = std::mktime(&time) - timezone;
+                ifModifiedSince = std::mktime(&time)/* - timezone*/;
             }
             else
                 processed=false;
