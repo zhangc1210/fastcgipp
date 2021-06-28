@@ -48,6 +48,7 @@ typedef SOCKET socket_t;
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -1039,18 +1040,18 @@ bool Fastcgipp::SocketGroup::listen(
 	}
 	else 
 	{
-		if ((-1) == (fcgi_addr_in.sin_addr.s_addr = inet_addr(ifName))) 
+		if (in_addr_t(-1) == (fcgi_addr_in.sin_addr.s_addr = inet_addr(ifName))) 
 		{
 			return -1;
 		}
 	}
 	int fcgi_fd = ::socket(socket_type, SOCK_STREAM, 0);
-	Fastcgipp::Socket::set_reuse(fcgi_fd);
+	Socket::set_reuse(fcgi_fd);
 	if (-1 == bind(fcgi_fd, fcgi_addr, servlen)) {
 #if defined(FASTCGIPP_WINDOWS)
 		::closesocket(fcgi_fd);
 #else
-		close(fd);
+		close(fcgi_fd);
 #endif
 		return -1;
 	}
@@ -1065,7 +1066,7 @@ bool Fastcgipp::SocketGroup::listen(
 		return false;
 	}
 #else
-	fcntl(fcgi_fd, F_SETFL, fcntl(listen, F_GETFL) | O_NONBLOCK);
+	fcntl(fcgi_fd, F_SETFL, fcntl(fcgi_fd, F_GETFL) | O_NONBLOCK);
 #endif
 	if (fcgi_fd == -1)
 	{
@@ -1327,7 +1328,7 @@ bool Fastcgipp::SocketGroup::listen(
     std::strncpy(address.sun_path, name, sizeof(address.sun_path) - 1);
 
     if(m_reuse)
-        set_reuse(fd);
+        Socket::set_reuse(fd);
     if(bind(
                 fd,
                 reinterpret_cast<struct sockaddr*>(&address),

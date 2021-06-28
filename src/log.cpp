@@ -58,7 +58,7 @@ namespace Fastcgipp
 #else
 			const int cnBufferLength = HOST_NAME_MAX + 2;
 #endif
-			char buffer[256 + 2];
+			char buffer[cnBufferLength];
 			if (0 != gethostname(buffer, sizeof(buffer)))
 			{
 #if defined(FASTCGIPP_WINDOWS)
