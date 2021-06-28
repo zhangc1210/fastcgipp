@@ -139,6 +139,10 @@ void Fastcgipp::Manager_base::signalHandler(int signum)
         }
     }
 }
+#else
+void Fastcgipp::Manager_base::setupSignals()
+{
+}
 #endif
 void Fastcgipp::Manager_base::localHandler()
 {
