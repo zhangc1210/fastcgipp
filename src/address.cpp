@@ -44,13 +44,14 @@ Fastcgipp::Address& Fastcgipp::Address::operator&=(
     return *this;
 }
 
+#if ! defined(FASTCGIPP_WINDOWS)
 template void Fastcgipp::Address::assign<char>(
         const char* start,
         const char* end);
 template void Fastcgipp::Address::assign<wchar_t>(
         const wchar_t* start,
         const wchar_t* end);
-/*template<class charT> void Fastcgipp::Address::assign(
+template<class charT> void Fastcgipp::Address::assign(
         const charT* start,
         const charT* end)
 {
@@ -165,8 +166,8 @@ template void Fastcgipp::Address::assign<wchar_t>(
             std::fill(pad, padEnd, 0);
         }
     }
-}*/
-
+}
+#endif
 template std::basic_ostream<char, std::char_traits<char>>&
 Fastcgipp::operator<< <char, std::char_traits<char>>(
         std::basic_ostream<char, std::char_traits<char>>& os,
