@@ -43,7 +43,7 @@
 #include <algorithm>
 #endif
 
-
+extern int getLastSocketError();
 #ifdef FASTCGIPP_LINUX
 const unsigned Fastcgipp::Poll::Result::pollIn = EPOLLIN;
 const unsigned Fastcgipp::Poll::Result::pollErr = EPOLLERR;
@@ -55,10 +55,9 @@ const unsigned Fastcgipp::Poll::Result::pollErr = POLLERR;
 const unsigned Fastcgipp::Poll::Result::pollHup = POLLHUP;
 const unsigned Fastcgipp::Poll::Result::pollRdHup = POLLRDHUP;
 #elif defined FASTCGIPP_WINDOWS
-const unsigned Fastcgipp::Poll::Result::pollIn = POLLIN;
+const unsigned Fastcgipp::Poll::Result::pollIn = POLLRDNORM;
 const unsigned Fastcgipp::Poll::Result::pollErr = POLLERR;
 const unsigned Fastcgipp::Poll::Result::pollHup = POLLHUP;
-const unsigned Fastcgipp::Poll::Result::pollRdHup = POLLHUP;
 #endif
 
 Fastcgipp::Poll::Poll()
@@ -76,19 +75,19 @@ Fastcgipp::Poll::~Poll()
 
 Fastcgipp::Poll::Result Fastcgipp::Poll::poll(int timeout)
 {
-    int pollResult;
+	int pollResult;
 #ifdef FASTCGIPP_LINUX
-    epoll_event epollEvent;
-    pollResult = epoll_wait(
-            m_poll,
-            &epollEvent,
-            1,
-            timeout);
+	epoll_event epollEvent;
+	pollResult = epoll_wait(
+		m_poll,
+		&epollEvent,
+		1,
+		timeout);
 #elif defined FASTCGIPP_UNIX
-    pollResult = ::poll(
-            m_poll.data(),
-            m_poll.size(),
-            timeout);
+	pollResult = ::poll(
+		m_poll.data(),
+		m_poll.size(),
+		timeout);
 #elif defined FASTCGIPP_WINDOWS
 	pollResult = ::WSAPoll(
 		m_poll.data(),
@@ -96,10 +95,20 @@ Fastcgipp::Poll::Result Fastcgipp::Poll::poll(int timeout)
 		timeout);
 #endif
 
-    Result result;
-
-    if(pollResult<0 && errno != EINTR)
-        FAIL_LOG("Error on poll: " << std::strerror(errno))
+	Result result;
+	int err = getLastSocketError();
+	const char* cError = std::strerror(getLastSocketError());
+#if defined(FASTCGIPP_WINDOWS)
+	if (pollResult < 0)
+	{
+		FAIL_LOG("Error on poll: " << cError)
+	}
+#else
+	if (pollResult < 0 && err != EINTR)
+	{
+		FAIL_LOG("Error on poll: " << cError)
+	}
+#endif
     else if(pollResult>0)
     {
         result.m_data = true;
@@ -128,7 +137,7 @@ Fastcgipp::Poll::Result Fastcgipp::Poll::poll(int timeout)
 			});
 		if (fd == m_poll.end())
 			FAIL_LOG("poll() gave a result >0 but no revents are non-zero")
-			result.m_socket = fd->fd;
+		result.m_socket = fd->fd;
 		result.m_events = fd->revents;
 #endif
     }
@@ -171,7 +180,7 @@ bool Fastcgipp::Poll::add(const socket_t socket)
 
 	m_poll.emplace_back();
 	m_poll.back().fd = socket;
-	m_poll.back().events = POLLIN | POLLERR | POLLHUP;
+	m_poll.back().events = Result::pollIn;
 	return true;
 #endif
 }

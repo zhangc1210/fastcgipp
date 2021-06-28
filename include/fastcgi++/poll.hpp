@@ -95,9 +95,10 @@ namespace Fastcgipp
             //! Event: the socket has been "hung up" on this end
             static const unsigned pollHup;
 
+#if ! defined(FASTCGIPP_WINDOWS)
             //! Event: the socket has been "hung up" on the other end
             static const unsigned pollRdHup;
-
+#endif
             //! Event register
             unsigned m_events;
 
@@ -143,7 +144,11 @@ namespace Fastcgipp
             //! True if the socket has been "hung up" on the other end
             bool rdHup() const
             {
-                return m_events & pollRdHup;
+#if defined(FASTCGIPP_WINDOWS)
+				return hup();
+#else
+				return m_events & pollRdHup;
+#endif
             }
 
             //! True if the socket has an error
@@ -151,7 +156,6 @@ namespace Fastcgipp
             {
                 return m_events & pollErr;
             }
-
             //! True if the socket has data to read
             bool in() const
             {
