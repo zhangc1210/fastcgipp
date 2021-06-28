@@ -1040,7 +1040,11 @@ bool Fastcgipp::SocketGroup::listen(
 	}
 	else 
 	{
-		if (in_addr_t(-1) == (fcgi_addr_in.sin_addr.s_addr = inet_addr(ifName))) 
+#if defined(FASTCGIPP_WINDOWS)
+		if ((-1) == (fcgi_addr_in.sin_addr.s_addr = inet_addr(ifName)))
+#else
+		if (in_addr_t(-1) == (fcgi_addr_in.sin_addr.s_addr = inet_addr(ifName)))
+#endif
 		{
 			return -1;
 		}
