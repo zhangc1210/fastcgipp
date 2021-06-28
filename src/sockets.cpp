@@ -1044,7 +1044,7 @@ bool Fastcgipp::SocketGroup::listen(
 			return -1;
 		}
 	}
-	int fcgi_fd = socket(socket_type, SOCK_STREAM, 0);
+	int fcgi_fd = ::socket(socket_type, SOCK_STREAM, 0);
 	Fastcgipp::Socket::set_reuse(fcgi_fd);
 	if (-1 == bind(fcgi_fd, fcgi_addr, servlen)) {
 #if defined(FASTCGIPP_WINDOWS)
@@ -1083,6 +1083,45 @@ bool Fastcgipp::SocketGroup::listen(
 				<< std::strerror(getLastSocketError()));
 			return false;
 		}
+#if defined(FASTCGIPP_WINDOWS)
+		socket_t clientSock= ::socket(socket_type, SOCK_STREAM, 0);
+		if (clientSock == -1)
+		{
+			ERR_LOG("Unable to create wakesocket: "\
+				<< std::strerror(getLastSocketError()));
+			return false;
+		}
+		if ((-1) == (fcgi_addr_in.sin_addr.s_addr = inet_addr("127.0.0.1")))
+		{
+			return -1;
+		}
+		if (SOCKET_ERROR == ::connect(clientSock, fcgi_addr, servlen))
+		{
+			ERR_LOG("Unable to connect wakesocket: "\
+				<< std::strerror(getLastSocketError()));
+			return false;
+		}
+		socket_t serverSock = ::accept(fcgi_fd, 0, 0);
+		if (serverSock == -1)
+		{
+			ERR_LOG("Unable to accpet wakesocket: "\
+				<< std::strerror(getLastSocketError()));
+			return false;
+		}
+
+		unsigned long nonblocking = 1;
+		if (ioctlsocket(serverSock, FIONBIO, &nonblocking) == SOCKET_ERROR)
+		{
+			ERR_LOG("Unable to set NONBLOCK on wakesocket: " << serverSock \
+				<< " with ioctlsocket(): " << std::strerror(getLastSocketError()))
+			::closesocket(clientSock);
+			::closesocket(serverSock);
+			return false;
+		}
+		m_wakeSockets[0] = clientSock;
+		m_wakeSockets[1] = serverSock;
+		m_poll.add(m_wakeSockets[1]);
+#endif
 		m_listeners.insert(fcgi_fd);
 		m_refreshListeners = true;
 		return true;
