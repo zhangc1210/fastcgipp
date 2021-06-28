@@ -29,6 +29,15 @@
 #include "fastcgi++/sockets.hpp"
 #include "fastcgi++/log.hpp"
 
+int getLastSocketError()
+{
+#if defined(FASTCGIPP_WINDOWS)
+	bool bRe = errno == WSAGetLastError();
+	return WSAGetLastError();
+#else
+	return getLastSocketError();
+#endif
+}
 #if defined(FASTCGIPP_WINDOWS)
 #include <WS2tcpip.h>
 #include <WSPiApi.h>
@@ -630,7 +639,7 @@ Fastcgipp::Socket::Socket(
 	if (!group.m_poll.add(socket))
 	{
 		ERR_LOG("Unable to add socket " << socket << " to poll list: " \
-			<< std::strerror(errno))
+			<< std::strerror(getLastSocketError()))
 			close();
 	}
 }
@@ -662,8 +671,12 @@ ssize_t Fastcgipp::Socket::read(char* buffer, size_t size) const
 	if (count < 0)
 	{
 		WARNING_LOG("Socket read() error on fd " \
-			<< m_data->m_socket << ": " << std::strerror(errno))
-			if (errno == EAGAIN)
+			<< m_data->m_socket << ": " << std::strerror(getLastSocketError()))
+#if defined(FASTCGIPP_WINDOWS)
+			if (getLastSocketError() == WSAEWOULDBLOCK)
+#else
+			if (getLastSocketError() == EAGAIN)
+#endif
 				return 0;
 		close();
 		return -1;
@@ -695,10 +708,14 @@ ssize_t Fastcgipp::Socket::write(const char* buffer, size_t size) const
 #endif
 	if (count < 0)
 	{
-		if (errno == EAGAIN || errno == EWOULDBLOCK)
+#if defined(FASTCGIPP_WINDOWS)
+		if (getLastSocketError() == WSAEWOULDBLOCK)
+#else
+		if (getLastSocketError() == EAGAIN || getLastSocketError() == EWOULDBLOCK)
+#endif
 			return 0;
 		WARNING_LOG("Socket write() error on fd " \
-			<< m_data->m_socket << ": " << strerror(errno))
+			<< m_data->m_socket << ": " << strerror(getLastSocketError()))
 			close();
 		return -1;
 	}
@@ -717,10 +734,10 @@ ssize_t Fastcgipp::Socket::write2(const char* buffer, size_t size) const
 	const ssize_t count = ::send(m_data->m_socket, buffer, size, MSG_NOSIGNAL);
 	if(count<0)
 	{
-		if(errno == EAGAIN || errno == EWOULDBLOCK)
+		if(getLastSocketError() == EAGAIN || getLastSocketError() == EWOULDBLOCK)
 			return 0;
 		WARNING_LOG("Socket write() error on fd " \
-				<< m_data->m_socket << ": " << strerror(errno))
+				<< m_data->m_socket << ": " << strerror(getLastSocketError()))
 		close();
 		return -1;
 	}
@@ -773,8 +790,47 @@ Fastcgipp::socket_t Fastcgipp::Socket::getHandle()const
 {
 	return m_data->m_socket;
 }
+void Fastcgipp::Socket::set_reuse(socket_t sock)
+{
+#if defined(FASTCGIPP_LINUX) || defined(FASTCGIPP_UNIX)
+	int x = 1;
+	if (::setsockopt(
+		sock,
+		SOL_SOCKET,
+		SO_REUSEADDR,
+		&x,
+		sizeof(int)) != 0)
+		WARNING_LOG("Socket setsockopt(SO_REUSEADDR, 1) error on fd " \
+			<< sock << ": " << strerror(getLastSocketError()))
+#elif defined(FASTCGIPP_WINDOWS)
+	bool x = true;
+	if (::setsockopt(
+		sock,
+		SOL_SOCKET,
+		SO_REUSEADDR,
+		(const char*)&x,
+		sizeof(int)) != 0)
+		WARNING_LOG("Socket setsockopt(SO_REUSEADDR, 1) error on fd " \
+			<< sock << ": " << strerror(getLastSocketError()))
+#else
+	WARNING_LOG("SocketGroup::set_reuse_address(true) not implemented");
+#endif
+}
 
-
+#if defined(FASTCGIPP_WINDOWS)
+bool Fastcgipp::Socket::Startup()
+{
+	WORD myVersionRequest;
+	WSADATA wsaData;
+	myVersionRequest = MAKEWORD(1, 1);
+	int err;
+	err = WSAStartup(myVersionRequest, &wsaData);
+	return err == 0;
+}
+void Fastcgipp::Socket::Cleanup()
+{
+}
+#endif
 
 Fastcgipp::SocketGroup::SocketGroup() :
 	m_waking(false),
@@ -794,8 +850,8 @@ Fastcgipp::SocketGroup::SocketGroup() :
 #if defined(FASTCGIPP_WINDOWS)
 #else
 	socketpair(AF_UNIX, SOCK_STREAM, 0, m_wakeSockets);
-#endif
 	m_poll.add(m_wakeSockets[1]);
+#endif
 	DIAG_LOG("SocketGroup::SocketGroup(): Initialized ")
 }
 
@@ -848,40 +904,21 @@ void Fastcgipp::SocketGroup::wake()
 		if (write(m_wakeSockets[0], &x, 1) != 1)
 #endif
 			FAIL_LOG("Unable to write to wakeup socket in SocketGroup: " \
-				<< std::strerror(errno))
+				<< std::strerror(getLastSocketError()))
 	}
-}
-static void set_reuse(int sock)
-{
-#if defined(FASTCGIPP_LINUX) || defined(FASTCGIPP_UNIX)
-	int x = 1;
-	if (::setsockopt(
-		sock,
-		SOL_SOCKET,
-		SO_REUSEADDR,
-		&x,
-		sizeof(int)) != 0)
-		WARNING_LOG("Socket setsockopt(SO_REUSEADDR, 1) error on fd " \
-			<< sock << ": " << strerror(errno))
-#elif defined(FASTCGIPP_WINDOWS)
-	bool x = true;
-	if (::setsockopt(
-		sock,
-		SOL_SOCKET,
-		SO_REUSEADDR,
-		(const char *)&x,
-		sizeof(int)) != 0)
-		WARNING_LOG("Socket setsockopt(SO_REUSEADDR, 1) error on fd " \
-			<< sock << ": " << strerror(errno))
-#else
-	WARNING_LOG("SocketGroup::set_reuse_address(true) not implemented");
-#endif
 }
 bool Fastcgipp::SocketGroup::listen()
 {
-	const int listen = 0;
+	const int listen = 0;//windows can not use close() and dup() to imp listen on fd 0,should use createnamedpipe?
 
 #if defined(FASTCGIPP_WINDOWS)
+	unsigned long nonblocking = 1;
+	if (ioctlsocket(listen, FIONBIO, &nonblocking) == SOCKET_ERROR)
+	{
+		ERR_LOG("Unable to set NONBLOCK on Listen Socket: "\
+			<< std::strerror(getLastSocketError()));
+		return false;
+	}
 #else
 	fcntl(listen, F_SETFL, fcntl(listen, F_GETFL) | O_NONBLOCK);
 #endif
@@ -891,7 +928,7 @@ bool Fastcgipp::SocketGroup::listen()
 		if (::listen(listen, 100) < 0)
 		{
 			ERR_LOG("Unable to listen on default FastCGI socket: "\
-				<< std::strerror(errno));
+				<< std::strerror(getLastSocketError()));
 			return false;
 		}
 		m_listeners.insert(listen);
@@ -903,6 +940,159 @@ bool Fastcgipp::SocketGroup::listen()
 		ERR_LOG("Socket " << listen << " already being listened to")
 			return false;
 	}
+}
+bool Fastcgipp::SocketGroup::listen(
+	const char* ifName,
+	const char* service)
+{
+	if (service == nullptr)
+	{
+		ERR_LOG("Cannot call listen(ifName, service) with service=nullptr.")
+			return false;
+	}
+
+	addrinfo hints;
+	std::memset(&hints, 0, sizeof(addrinfo));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = AI_PASSIVE;
+	hints.ai_protocol = IPPROTO_TCP;
+	hints.ai_canonname = nullptr;
+	hints.ai_addr = nullptr;
+	hints.ai_next = nullptr;
+
+	addrinfo* result;
+
+	if (getaddrinfo(ifName, service, &hints, &result))
+	{
+		ERR_LOG("Unable to use getaddrinfo() on " \
+			<< (ifName == nullptr ? "0.0.0.0" : ifName) << ":" << service << ". " \
+			<< std::strerror(getLastSocketError()))
+			return false;
+	}
+
+	int fd = -1;
+	for (auto i = result; i != nullptr; i = result->ai_next)
+	{
+		fd = socket(i->ai_family, i->ai_socktype, i->ai_protocol);
+		if (fd == -1)
+			continue;
+		if (m_reuse)
+			Socket::set_reuse(fd);
+		if (
+			bind(fd, i->ai_addr, i->ai_addrlen) == 0
+			&& ::listen(fd, 100) == 0)
+			break;
+#if defined(FASTCGIPP_WINDOWS)
+		::closesocket(fd);
+#else
+		close(fd);
+#endif
+		fd = -1;
+	}
+	freeaddrinfo(result);
+
+	if (fd == -1)
+	{
+		ERR_LOG("Unable to bind/listen on " \
+			<< (ifName == nullptr ? "0.0.0.0" : ifName) << ":" << service)
+			return false;
+	}
+
+	if (m_listeners.find(fd) == m_listeners.end())
+	{
+		if (::listen(fd, 100) < 0)
+		{
+			ERR_LOG("Unable to listen on default FastCGI socket: "\
+				<< std::strerror(getLastSocketError()));
+			return false;
+		}
+		m_listeners.insert(fd);
+		m_refreshListeners = true;
+		return true;
+	}
+	else
+	{
+		ERR_LOG("Socket " << fd << " already being listened to")
+		return false;
+	}
+	return true;
+}
+
+bool Fastcgipp::SocketGroup::listen(
+	const char* ifName,
+	int port)
+{
+	struct sockaddr_in fcgi_addr_in;
+	memset(&fcgi_addr_in, 0, sizeof(fcgi_addr_in));
+	fcgi_addr_in.sin_family = AF_INET;
+	fcgi_addr_in.sin_port = htons(port);
+
+	int servlen = sizeof(fcgi_addr_in);
+	int socket_type = AF_INET;
+	struct sockaddr* fcgi_addr = (struct sockaddr*)&fcgi_addr_in;
+
+
+	if (ifName == NULL) 
+	{
+		fcgi_addr_in.sin_addr.s_addr = htonl(INADDR_ANY);
+	}
+	else 
+	{
+		if ((-1) == (fcgi_addr_in.sin_addr.s_addr = inet_addr(ifName))) 
+		{
+			return -1;
+		}
+	}
+	int fcgi_fd = socket(socket_type, SOCK_STREAM, 0);
+	Fastcgipp::Socket::set_reuse(fcgi_fd);
+	if (-1 == bind(fcgi_fd, fcgi_addr, servlen)) {
+#if defined(FASTCGIPP_WINDOWS)
+		::closesocket(fcgi_fd);
+#else
+		close(fd);
+#endif
+		return -1;
+	}
+
+
+#if defined(FASTCGIPP_WINDOWS)
+	unsigned long nonblocking = 1;
+	if (ioctlsocket(fcgi_fd, FIONBIO, &nonblocking) == SOCKET_ERROR)
+	{
+		ERR_LOG("Unable to set NONBLOCK on Listen Socket: "\
+			<< std::strerror(getLastSocketError()));
+		return false;
+	}
+#else
+	fcntl(fcgi_fd, F_SETFL, fcntl(listen, F_GETFL) | O_NONBLOCK);
+#endif
+	if (fcgi_fd == -1)
+	{
+		ERR_LOG("Unable to bind/listen on " \
+			<< (ifName == nullptr ? "0.0.0.0" : ifName) << ":" << port)
+			return false;
+	}
+
+
+	if (m_listeners.find(fcgi_fd) == m_listeners.end())
+	{
+		if (::listen(fcgi_fd, 100) < 0)
+		{
+			ERR_LOG("Unable to listen on default FastCGI socket: "\
+				<< std::strerror(getLastSocketError()));
+			return false;
+		}
+		m_listeners.insert(fcgi_fd);
+		m_refreshListeners = true;
+		return true;
+	}
+	else
+	{
+		ERR_LOG("Socket " << fcgi_fd << " already being listened to")
+			return false;
+	}
+	return true;
 }
 
 Fastcgipp::Socket Fastcgipp::SocketGroup::connect(
@@ -936,7 +1126,7 @@ Fastcgipp::Socket Fastcgipp::SocketGroup::connect(
 	if (getaddrinfo(host, service, &hints, &result))
 	{
 		ERR_LOG("Unable to use getaddrinfo() on " << host << ":" << service  \
-			<< ". " << std::strerror(errno))
+			<< ". " << std::strerror(getLastSocketError()))
 			return Socket();
 	}
 
@@ -983,7 +1173,7 @@ Fastcgipp::Socket Fastcgipp::SocketGroup::poll(bool block)
 				m_poll.del(listener);
 				if (m_accept && !m_poll.add(listener))
 					FAIL_LOG("Unable to add listen socket " << listener \
-						<< " to the poll list: " << std::strerror(errno))
+						<< " to the poll list: " << std::strerror(getLastSocketError()))
 			}
 			m_refreshListeners = false;
 		}
@@ -1019,7 +1209,7 @@ Fastcgipp::Socket Fastcgipp::SocketGroup::poll(bool block)
 					if (read(m_wakeSockets[1], x, 256) < 1)
 #endif
 						FAIL_LOG("Unable to read out of SocketGroup wakeup socket: " << \
-							std::strerror(errno))
+							std::strerror(getLastSocketError()))
 						m_waking = false;
 					block = false;
 					continue;
@@ -1058,9 +1248,11 @@ Fastcgipp::Socket Fastcgipp::SocketGroup::poll(bool block)
 						socket->second.m_data->m_closing = true;
 				}
 				else if (!result.in())
+				{
 					FAIL_LOG("Got a weird event 0x" << std::hex \
 						<< result.events() << " on socket poll.")
-					return socket->second;
+				}
+				return socket->second;
 			}
 		}
 		break;
@@ -1075,17 +1267,17 @@ bool Fastcgipp::SocketGroup::listen(
         const char* owner,
         const char* group)
 {
-    if(std::remove(name) != 0 && errno != ENOENT)
+    if(std::remove(name) != 0 && getLastSocketError() != ENOENT)
     {
         ERR_LOG("Unable to delete file \"" << name << "\": " \
-                << std::strerror(errno))
+                << std::strerror(getLastSocketError()))
         return false;
     }
 
     const auto fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if(fd == -1)
     {
-        ERR_LOG("Unable to create unix socket: " << std::strerror(errno))
+        ERR_LOG("Unable to create unix socket: " << std::strerror(getLastSocketError()))
         return false;
 
     }
@@ -1103,7 +1295,7 @@ bool Fastcgipp::SocketGroup::listen(
                 sizeof(address)) < 0)
     {
         ERR_LOG("Unable to bind to unix socket \"" << name << "\": " \
-                << std::strerror(errno));
+                << std::strerror(getLastSocketError()));
         close(fd);
         std::remove(name);
         return false;
@@ -1118,7 +1310,7 @@ bool Fastcgipp::SocketGroup::listen(
         {
             ERR_LOG("Unable to chown " << owner << ":" << group \
                     << " on the unix socket \"" << name << "\": " \
-                    << std::strerror(errno));
+                    << std::strerror(getLastSocketError()));
             close(fd);
             return false;
         }
@@ -1131,7 +1323,7 @@ bool Fastcgipp::SocketGroup::listen(
         {
             ERR_LOG("Unable to set permissions 0" << std::oct << permissions \
                     << std::dec << " on \"" << name << "\": " \
-                    << std::strerror(errno));
+                    << std::strerror(getLastSocketError()));
             close(fd);
             return false;
         }
@@ -1140,7 +1332,7 @@ bool Fastcgipp::SocketGroup::listen(
     if(::listen(fd, 100) < 0)
     {
         ERR_LOG("Unable to listen on unix socket :\"" << name << "\": "\
-                << std::strerror(errno));
+                << std::strerror(getLastSocketError()));
         close(fd);
         return false;
     }
@@ -1165,28 +1357,31 @@ void Fastcgipp::SocketGroup::createSocket(const socket_t listener)
 		reinterpret_cast<sockaddr*>(&addr),
 		&addrlen);
 	if (socket < 0)
+	{
 		FAIL_LOG("Unable to accept() with fd " \
 			<< listener << ": " \
-			<< std::strerror(errno))
+			<< std::strerror(getLastSocketError()))
+	}
 #if defined(FASTCGIPP_WINDOWS)
+	unsigned long nonblocking = 1;
+	if (ioctlsocket(socket, FIONBIO, &nonblocking) == SOCKET_ERROR)
+	{
+		ERR_LOG("Unable to set NONBLOCK on fd " << socket \
+			<< " with ioctlsocket(): " << std::strerror(getLastSocketError()))
+			::closesocket(socket);
 #else
-		if (fcntl(
-			socket,
-			F_SETFL,
-			fcntl(socket, F_GETFL) | O_NONBLOCK)
-			< 0)
-#endif
-		{
-			ERR_LOG("Unable to set NONBLOCK on fd " << socket \
-				<< " with fcntl(): " << std::strerror(errno))
-#if defined(FASTCGIPP_WINDOWS)
-				::closesocket(socket);
-#else
-				close(socket);
+	if (fcntl(
+		socket,
+		F_SETFL,
+		fcntl(socket, F_GETFL) | O_NONBLOCK)
+		< 0)
+	{
+		ERR_LOG("Unable to set NONBLOCK on fd " << socket \
+			<< " with fcntl(): " << std::strerror(getLastSocketError()))
+			close(socket);
 #endif
 			return;
-		}
-
+	}
 	if (m_accept)
 	{
 		m_sockets.emplace(
