@@ -46,7 +46,7 @@ typedef SOCKET socket_t;
 #include <grp.h>
 #include <cstring>
 
-ssize_t Fastcgipp::Socket::read(char* buffer, size_t size) const
+/*ssize_t Fastcgipp::Socket::read(char* buffer, size_t size) const
 {
     if(!valid())
         return -1;
@@ -101,7 +101,7 @@ ssize_t Fastcgipp::Socket::write(const char* buffer, size_t size) const
 ssize_t Fastcgipp::Socket::write2(const char* buffer, size_t size) const
 {
     return write(buffer,size);
-    /*if(!valid() || m_data->m_closing)
+    / *if(!valid() || m_data->m_closing)
         return -1;
 
     const ssize_t count = ::send(m_data->m_socket, buffer, size, MSG_NOSIGNAL);
@@ -119,7 +119,7 @@ ssize_t Fastcgipp::Socket::write2(const char* buffer, size_t size) const
     m_data->m_group.m_bytesSent += count;
 #endif
 
-    return count;*/
+    return count;* /
 }
 
 void Fastcgipp::Socket::close() const
@@ -618,7 +618,7 @@ void Fastcgipp::SocketGroup::createSocket(const socket_t listener)
         close(socket);
 }
 
-
+*/
 #endif
 Fastcgipp::Socket::Socket(
 	const socket_t& socket,
@@ -863,7 +863,6 @@ static void set_reuse(int sock)
 		sizeof(int)) != 0)
 		WARNING_LOG("Socket setsockopt(SO_REUSEADDR, 1) error on fd " \
 			<< sock << ": " << strerror(errno))
-		int x = 1;
 #elif defined(FASTCGIPP_WINDOWS)
 	bool x = true;
 	if (::setsockopt(
@@ -1069,6 +1068,89 @@ Fastcgipp::Socket Fastcgipp::SocketGroup::poll(bool block)
 	return Socket();
 }
 
+#if ! defined(FASTCGIPP_WINDOWS)
+bool Fastcgipp::SocketGroup::listen(
+        const char* name,
+        uint32_t permissions,
+        const char* owner,
+        const char* group)
+{
+    if(std::remove(name) != 0 && errno != ENOENT)
+    {
+        ERR_LOG("Unable to delete file \"" << name << "\": " \
+                << std::strerror(errno))
+        return false;
+    }
+
+    const auto fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if(fd == -1)
+    {
+        ERR_LOG("Unable to create unix socket: " << std::strerror(errno))
+        return false;
+
+    }
+
+    struct sockaddr_un address;
+    std::memset(&address, 0, sizeof(address));
+    address.sun_family = AF_UNIX;
+    std::strncpy(address.sun_path, name, sizeof(address.sun_path) - 1);
+
+    if(m_reuse)
+        set_reuse(fd);
+    if(bind(
+                fd,
+                reinterpret_cast<struct sockaddr*>(&address),
+                sizeof(address)) < 0)
+    {
+        ERR_LOG("Unable to bind to unix socket \"" << name << "\": " \
+                << std::strerror(errno));
+        close(fd);
+        std::remove(name);
+        return false;
+    }
+
+    // Set the user and group of the socket
+    if(owner!=nullptr && group!=nullptr)
+    {
+        struct passwd* passwd = getpwnam(owner);
+        struct group* grp = getgrnam(group);
+        if(chown(name, passwd->pw_uid, grp->gr_gid)==-1)
+        {
+            ERR_LOG("Unable to chown " << owner << ":" << group \
+                    << " on the unix socket \"" << name << "\": " \
+                    << std::strerror(errno));
+            close(fd);
+            return false;
+        }
+    }
+
+    // Set the user and group of the socket
+    if(permissions != 0xffffffffUL)
+    {
+        if(chmod(name, permissions)<0)
+        {
+            ERR_LOG("Unable to set permissions 0" << std::oct << permissions \
+                    << std::dec << " on \"" << name << "\": " \
+                    << std::strerror(errno));
+            close(fd);
+            return false;
+        }
+    }
+
+    if(::listen(fd, 100) < 0)
+    {
+        ERR_LOG("Unable to listen on unix socket :\"" << name << "\": "\
+                << std::strerror(errno));
+        close(fd);
+        return false;
+    }
+
+    m_filenames.emplace_back(name);
+    m_listeners.insert(fd);
+    m_refreshListeners = true;
+    return true;
+}
+#endif
 void Fastcgipp::SocketGroup::createSocket(const socket_t listener)
 {
 #if defined(FASTCGIPP_WINDOWS)
