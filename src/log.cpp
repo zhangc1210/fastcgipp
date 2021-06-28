@@ -40,6 +40,7 @@
 #include <unistd.h>
 #else
 #include <WinSock2.h>
+#include "fastcgi++/sockets.hpp"
 #endif
 #include <limits.h>
 #include <sys/types.h>
@@ -53,12 +54,18 @@ namespace Fastcgipp
 		std::wstring getHostname()
 		{
 #if defined(FASTCGIPP_WINDOWS)
-			char buffer[256 + 2];
-			gethostname(buffer, sizeof(buffer));
+			const int cnBufferLength = 256 + 2;
 #else
-			char buffer[HOST_NAME_MAX + 2];
-			gethostname(buffer, sizeof(buffer));
+			const int cnBufferLength = HOST_NAME_MAX + 2;
 #endif
+			char buffer[256 + 2];
+			if (0 != gethostname(buffer, sizeof(buffer)))
+			{
+#if defined(FASTCGIPP_WINDOWS)
+				Socket::Startup();
+				gethostname(buffer, sizeof(buffer));
+#endif
+			}
 			std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
 			try
 			{

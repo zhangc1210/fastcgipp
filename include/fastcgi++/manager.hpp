@@ -170,6 +170,24 @@ namespace Fastcgipp
         {
             return m_transceiver.listen(ifName, service);
         }
+		//! Listen to a TCP port
+		/*!
+		 * Listen on a specific interface and TCP port.
+		 *
+		 * @param [in] interface Interface to listen on. This could be an IP
+		 *                       address or a hostname. If you don't want to
+		 *                       specify the interface, pass nullptr.
+		 * @param [in] port to listen on. This could be a
+		 *                     service name, or a string representation of a
+		 *                     port number.
+		 * @return True on success. False on failure.
+		 */
+		bool listen(
+			const char* ifName,
+			int port)
+		{
+			return m_transceiver.listen(ifName, port);
+		}
 
         //! Pass a message to a request
         void push(Protocol::RequestId id, Message&& message);

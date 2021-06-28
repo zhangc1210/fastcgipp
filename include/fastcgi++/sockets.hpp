@@ -136,7 +136,8 @@ namespace Fastcgipp
                 const socket_t& socket,
                 SocketGroup& group,
                 bool valid=true);
-
+	public:
+		static void set_reuse(socket_t sock);
     public:
         //! Try and read a chunk of data out of the socket.
         /*!
@@ -253,6 +254,11 @@ namespace Fastcgipp
         //! Creates an invalid socket with no original.
         Socket();
         socket_t getHandle()const;
+#if defined(FASTCGIPP_WINDOWS)
+		public:
+			static bool Startup();
+			static void Cleanup();
+#endif
     };
 
     //! Class for representing an OS level socket that listens for connections.
@@ -322,6 +328,21 @@ namespace Fastcgipp
         bool listen(
                 const char* ifName,
                 const char* service);
+		//! Listen to a TCP port
+		/*!
+		 * Listen on a specific interface and TCP port.
+		 *
+		 * @param [in] interface Interface to listen on. This could be an IP
+		 *                       address or a hostname. If you don't want to
+		 *                       specify the interface, pass nullptr.
+		 * @param [in] port to listen on. This could be a
+		 *                     service name, or a string representation of a
+		 *                     port number.
+		 * @return True on success. False on failure.
+		 */
+		bool listen(
+			const char* ifName,
+			int port);
 #if ! defined(FASTCGIPP_WINDOWS)
         //! Connect to a named socket
         /*!
@@ -410,7 +431,6 @@ namespace Fastcgipp
         {
             m_reuse = value;
         }
-
     private:
         //! Our sockets need access to our private data
         friend class Socket;
