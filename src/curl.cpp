@@ -328,7 +328,7 @@ size_t Fastcgipp::Curl_base::StreamBuf<wchar_t>::injectResponse(
     if(result == std::codecvt_base::error
             || result == std::codecvt_base::noconv)
     {
-        ERROR_LOG("injectResponse() code conversion failed");
+        ERR_LOG("injectResponse() code conversion failed");
         return inputDataSize;
     }
 
