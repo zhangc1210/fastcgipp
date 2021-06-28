@@ -54,7 +54,7 @@ void Fastcgipp::Mail::Email<wchar_t>::from(const std::wstring& address)
     {
         m_data.from = converter.to_bytes(address);
     }
-    catch(const std::range_error& e)
+    catch(const std::range_error& /*e*/)
     {
         WARNING_LOG("Error in code conversion to utf8 in email from address")
     }
