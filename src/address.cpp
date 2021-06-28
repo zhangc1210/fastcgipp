@@ -44,7 +44,6 @@ Fastcgipp::Address& Fastcgipp::Address::operator&=(
     return *this;
 }
 
-#if ! defined(FASTCGIPP_WINDOWS)
 template void Fastcgipp::Address::assign<char>(
         const char* start,
         const char* end);
@@ -102,11 +101,19 @@ template<class charT> void Fastcgipp::Address::assign(
         {
             if(write == m_data.begin())
             {
-                // We must be getting a pure ipv4 formatted address. Not an
-                // ::ffff:xxx.xxx.xxx.xxx style ipv4 address.
-                *reinterpret_cast<uint16_t*>(write) = 0xffff;
-                pad = m_data.begin();
-                write += 2;
+#if defined(FASTCGIPP_WINDOWS)
+				*write = 0xff;
+				++write;
+				*write = 0xff;
+				++write;
+				pad = m_data.begin();
+#else
+				// We must be getting a pure ipv4 formatted address. Not an
+				// ::ffff:xxx.xxx.xxx.xxx style ipv4 address.
+				* reinterpret_cast<uint16_t*>(write) = 0xffff;
+				pad = m_data.begin();
+				write += 2;
+#endif
             }
             else if(write - m_data.begin() > 12)
             {
@@ -167,7 +174,6 @@ template<class charT> void Fastcgipp::Address::assign(
         }
     }
 }
-#endif
 template std::basic_ostream<char, std::char_traits<char>>&
 Fastcgipp::operator<< <char, std::char_traits<char>>(
         std::basic_ostream<char, std::char_traits<char>>& os,

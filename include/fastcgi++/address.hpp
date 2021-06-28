@@ -97,7 +97,6 @@ namespace Fastcgipp
             std::copy(data, data+m_data.size(), m_data.begin());
         }
 
-#if ! defined(FASTCGIPP_WINDOWS)
         //! Assign the IP address from a string of characters
         /*!
          * In order for this to work the string must represent either an IPv4
@@ -116,7 +115,6 @@ namespace Fastcgipp
             assign(string, string+std::strlen(string));
         }
 
-#endif
         bool operator==(const Address& x) const
         {
             return std::equal(
