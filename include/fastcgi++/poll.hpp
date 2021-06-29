@@ -48,8 +48,11 @@
 namespace Fastcgipp
 {
     //! Our socket identifier type in GNU/Linux is simply an int
+#if ! defined(FASTCGIPP_WINDOWS)
     typedef int socket_t;
-
+#else
+	typedef SOCKET socket_t;
+#endif
     //! Class for handling OS level socket polling
     /*!
      * This class introduces a layer of abstraction to the polling interface
