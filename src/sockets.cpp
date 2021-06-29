@@ -845,7 +845,7 @@ bool Fastcgipp::Socket::setNonBlocking(socket_t fd)
 	return fcntl(
 		fd,
 		F_SETFL,
-		fcntl(socket, F_GETFL) | O_NONBLOCK)
+		fcntl(fd, F_GETFL) | O_NONBLOCK)
 		== 0;
 #endif
 }
