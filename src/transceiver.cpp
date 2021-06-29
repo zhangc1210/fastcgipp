@@ -296,9 +296,9 @@ bool Fastcgipp::Transceiver::transmit()
     return true;
 }
 
-void Fastcgipp::Transceiver::handler()
+/*void Fastcgipp::Transceiver::handler()
 {
-    /*bool flushed=false;
+    bool flushed=false;
     Socket socket;
 
     while(!m_terminate && !(m_stop && m_sockets.size()==0))
@@ -306,8 +306,11 @@ void Fastcgipp::Transceiver::handler()
         socket = m_sockets.poll(flushed);
         receive(socket);
         flushed = transmit();
-    }*/
+    }
+}*/
 
+void Fastcgipp::Transceiver::handler()
+{
     std::unique_lock<std::mutex> lock(m_wakeMutex);
     while(!m_terminate && !(m_stop && m_sockets.size()==0))
     {
@@ -390,6 +393,10 @@ void Fastcgipp::Transceiver::receive(Socket& socket)
         std::shared_ptr<Block> pBuffer;
         {
             std::lock_guard<std::mutex> lock(m_recvBufferMutex);
+            if(m_receiveBuffers.find(socket) == m_receiveBuffers.end())
+            {
+                m_receiveBuffers[socket].reset(new Block());
+            }
             pBuffer=m_receiveBuffers[socket];
         }
         Block &buffer=*pBuffer;
@@ -436,7 +443,11 @@ void Fastcgipp::Transceiver::receive(Socket& socket)
 
         Message message;
         message.data = std::move(buffer);
-
+        /*pBuffer.reset();
+        {
+            std::lock_guard<std::mutex> lock(m_recvBufferMutex);
+            m_receiveBuffers.erase(socket);
+        }*/
         m_sendMessage(
                 Protocol::RequestId(header.fcgiId, socket),
                 std::move(message));

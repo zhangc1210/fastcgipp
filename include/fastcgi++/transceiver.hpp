@@ -191,7 +191,7 @@ namespace Fastcgipp
         }
     private:
         //! Container associating sockets with their receive buffers
-        std::map<Socket, std::shared_ptr<Block> >m_receiveBuffers;
+        std::map<Socket, std::shared_ptr<Block> > m_receiveBuffers;
         std::mutex m_recvBufferMutex;
 
         //! Simple FastCGI record to queue up for transmission
