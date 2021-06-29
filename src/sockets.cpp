@@ -840,13 +840,13 @@ bool Fastcgipp::Socket::setNonBlocking(socket_t fd)
 {
 #if defined(FASTCGIPP_WINDOWS)
 	unsigned long nonblocking = 1;
-	return ioctlsocket(fd, FIONBIO, &nonblocking) == SOCKET_ERROR;
+	return ioctlsocket(fd, FIONBIO, &nonblocking) != SOCKET_ERROR;
 #else
 	return fcntl(
 		fd,
 		F_SETFL,
 		fcntl(fd, F_GETFL) | O_NONBLOCK)
-		== 0;
+		>= 0;
 #endif
 }
 
@@ -1081,6 +1081,7 @@ bool Fastcgipp::SocketGroup::listen(
 			return false;
 		}
 #if defined(FASTCGIPP_WINDOWS)
+		//create wake socket
 		socket_t clientSock= ::socket(socket_type, SOCK_STREAM, 0);
 		if (clientSock == -1)
 		{
@@ -1099,6 +1100,16 @@ bool Fastcgipp::SocketGroup::listen(
 			return false;
 		}
 		socket_t serverSock = ::accept(fcgi_fd, 0, 0);
+		for (int i = 0;i < 100;++i)
+		{
+			if (serverSock != -1)
+			{
+				break;
+			}
+			Sleep(50);
+			serverSock = ::accept(fcgi_fd, 0, 0);
+		}
+
 		if (serverSock == -1)
 		{
 			ERR_LOG("Unable to accpet wakesocket: "\
@@ -1106,13 +1117,12 @@ bool Fastcgipp::SocketGroup::listen(
 			return false;
 		}
 
-		unsigned long nonblocking = 1;
-		if (ioctlsocket(serverSock, FIONBIO, &nonblocking) == SOCKET_ERROR)
+		if (!Socket::setNonBlocking(serverSock))
 		{
 			ERR_LOG("Unable to set NONBLOCK on wakesocket: " << serverSock \
 				<< " with ioctlsocket(): " << std::strerror(getLastSocketError()))
-			::closesocket(clientSock);
-			::closesocket(serverSock);
+			Socket::closesocket(clientSock);
+			Socket::closesocket(serverSock);
 			return false;
 		}
 		m_wakeSockets[0] = clientSock;
