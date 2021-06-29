@@ -753,15 +753,9 @@ void Fastcgipp::Socket::close() const
 {
 	if (valid())
 	{
-#if defined(FASTCGIPP_WINDOWS)
-		::shutdown(m_data->m_socket, SD_BOTH);
+		shutdown(m_data->m_socket);
 		m_data->m_group.m_poll.del(m_data->m_socket);
-		::closesocket(m_data->m_socket);
-#else
-		::shutdown(m_data->m_socket, SHUT_RDWR);
-		m_data->m_group.m_poll.del(m_data->m_socket);
-		::close(m_data->m_socket);
-#endif
+		closesocket(m_data->m_socket);
 		m_data->m_valid = false;
 		m_data->m_group.m_sockets.erase(m_data->m_socket);
 #if FASTCGIPP_LOG_LEVEL > 3
@@ -775,15 +769,9 @@ Fastcgipp::Socket::~Socket()
 {
 	if (m_original && valid())
 	{
-#if defined(FASTCGIPP_WINDOWS)
-		::shutdown(m_data->m_socket, SD_BOTH);
+		shutdown(m_data->m_socket);
 		m_data->m_group.m_poll.del(m_data->m_socket);
-		::closesocket(m_data->m_socket);
-#else
-		::shutdown(m_data->m_socket, SHUT_RDWR);
-		m_data->m_group.m_poll.del(m_data->m_socket);
-		::close(m_data->m_socket);
-#endif
+		closesocket(m_data->m_socket);
 		m_data->m_valid = false;
 	}
 }
@@ -832,6 +820,35 @@ void Fastcgipp::Socket::Cleanup()
 {
 }
 #endif
+int Fastcgipp::Socket::closesocket(socket_t fd)
+{
+#if defined(FASTCGIPP_WINDOWS)
+	return ::closesocket(fd);
+#else
+	return close(fd);
+#endif
+}
+int Fastcgipp::Socket::shutdown(socket_t fd)
+{
+#if defined(FASTCGIPP_WINDOWS)
+	return ::shutdown(fd,SD_BOTH);
+#else
+	return ::shutdown(fd,SHUT_RDWR);
+#endif
+}
+bool Fastcgipp::Socket::setNonBlocking(socket_t fd)
+{
+#if defined(FASTCGIPP_WINDOWS)
+	unsigned long nonblocking = 1;
+	return ioctlsocket(fd, FIONBIO, &nonblocking) == SOCKET_ERROR;
+#else
+	return fcntl(
+		fd,
+		F_SETFL,
+		fcntl(socket, F_GETFL) | O_NONBLOCK)
+		== 0;
+#endif
+}
 
 Fastcgipp::SocketGroup::SocketGroup() :
 	m_waking(false),
@@ -858,23 +875,13 @@ Fastcgipp::SocketGroup::SocketGroup() :
 
 Fastcgipp::SocketGroup::~SocketGroup()
 {
-#if defined(FASTCGIPP_WINDOWS)
-	closesocket(m_wakeSockets[0]);
-	closesocket(m_wakeSockets[1]);
+	Socket::closesocket(m_wakeSockets[0]);
+	Socket::closesocket(m_wakeSockets[1]);
 	for (const auto& listener : m_listeners)
 	{
-		::shutdown(listener, SD_BOTH);
-		::closesocket(listener);
+		Socket::shutdown(listener);
+		Socket::closesocket(listener);
 	}
-#else
-	close(m_wakeSockets[0]);
-	close(m_wakeSockets[1]);
-	for (const auto& listener : m_listeners)
-	{
-		::shutdown(listener, SHUT_RDWR);
-		::close(listener);
-	}
-#endif
 	for (const auto& filename : m_filenames)
 		std::remove(filename.c_str());
 
@@ -912,16 +919,15 @@ bool Fastcgipp::SocketGroup::listen()
 {
 	const int listen = 0;//windows can not use close() and dup() to imp listen on fd 0,should use createnamedpipe?
 
+
+	bool res = Socket::setNonBlocking(listen);
 #if defined(FASTCGIPP_WINDOWS)
-	unsigned long nonblocking = 1;
-	if (ioctlsocket(listen, FIONBIO, &nonblocking) == SOCKET_ERROR)
+	if (!res)
 	{
-		ERR_LOG("Unable to set NONBLOCK on Listen Socket: "\
+		ERR_LOG("Unable to set Nonblocking on FastCGI socket: "\
 			<< std::strerror(getLastSocketError()));
 		return false;
 	}
-#else
-	fcntl(listen, F_SETFL, fcntl(listen, F_GETFL) | O_NONBLOCK);
 #endif
 
 	if (m_listeners.find(listen) == m_listeners.end())
@@ -984,11 +990,7 @@ bool Fastcgipp::SocketGroup::listen(
 			bind(fd, i->ai_addr, i->ai_addrlen) == 0
 			&& ::listen(fd, 100) == 0)
 			break;
-#if defined(FASTCGIPP_WINDOWS)
-		::closesocket(fd);
-#else
-		close(fd);
-#endif
+		Socket::closesocket(fd);
 		fd = -1;
 	}
 	freeaddrinfo(result);
@@ -1040,11 +1042,7 @@ bool Fastcgipp::SocketGroup::listen(
 	}
 	else 
 	{
-#if defined(FASTCGIPP_WINDOWS)
 		if (unsigned(-1) == (fcgi_addr_in.sin_addr.s_addr = inet_addr(ifName)))
-#else
-		if (in_addr_t(-1) == (fcgi_addr_in.sin_addr.s_addr = inet_addr(ifName)))
-#endif
 		{
 			return -1;
 		}
@@ -1052,25 +1050,19 @@ bool Fastcgipp::SocketGroup::listen(
 	int fcgi_fd = ::socket(socket_type, SOCK_STREAM, 0);
 	Socket::set_reuse(fcgi_fd);
 	if (-1 == bind(fcgi_fd, fcgi_addr, servlen)) {
-#if defined(FASTCGIPP_WINDOWS)
-		::closesocket(fcgi_fd);
-#else
-		close(fcgi_fd);
-#endif
+		Socket::closesocket(fcgi_fd);
 		return -1;
 	}
 
 
+	bool res = Socket::setNonBlocking(fcgi_fd);
 #if defined(FASTCGIPP_WINDOWS)
-	unsigned long nonblocking = 1;
-	if (ioctlsocket(fcgi_fd, FIONBIO, &nonblocking) == SOCKET_ERROR)
+	if(!res)
 	{
 		ERR_LOG("Unable to set NONBLOCK on Listen Socket: "\
 			<< std::strerror(getLastSocketError()));
 		return false;
 	}
-#else
-	fcntl(fcgi_fd, F_SETFL, fcntl(fcgi_fd, F_GETFL) | O_NONBLOCK);
 #endif
 	if (fcgi_fd == -1)
 	{
@@ -1182,11 +1174,7 @@ Fastcgipp::Socket Fastcgipp::SocketGroup::connect(
 			continue;
 		if (::connect(fd, i->ai_addr, i->ai_addrlen) != -1)
 			break;
-#if defined(FASTCGIPP_WINDOWS)
-		::closesocket(fd);
-#else
-		close(fd);
-#endif
+		Socket::closesocket(fd);
 		fd = -1;
 	}
 	freeaddrinfo(result);
@@ -1271,11 +1259,7 @@ Fastcgipp::Socket Fastcgipp::SocketGroup::poll(bool block)
 					ERR_LOG("Poll gave fd " << result.socket() \
 						<< " which isn't in m_sockets.")
 						m_poll.del(result.socket());
-#if defined(FASTCGIPP_WINDOWS)
-					::closesocket(result.socket());
-#else
-					close(result.socket());
-#endif
+					Socket::closesocket(result.socket());
 					continue;
 				}
 
@@ -1406,24 +1390,11 @@ void Fastcgipp::SocketGroup::createSocket(const socket_t listener)
 			<< listener << ": " \
 			<< std::strerror(getLastSocketError()))
 	}
-#if defined(FASTCGIPP_WINDOWS)
-	unsigned long nonblocking = 1;
-	if (ioctlsocket(socket, FIONBIO, &nonblocking) == SOCKET_ERROR)
+	if (!Socket::setNonBlocking(socket))
 	{
 		ERR_LOG("Unable to set NONBLOCK on fd " << socket \
-			<< " with ioctlsocket(): " << std::strerror(getLastSocketError()))
-			::closesocket(socket);
-#else
-	if (fcntl(
-		socket,
-		F_SETFL,
-		fcntl(socket, F_GETFL) | O_NONBLOCK)
-		< 0)
-	{
-		ERR_LOG("Unable to set NONBLOCK on fd " << socket \
-			<< " with fcntl(): " << std::strerror(getLastSocketError()))
-			close(socket);
-#endif
+			<< std::strerror(getLastSocketError()))
+			Socket::closesocket(socket);
 			return;
 	}
 	if (m_accept)
@@ -1436,10 +1407,6 @@ void Fastcgipp::SocketGroup::createSocket(const socket_t listener)
 #endif
 	}
 	else
-#if defined(FASTCGIPP_WINDOWS)
-		::closesocket(socket);
-#else
-		close(socket);
-#endif
+		Socket::closesocket(socket);
 }
 

@@ -254,8 +254,12 @@ namespace Fastcgipp
         //! Creates an invalid socket with no original.
         Socket();
         socket_t getHandle()const;
+public:
+		static int closesocket(socket_t fd);
+		static int shutdown(socket_t fd);
+		static bool setNonBlocking(socket_t fd);
 #if defined(FASTCGIPP_WINDOWS)
-		public:
+public:
 			static bool Startup();
 			static void Cleanup();
 #endif
