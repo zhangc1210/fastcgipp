@@ -87,6 +87,7 @@ bool Fastcgipp::Transceiver::transmit()
 	//bool bSleep=false;
 	int nCountDDD=0;
 	socket_t lastSocket=-1;
+	std::set<Socket> eraseRecvBufferSock;
     while(!m_sendBuffer.empty())
     {
         if(m_sendBufferSize < m_maxSendBufferSize)
@@ -157,7 +158,7 @@ bool Fastcgipp::Transceiver::transmit()
                     m_sendBufferSize-=(*iterList)->data.end()-(*iterList)->read;
                 }
                 m_sendBuffer.erase(lastSocket);
-                m_receiveBuffers.erase(record->socket);
+                eraseRecvBufferSock.insert(record->socket);
                 continue;
             }
 #if FASTCGIPP_LOG_LEVEL > 3
@@ -173,7 +174,7 @@ bool Fastcgipp::Transceiver::transmit()
                     m_sendBufferSize-=(*iterList)->data.end()-(*iterList)->read;
                 }
                 m_sendBuffer.erase(lastSocket);
-                m_receiveBuffers.erase(record->socket);
+                eraseRecvBufferSock.insert(record->socket);
 #if FASTCGIPP_LOG_LEVEL > 3
                 ++m_connectionKillCount;
 #endif
@@ -252,7 +253,7 @@ bool Fastcgipp::Transceiver::transmit()
                         m_sendBufferSize-=(*iterList)->data.end()-(*iterList)->read;
                     }
                     m_sendBuffer.erase(lastSocket);
-                    m_receiveBuffers.erase(record->socket);
+                    eraseRecvBufferSock.insert(record->socket);
                     continue;
                 }
 #if FASTCGIPP_LOG_LEVEL > 3
@@ -267,7 +268,7 @@ bool Fastcgipp::Transceiver::transmit()
                         m_sendBufferSize-=(*iterList)->data.end()-(*iterList)->read;
                     }
                     m_sendBuffer.erase(lastSocket);
-                    m_receiveBuffers.erase(record->socket);
+                    eraseRecvBufferSock.insert(record->socket);
 #if FASTCGIPP_LOG_LEVEL > 3
                     ++m_connectionKillCount;
 #endif
@@ -283,14 +284,21 @@ bool Fastcgipp::Transceiver::transmit()
             }
         }
     }
-
+    if(!eraseRecvBufferSock.empty())
+    {
+        std::lock_guard<std::mutex> lock(m_recvBufferMutex);
+        for(auto iter=eraseRecvBufferSock.begin();iter != eraseRecvBufferSock.end();++iter)
+        {
+            m_receiveBuffers.erase(*iter);
+        }
+    }
     int nn=m_sendBufferSize;
     ++nn;
     --nn;
     return true;
 }
 
-void Fastcgipp::Transceiver::handler()
+/*void Fastcgipp::Transceiver::handler()
 {
     bool flushed=false;
     Socket socket;
@@ -301,8 +309,27 @@ void Fastcgipp::Transceiver::handler()
         receive(socket);
         flushed = transmit();
     }
-}
+}*/
 
+void Fastcgipp::Transceiver::handler()
+{
+    std::unique_lock<std::mutex> lock(m_wakeMutex);
+    while(!m_terminate && !(m_stop && m_sockets.size()==0))
+    {
+        m_wakeSend.wait(lock);
+        transmit();
+    }
+}
+void Fastcgipp::Transceiver::recvHandler()
+{
+    Socket socket;
+
+    while(!m_terminate && !(m_stop && m_sockets.size()==0))
+    {
+        socket = m_sockets.poll(true);
+        receive(socket);
+    }
+}
 void Fastcgipp::Transceiver::stop()
 {
     m_stop=true;
@@ -320,6 +347,11 @@ void Fastcgipp::Transceiver::start()
     m_stop=false;
     m_terminate=false;
     m_sockets.accept(true);
+    if(!m_threadRecv.joinable())
+    {
+        std::thread thread(&Fastcgipp::Transceiver::recvHandler, this);
+        m_threadRecv.swap(thread);
+    }
     if(!m_thread.joinable())
     {
         std::thread thread(&Fastcgipp::Transceiver::handler, this);
@@ -329,6 +361,10 @@ void Fastcgipp::Transceiver::start()
 
 void Fastcgipp::Transceiver::join()
 {
+    if(m_threadRecv.joinable())
+    {
+        m_threadRecv.join();
+    }
     if(m_thread.joinable())
     {
         m_thread.join();
@@ -356,8 +392,16 @@ void Fastcgipp::Transceiver::receive(Socket& socket)
 {
     if(socket.valid())
     {
-        Block& buffer=m_receiveBuffers[socket];
-
+        std::shared_ptr<Block> pBuffer;
+        {
+            std::lock_guard<std::mutex> lock(m_recvBufferMutex);
+            if(m_receiveBuffers.find(socket) == m_receiveBuffers.end())
+            {
+                m_receiveBuffers[socket].reset(new Block());
+            }
+            pBuffer=m_receiveBuffers[socket];
+        }
+        Block &buffer=*pBuffer;
         // Are we receiving a header?
         if(buffer.size() < sizeof(Protocol::Header))
         {
@@ -401,7 +445,11 @@ void Fastcgipp::Transceiver::receive(Socket& socket)
 
         Message message;
         message.data = std::move(buffer);
-
+        /*pBuffer.reset();
+        {
+            std::lock_guard<std::mutex> lock(m_recvBufferMutex);
+            m_receiveBuffers.erase(socket);
+        }*/
         m_sendMessage(
                 Protocol::RequestId(header.fcgiId, socket),
                 std::move(message));
@@ -413,7 +461,10 @@ void Fastcgipp::Transceiver::receive(Socket& socket)
 
 void Fastcgipp::Transceiver::cleanupSocket(const Socket& socket)
 {
-    m_receiveBuffers.erase(socket);
+    {
+        std::lock_guard<std::mutex> lock(m_recvBufferMutex);
+        m_receiveBuffers.erase(socket);
+    }
     m_sendMessage(
             Fastcgipp::Protocol::RequestId(Protocol::badFcgiId, socket),
             Message());
@@ -452,6 +503,7 @@ void Fastcgipp::Transceiver::send(
 	++nCount;
 	--nCount;
     m_sockets.wake();
+    m_wakeSend.notify_one();
 #if FASTCGIPP_LOG_LEVEL > 3
     ++m_recordsQueued;
 #endif
