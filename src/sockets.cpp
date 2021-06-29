@@ -921,14 +921,14 @@ bool Fastcgipp::SocketGroup::listen()
 
 
 	bool res = Socket::setNonBlocking(listen);
-#if defined(FASTCGIPP_WINDOWS)
 	if (!res)
 	{
 		ERR_LOG("Unable to set Nonblocking on FastCGI socket: "\
 			<< std::strerror(getLastSocketError()));
+#if defined(FASTCGIPP_WINDOWS)
 		return false;
-	}
 #endif
+	}
 
 	if (m_listeners.find(listen) == m_listeners.end())
 	{
@@ -1056,14 +1056,14 @@ bool Fastcgipp::SocketGroup::listen(
 
 
 	bool res = Socket::setNonBlocking(fcgi_fd);
-#if defined(FASTCGIPP_WINDOWS)
 	if(!res)
 	{
 		ERR_LOG("Unable to set NONBLOCK on Listen Socket: "\
 			<< std::strerror(getLastSocketError()));
+#if defined(FASTCGIPP_WINDOWS)
 		return false;
-	}
 #endif
+	}
 	if (fcgi_fd == -1)
 	{
 		ERR_LOG("Unable to bind/listen on " \
@@ -1394,8 +1394,8 @@ void Fastcgipp::SocketGroup::createSocket(const socket_t listener)
 	{
 		ERR_LOG("Unable to set NONBLOCK on fd " << socket \
 			<< std::strerror(getLastSocketError()))
-			Socket::closesocket(socket);
-			return;
+		Socket::closesocket(socket);
+		return;
 	}
 	if (m_accept)
 	{
