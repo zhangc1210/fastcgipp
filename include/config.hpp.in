@@ -5,5 +5,7 @@
 #define FASTCGIPP_@SYSTEM@
 #define FASTCGIPP_BUILD_TIME "@BUILD_TIME@"
 #define FASTCGIPP_LOG_LEVEL @LOG_LEVEL@
-
+#ifdef FASTCGIPP_WINDOWS
+#define NOMINMAX
+#endif
 #endif
