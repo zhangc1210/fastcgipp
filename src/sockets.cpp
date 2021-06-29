@@ -825,7 +825,7 @@ int Fastcgipp::Socket::closesocket(socket_t fd)
 #if defined(FASTCGIPP_WINDOWS)
 	return ::closesocket(fd);
 #else
-	return close(fd);
+	return ::close(fd);
 #endif
 }
 int Fastcgipp::Socket::shutdown(socket_t fd)
