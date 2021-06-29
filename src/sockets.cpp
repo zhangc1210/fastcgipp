@@ -677,11 +677,16 @@ ssize_t Fastcgipp::Socket::read(char* buffer, size_t size) const
 	if (!valid())
 		return -1;
 
+	//add by zhangc for transmit send and recv concurrent
+	ssize_t count = 0;
+	{
+		std::lock_guard<std::mutex> lock(m_sockDataMutex);
 #if defined(FASTCGIPP_WINDOWS)
-	const ssize_t count = ::recv(m_data->m_socket, buffer, size, 0);
+		count = ::recv(m_data->m_socket, buffer, size, 0);
 #else
-	const ssize_t count = ::read(m_data->m_socket, buffer, size);
+		count = ::read(m_data->m_socket, buffer, size);
 #endif
+	}
 	if (count < 0)
 	{
 		WARNING_LOG("Socket read() error on fd " \
@@ -714,12 +719,16 @@ ssize_t Fastcgipp::Socket::write(const char* buffer, size_t size) const
 {
 	if (!valid() || m_data->m_closing)
 		return -1;
-
+	//add by zhangc for transmit send and recv concurrent
+	ssize_t count = 0;
+	{
+		std::lock_guard<std::mutex> lock(m_sockDataMutex);
 #if defined(FASTCGIPP_WINDOWS)
-	const ssize_t count = ::send(m_data->m_socket, buffer, size,0);
+		count = ::send(m_data->m_socket, buffer, size, 0);
 #else
-	const ssize_t count = ::send(m_data->m_socket, buffer, size, MSG_NOSIGNAL);
+		count = ::send(m_data->m_socket, buffer, size, MSG_NOSIGNAL);
 #endif
+	}
 	if (count < 0)
 	{
 #if defined(FASTCGIPP_WINDOWS)
@@ -766,6 +775,8 @@ void Fastcgipp::Socket::close() const
 {
 	if (valid())
 	{
+		//add by zhangc for transmit send and recv concurrent
+		std::lock_guard<std::mutex> lock(m_sockDataMutex);
 		shutdown(m_data->m_socket);
 		m_data->m_group.m_poll.del(m_data->m_socket);
 		closesocket(m_data->m_socket);
@@ -782,6 +793,8 @@ Fastcgipp::Socket::~Socket()
 {
 	if (m_original && valid())
 	{
+		//add by zhangc for transmit send and recv concurrent
+		std::lock_guard<std::mutex> lock(m_sockDataMutex);
 		shutdown(m_data->m_socket);
 		m_data->m_group.m_poll.del(m_data->m_socket);
 		closesocket(m_data->m_socket);

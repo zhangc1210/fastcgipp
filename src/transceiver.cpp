@@ -502,7 +502,7 @@ void Fastcgipp::Transceiver::send(
 	m_sendBufferSize+=sendDataSize;
 	++nCount;
 	--nCount;
-    m_sockets.wake();
+	//m_sockets.wake();//do not use,this is for wake poll in one thread transceiver mode,
     m_wakeSend.notify_one();
 #if FASTCGIPP_LOG_LEVEL > 3
     ++m_recordsQueued;
