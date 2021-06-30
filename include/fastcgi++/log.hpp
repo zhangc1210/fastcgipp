@@ -91,9 +91,11 @@ namespace Fastcgipp
 #define FAIL_LOG(data) {\
     if(!::Fastcgipp::Logging::suppress)\
     { \
-        std::lock_guard<std::mutex> lock(::Fastcgipp::Logging::mutex);\
-        ::Fastcgipp::Logging::header(::Fastcgipp::Logging::FAIL);\
-        *::Fastcgipp::Logging::logstream << data << std::endl;\
+		{\
+			std::lock_guard<std::mutex> lock(::Fastcgipp::Logging::mutex); \
+			::Fastcgipp::Logging::header(::Fastcgipp::Logging::FAIL); \
+			* ::Fastcgipp::Logging::logstream << data << std::endl; \
+		}\
         std::exit(EXIT_FAILURE);\
     }}
 
