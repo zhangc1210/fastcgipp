@@ -35,7 +35,7 @@ int getLastSocketError()
 	bool bRe = errno == WSAGetLastError();
 	return WSAGetLastError();
 #else
-	return getLastSocketError();
+	return errno;
 #endif
 }
 #if defined(FASTCGIPP_WINDOWS)
