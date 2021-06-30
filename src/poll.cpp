@@ -60,6 +60,89 @@ const unsigned Fastcgipp::Poll::Result::pollErr = POLLERR;
 const unsigned Fastcgipp::Poll::Result::pollHup = POLLHUP;
 #endif
 
+int Fastcgipp::closesocket(socket_t fd)
+{
+#if defined(FASTCGIPP_WINDOWS)
+	return ::closesocket(fd);
+#else
+	return ::close(fd);
+#endif
+}
+int Fastcgipp::shutdown(socket_t fd, bool bRead, bool Write)
+{
+	int nOper = 0;
+#if defined(FASTCGIPP_WINDOWS)
+	if (bRead && Write)
+	{
+		nOper = SD_BOTH;
+	}
+	else if (bRead)
+	{
+		nOper = SD_RECEIVE;
+	}
+	else if (Write)
+	{
+		nOper = SD_SEND;
+	}
+#else
+	if (bRead && Write)
+	{
+		nOper = SHUT_RDWR;
+	}
+	else if (bRead)
+	{
+		nOper = SHUT_RD;
+	}
+	else if (Write)
+	{
+		nOper = SHUT_WR;
+	}
+#endif
+	else
+	{
+		return -1;
+	}
+	return ::shutdown(fd, nOper);
+}
+bool Fastcgipp::setNonBlocking(socket_t fd)
+{
+#if defined(FASTCGIPP_WINDOWS)
+	unsigned long nonblocking = 1;
+	return ioctlsocket(fd, FIONBIO, &nonblocking) != SOCKET_ERROR;
+#else
+	return fcntl(
+		fd,
+		F_SETFL,
+		fcntl(fd, F_GETFL) | O_NONBLOCK)
+		>= 0;
+#endif
+}
+void Fastcgipp::set_reuse(socket_t sock)
+{
+#if defined(FASTCGIPP_LINUX) || defined(FASTCGIPP_UNIX)
+	int x = 1;
+	if (::setsockopt(
+		sock,
+		SOL_SOCKET,
+		SO_REUSEADDR,
+		&x,
+		sizeof(int)) != 0)
+		WARNING_LOG("Socket setsockopt(SO_REUSEADDR, 1) error on fd " \
+			<< sock << ": " << strerror(getLastSocketError()))
+#elif defined(FASTCGIPP_WINDOWS)
+	bool x = true;
+	if (::setsockopt(
+		sock,
+		SOL_SOCKET,
+		SO_REUSEADDR,
+		(const char*)&x,
+		sizeof(int)) != 0)
+		WARNING_LOG("Socket setsockopt(SO_REUSEADDR, 1) error on fd " \
+			<< sock << ": " << strerror(getLastSocketError()))
+#else
+	WARNING_LOG("SocketGroup::set_reuse_address(true) not implemented");
+#endif
+}
 Fastcgipp::Poll::Poll()
 #ifdef FASTCGIPP_LINUX
     :m_poll(epoll_create1(0))
@@ -97,15 +180,20 @@ Fastcgipp::Poll::Result Fastcgipp::Poll::poll(int timeout)
 
 	Result result;
 	int err = getLastSocketError();
-	const char* cError = std::strerror(getLastSocketError());
 #if defined(FASTCGIPP_WINDOWS)
 	if (pollResult < 0)
 	{
-		FAIL_LOG("Error on poll: " << cError)
+		if (err == WSAENOTSOCK)
+		{
+			++err;
+			--err;
+		}
+		FAIL_LOG("Error on poll: " << err)
 	}
 #else
 	if (pollResult < 0 && err != EINTR)
 	{
+		const char* cError = std::strerror(err);
 		FAIL_LOG("Error on poll: " << cError)
 	}
 #endif
@@ -139,6 +227,12 @@ Fastcgipp::Poll::Result Fastcgipp::Poll::poll(int timeout)
 			FAIL_LOG("poll() gave a result >0 but no revents are non-zero")
 		result.m_socket = fd->fd;
 		result.m_events = fd->revents;
+		if (result.m_events == POLLNVAL)
+		{
+			result.m_socket = -1;
+			result.m_data = false;
+			m_poll.erase(fd);
+		}
 #endif
     }
 
@@ -146,6 +240,80 @@ Fastcgipp::Poll::Result Fastcgipp::Poll::poll(int timeout)
 }
 
 bool Fastcgipp::Poll::add(const socket_t socket)
+{
+#ifdef FASTCGIPP_LINUX
+	epoll_event event;
+	event.data.fd = socket;
+	event.events = EPOLLIN | EPOLLERR | EPOLLHUP | EPOLLRDHUP;
+	return epoll_ctl(m_poll, EPOLL_CTL_ADD, socket, &event) != -1;
+#elif defined FASTCGIPP_UNIX
+	const auto fd = std::find_if(
+		m_poll.begin(),
+		m_poll.end(),
+		[&socket](const pollfd& x)
+		{
+			return x.fd == socket;
+		});
+	if (fd != m_poll.end())
+		return false;
+
+	m_poll.emplace_back();
+	m_poll.back().fd = socket;
+	m_poll.back().events = POLLIN | POLLRDHUP | POLLERR | POLLHUP;
+	return true;
+#elif defined FASTCGIPP_WINDOWS
+	const auto fd = std::find_if(
+		m_poll.begin(),
+		m_poll.end(),
+		[&socket](const pollfd& x)
+		{
+			return x.fd == socket;
+		});
+	if (fd != m_poll.end())
+		return false;
+
+	m_poll.emplace_back();
+	m_poll.back().fd = socket;
+	m_poll.back().events = Result::pollIn;
+	return true;
+#endif
+}
+
+bool Fastcgipp::Poll::del(const socket_t socket)
+{
+#ifdef FASTCGIPP_LINUX
+	return epoll_ctl(m_poll, EPOLL_CTL_DEL, socket, nullptr) != -1;
+#elif defined FASTCGIPP_UNIX
+	const auto fd = std::find_if(
+		m_poll.begin(),
+		m_poll.end(),
+		[&socket](const pollfd& x)
+		{
+			return x.fd == socket;
+		});
+	if (fd == m_poll.end())
+		return false;
+
+	m_poll.erase(fd);
+	return true;
+#elif defined FASTCGIPP_WINDOWS
+	const auto fd = std::find_if(
+		m_poll.begin(),
+		m_poll.end(),
+		[&socket](const pollfd& x)
+		{
+			return x.fd == socket;
+		});
+	if (fd == m_poll.end())
+		return false;
+
+	m_poll.erase(fd);
+	shutdown(socket);
+	closesocket(socket);
+	return true;
+#endif
+}
+/*bool Fastcgipp::Poll::add(const socket_t socket)
 {
 #ifdef FASTCGIPP_LINUX
     epoll_event event;
@@ -216,4 +384,4 @@ bool Fastcgipp::Poll::del(const socket_t socket)
 	m_poll.erase(fd);
 	return true;
 #endif
-}
+}*/

@@ -43,6 +43,9 @@
 #include <vector>
 #include <WinSock2.h>
 #endif
+#include <mutex>
+#include <utility>
+
 
 //! Topmost namespace for the fastcgi++ library
 namespace Fastcgipp
@@ -53,6 +56,10 @@ namespace Fastcgipp
 #else
 	typedef SOCKET socket_t;
 #endif
+	int closesocket(socket_t fd);
+	int shutdown(socket_t fd, bool bRead = true, bool Write = true);
+	bool setNonBlocking(socket_t fd);
+	void set_reuse(socket_t fd);
     //! Class for handling OS level socket polling
     /*!
      * This class introduces a layer of abstraction to the polling interface
@@ -77,13 +84,12 @@ namespace Fastcgipp
 
         //! The OS level polling object
         poll_t m_poll;
-
     public:
         //! Add a socket identifier to the poll list
         bool add(const socket_t socket);
 
         //! Remove a socket identifier to the poll list
-        bool del(const socket_t socket);
+		bool del(const socket_t socket);
 
         //! Type returned from a poll request
         class Result

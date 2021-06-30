@@ -137,8 +137,6 @@ namespace Fastcgipp
                 const socket_t& socket,
                 SocketGroup& group,
                 bool valid=true);
-	public:
-		static void set_reuse(socket_t sock);
     public:
         //! Try and read a chunk of data out of the socket.
         /*!
@@ -251,14 +249,10 @@ namespace Fastcgipp
          * If the socket is already invalid, calling this does nothing.
          */
         void close() const;
-
+		void delayClose()const;
         //! Creates an invalid socket with no original.
         Socket();
         socket_t getHandle()const;
-public:
-		static int closesocket(socket_t fd);
-		static int shutdown(socket_t fd);
-		static bool setNonBlocking(socket_t fd);
 #if defined(FASTCGIPP_WINDOWS)
 public:
 			static bool Startup();
@@ -447,7 +441,7 @@ public:
         Poll m_poll;
 
         //! A pair of sockets for wakeup purposes
-        socket_t m_wakeSockets[2];
+        //socket_t m_wakeSockets[2];
 
         //! Set to true while there is a pending wake
         bool m_waking;
@@ -472,7 +466,13 @@ public:
 
         //! Filenames to cleanup when we're done
         std::deque<std::string> m_filenames;
-
+	private:
+		std::mutex m_pollMutex;
+		std::vector<std::pair<socket_t, bool> >m_ready2DoSock;
+	private:
+		void doAddDel();
+		void add(const socket_t socket);
+		void del(const socket_t socket);
 #if FASTCGIPP_LOG_LEVEL > 3
         //! Debug counter for incoming connections
         std::atomic_ullong m_incomingConnectionCount;

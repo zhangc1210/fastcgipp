@@ -130,7 +130,7 @@ namespace Fastcgipp
          */
         bool listen()
         {
-            return m_sockets.listen();
+            return m_socketGroup.listen();
         }
 
 #if ! defined(FASTCGIPP_WINDOWS)
@@ -155,7 +155,7 @@ namespace Fastcgipp
                 const char* owner = nullptr,
                 const char* group = nullptr)
         {
-            return m_sockets.listen(name, permissions, owner, group);
+            return m_socketGroup.listen(name, permissions, owner, group);
         }
 #endif
         //! Listen to a TCP port
@@ -174,7 +174,7 @@ namespace Fastcgipp
                 const char* ifName,
                 const char* service)
         {
-            return m_sockets.listen(ifName, service);
+            return m_socketGroup.listen(ifName, service);
         }
 		//! Listen to a TCP port
 		/*!
@@ -191,7 +191,7 @@ namespace Fastcgipp
 		bool listen(
 			const char* ifName, int port)
 		{
-			return m_sockets.listen(ifName, port);
+			return m_socketGroup.listen(ifName, port);
 		}
 			
         //! Should we set socket option to reuse address
@@ -201,7 +201,7 @@ namespace Fastcgipp
          */
         void reuseAddress(bool value)
         {
-            m_sockets.reuseAddress(value);
+            m_socketGroup.reuseAddress(value);
         }
         void SetMaxSendBufferSize(int nSize)
         {
@@ -245,7 +245,7 @@ namespace Fastcgipp
         const std::function<void(Protocol::RequestId, Message&&)> m_sendMessage;
 
         //! Listen for connections with this
-        SocketGroup m_sockets;
+        SocketGroup m_socketGroup;
 
         //! Transmit all buffered data possible
         /*!

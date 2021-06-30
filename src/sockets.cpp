@@ -650,12 +650,13 @@ Fastcgipp::Socket::Socket(
 	m_data(new Data(socket, valid, group)),
 	m_original(true)
 {
-	if (!group.m_poll.add(socket))
+	/*if (!group.m_poll.add(socket))
 	{
+		int errNum = getLastSocketError();
 		ERR_LOG("Unable to add socket " << socket << " to poll list: " \
-			<< std::strerror(getLastSocketError()))
+			<<"errno:"<< errNum <<"-"<< std::strerror(errNum))
 			close();
-	}
+	}*/
 }
 
 Fastcgipp::Socket::Socket() :
@@ -689,15 +690,16 @@ ssize_t Fastcgipp::Socket::read(char* buffer, size_t size) const
 	}
 	if (count < 0)
 	{
-		WARNING_LOG("Socket read() error on fd " \
-			<< m_data->m_socket << ": " << std::strerror(getLastSocketError()))
+		int lastError = getLastSocketError();
 #if defined(FASTCGIPP_WINDOWS)
-			if (getLastSocketError() == WSAEWOULDBLOCK)
+			if (lastError == WSAEWOULDBLOCK)
 #else
-			if (getLastSocketError() == EAGAIN)
+			if (lastError == EAGAIN)
 #endif
 				return 0;
-		close();
+		WARNING_LOG("Socket read() error on fd " \
+			<< m_data->m_socket << "errno:" << lastError << "-" << std::strerror(lastError))
+		delayClose();//close();
 		return -1;
 	}
 	if (count == 0 && m_data->m_closing)
@@ -705,7 +707,7 @@ ssize_t Fastcgipp::Socket::read(char* buffer, size_t size) const
 #if FASTCGIPP_LOG_LEVEL > 3
 		++m_data->m_group.m_connectionRDHupCount;
 #endif
-		close();
+		delayClose();//close();
 		return -1;
 	}
 
@@ -739,7 +741,7 @@ ssize_t Fastcgipp::Socket::write(const char* buffer, size_t size) const
 			return 0;
 		WARNING_LOG("Socket write() error on fd " \
 			<< m_data->m_socket << ": " << strerror(getLastSocketError()))
-			close();
+		delayClose();//close();
 		return -1;
 	}
 #if FASTCGIPP_LOG_LEVEL > 3
@@ -771,14 +773,25 @@ ssize_t Fastcgipp::Socket::write2(const char* buffer, size_t size) const
 
 	return count;*/
 }
+void Fastcgipp::Socket::delayClose()const
+{
+	std::lock_guard<std::mutex> lock(m_sockDataMutex);
+	//shutdown(m_data->m_socket);
+	m_data->m_group.del(m_data->m_socket);
+	m_data->m_valid = false;
+#if FASTCGIPP_LOG_LEVEL > 3
+	if (!m_data->m_closing)
+		++m_data->m_group.m_connectionKillCount;
+#endif
+}
 void Fastcgipp::Socket::close() const
 {
 	if (valid())
 	{
+		//WARNING_LOG("Socket " << m_data->m_socket << " ready to close")
 		//add by zhangc for transmit send and recv concurrent
 		std::lock_guard<std::mutex> lock(m_sockDataMutex);
 		shutdown(m_data->m_socket);
-		m_data->m_group.m_poll.del(m_data->m_socket);
 		closesocket(m_data->m_socket);
 		m_data->m_valid = false;
 		m_data->m_group.m_sockets.erase(m_data->m_socket);
@@ -786,6 +799,7 @@ void Fastcgipp::Socket::close() const
 		if (!m_data->m_closing)
 			++m_data->m_group.m_connectionKillCount;
 #endif
+		//WARNING_LOG("Socket " << m_data->m_socket << " closed")
 	}
 }
 
@@ -805,32 +819,6 @@ Fastcgipp::socket_t Fastcgipp::Socket::getHandle()const
 {
 	return m_data->m_socket;
 }
-void Fastcgipp::Socket::set_reuse(socket_t sock)
-{
-#if defined(FASTCGIPP_LINUX) || defined(FASTCGIPP_UNIX)
-	int x = 1;
-	if (::setsockopt(
-		sock,
-		SOL_SOCKET,
-		SO_REUSEADDR,
-		&x,
-		sizeof(int)) != 0)
-		WARNING_LOG("Socket setsockopt(SO_REUSEADDR, 1) error on fd " \
-			<< sock << ": " << strerror(getLastSocketError()))
-#elif defined(FASTCGIPP_WINDOWS)
-	bool x = true;
-	if (::setsockopt(
-		sock,
-		SOL_SOCKET,
-		SO_REUSEADDR,
-		(const char*)&x,
-		sizeof(int)) != 0)
-		WARNING_LOG("Socket setsockopt(SO_REUSEADDR, 1) error on fd " \
-			<< sock << ": " << strerror(getLastSocketError()))
-#else
-	WARNING_LOG("SocketGroup::set_reuse_address(true) not implemented");
-#endif
-}
 
 #if defined(FASTCGIPP_WINDOWS)
 bool Fastcgipp::Socket::Startup()
@@ -846,35 +834,6 @@ void Fastcgipp::Socket::Cleanup()
 {
 }
 #endif
-int Fastcgipp::Socket::closesocket(socket_t fd)
-{
-#if defined(FASTCGIPP_WINDOWS)
-	return ::closesocket(fd);
-#else
-	return ::close(fd);
-#endif
-}
-int Fastcgipp::Socket::shutdown(socket_t fd)
-{
-#if defined(FASTCGIPP_WINDOWS)
-	return ::shutdown(fd,SD_BOTH);
-#else
-	return ::shutdown(fd,SHUT_RDWR);
-#endif
-}
-bool Fastcgipp::Socket::setNonBlocking(socket_t fd)
-{
-#if defined(FASTCGIPP_WINDOWS)
-	unsigned long nonblocking = 1;
-	return ioctlsocket(fd, FIONBIO, &nonblocking) != SOCKET_ERROR;
-#else
-	return fcntl(
-		fd,
-		F_SETFL,
-		fcntl(fd, F_GETFL) | O_NONBLOCK)
-		>= 0;
-#endif
-}
 
 Fastcgipp::SocketGroup::SocketGroup() :
 	m_waking(false),
@@ -901,12 +860,12 @@ Fastcgipp::SocketGroup::SocketGroup() :
 
 Fastcgipp::SocketGroup::~SocketGroup()
 {
-	Socket::closesocket(m_wakeSockets[0]);
-	Socket::closesocket(m_wakeSockets[1]);
+	//Socket::closesocket(m_wakeSockets[0]);
+	//Socket::closesocket(m_wakeSockets[1]);
 	for (const auto& listener : m_listeners)
 	{
-		Socket::shutdown(listener);
-		Socket::closesocket(listener);
+		shutdown(listener);
+		closesocket(listener);
 	}
 	for (const auto& filename : m_filenames)
 		std::remove(filename.c_str());
@@ -927,7 +886,7 @@ Fastcgipp::SocketGroup::~SocketGroup()
 }
 void Fastcgipp::SocketGroup::wake()
 {
-	std::lock_guard<std::mutex> lock(m_wakingMutex);
+	/*std::lock_guard<std::mutex> lock(m_wakingMutex);
 	if (!m_waking)
 	{
 		m_waking = true;
@@ -939,14 +898,14 @@ void Fastcgipp::SocketGroup::wake()
 #endif
 			FAIL_LOG("Unable to write to wakeup socket in SocketGroup: " \
 				<< std::strerror(getLastSocketError()))
-	}
+	}*/
 }
 bool Fastcgipp::SocketGroup::listen()
 {
 	const int listen = 0;//windows can not use close() and dup() to imp listen on fd 0,should use createnamedpipe?
 
 
-	bool res = Socket::setNonBlocking(listen);
+	bool res = setNonBlocking(listen);
 	if (!res)
 	{
 		ERR_LOG("Unable to set Nonblocking on FastCGI socket: "\
@@ -1011,12 +970,12 @@ bool Fastcgipp::SocketGroup::listen(
 		if (fd == -1)
 			continue;
 		if (m_reuse)
-			Socket::set_reuse(fd);
+			set_reuse(fd);
 		if (
 			bind(fd, i->ai_addr, i->ai_addrlen) == 0
 			&& ::listen(fd, 100) == 0)
 			break;
-		Socket::closesocket(fd);
+		closesocket(fd);
 		fd = -1;
 	}
 	freeaddrinfo(result);
@@ -1074,14 +1033,14 @@ bool Fastcgipp::SocketGroup::listen(
 		}
 	}
 	int fcgi_fd = ::socket(socket_type, SOCK_STREAM, 0);
-	Socket::set_reuse(fcgi_fd);
+	set_reuse(fcgi_fd);
 	if (-1 == bind(fcgi_fd, fcgi_addr, servlen)) {
-		Socket::closesocket(fcgi_fd);
+		closesocket(fcgi_fd);
 		return -1;
 	}
 
 
-	bool res = Socket::setNonBlocking(fcgi_fd);
+	bool res = setNonBlocking(fcgi_fd);
 	if(!res)
 	{
 		ERR_LOG("Unable to set NONBLOCK on Listen Socket: "\
@@ -1108,7 +1067,7 @@ bool Fastcgipp::SocketGroup::listen(
 		}
 #if defined(FASTCGIPP_WINDOWS)
 		//create wake socket
-		socket_t clientSock= ::socket(socket_type, SOCK_STREAM, 0);
+		/*socket_t clientSock= ::socket(socket_type, SOCK_STREAM, 0);
 		if (clientSock == -1)
 		{
 			ERR_LOG("Unable to create wakesocket: "\
@@ -1153,7 +1112,7 @@ bool Fastcgipp::SocketGroup::listen(
 		}
 		m_wakeSockets[0] = clientSock;
 		m_wakeSockets[1] = serverSock;
-		m_poll.add(m_wakeSockets[1]);
+		m_poll.add(m_wakeSockets[1]);*/
 #endif
 		m_listeners.insert(fcgi_fd);
 		m_refreshListeners = true;
@@ -1210,7 +1169,7 @@ Fastcgipp::Socket Fastcgipp::SocketGroup::connect(
 			continue;
 		if (::connect(fd, i->ai_addr, i->ai_addrlen) != -1)
 			break;
-		Socket::closesocket(fd);
+		closesocket(fd);
 		fd = -1;
 	}
 	freeaddrinfo(result);
@@ -1234,14 +1193,19 @@ Fastcgipp::Socket Fastcgipp::SocketGroup::poll(bool block)
 {
 	while (m_listeners.size() + m_sockets.size() > 0)
 	{
+		doAddDel();
 		if (m_refreshListeners)
 		{
 			for (auto& listener : m_listeners)
 			{
 				m_poll.del(listener);
-				if (m_accept && !m_poll.add(listener))
+				if (m_accept)
+				{
+					m_poll.add(listener);
+				}
+				/*if (m_accept && !m_poll.add(listener))
 					FAIL_LOG("Unable to add listen socket " << listener \
-						<< " to the poll list: " << std::strerror(getLastSocketError()))
+						<< " to the poll list: " << std::strerror(getLastSocketError()))*/
 			}
 			m_refreshListeners = false;
 		}
@@ -1265,7 +1229,7 @@ Fastcgipp::Socket Fastcgipp::SocketGroup::poll(bool block)
 					FAIL_LOG("Got a weird event 0x" << std::hex \
 						<< result.events() << " on listen poll.")
 			}
-			else if (result.socket() == m_wakeSockets[1])
+			/*else if (result.socket() == m_wakeSockets[1])
 			{
 				if (result.onlyIn())
 				{
@@ -1286,7 +1250,7 @@ Fastcgipp::Socket Fastcgipp::SocketGroup::poll(bool block)
 					FAIL_LOG("The SocketGroup wakeup socket hung up.")
 				else if (result.err())
 					FAIL_LOG("Error in the SocketGroup wakeup socket.")
-			}
+			}*/
 			else
 			{
 				const auto socket = m_sockets.find(result.socket());
@@ -1294,8 +1258,8 @@ Fastcgipp::Socket Fastcgipp::SocketGroup::poll(bool block)
 				{
 					ERR_LOG("Poll gave fd " << result.socket() \
 						<< " which isn't in m_sockets.")
-						m_poll.del(result.socket());
-					Socket::closesocket(result.socket());
+					m_poll.del(result.socket());
+					//closesocket(result.socket());
 					continue;
 				}
 
@@ -1304,12 +1268,12 @@ Fastcgipp::Socket Fastcgipp::SocketGroup::poll(bool block)
 				else if (result.hup())
 				{
 					WARNING_LOG("Socket " << result.socket() << " hung up")
-						socket->second.m_data->m_closing = true;
+					socket->second.m_data->m_closing = true;
 				}
 				else if (result.err())
 				{
 					ERR_LOG("Error in socket " << result.socket())
-						socket->second.m_data->m_closing = true;
+					socket->second.m_data->m_closing = true;
 				}
 				else if (!result.in())
 				{
@@ -1352,7 +1316,7 @@ bool Fastcgipp::SocketGroup::listen(
     std::strncpy(address.sun_path, name, sizeof(address.sun_path) - 1);
 
     if(m_reuse)
-        Socket::set_reuse(fd);
+        set_reuse(fd);
     if(bind(
                 fd,
                 reinterpret_cast<struct sockaddr*>(&address),
@@ -1426,23 +1390,54 @@ void Fastcgipp::SocketGroup::createSocket(const socket_t listener)
 			<< listener << ": " \
 			<< std::strerror(getLastSocketError()))
 	}
-	if (!Socket::setNonBlocking(socket))
+	if (!setNonBlocking(socket))
 	{
 		ERR_LOG("Unable to set NONBLOCK on fd " << socket \
 			<< std::strerror(getLastSocketError()))
-		Socket::closesocket(socket);
+		closesocket(socket);
 		return;
 	}
 	if (m_accept)
 	{
-		m_sockets.emplace(
+		/*m_sockets.emplace(
 			socket,
-			Socket(socket, *this));
+			Socket(socket, *this));*/
+		add(socket);
 #if FASTCGIPP_LOG_LEVEL > 3
 		++m_incomingConnectionCount;
 #endif
 	}
 	else
-		Socket::closesocket(socket);
+		closesocket(socket);
+}
+void Fastcgipp::SocketGroup::doAddDel()
+{
+	std::lock_guard<std::mutex> lock(m_pollMutex);
+	for (auto iter = m_ready2DoSock.begin(); iter != m_ready2DoSock.end(); ++iter)
+	{
+		if (iter->second)
+		{
+			m_sockets.emplace(iter->first, Socket(iter->first, *this));
+			m_poll.add(iter->first);
+		}
+		else
+		{
+			m_sockets.erase(iter->first);
+			m_poll.del(iter->first);
+			shutdown(iter->first);
+			closesocket(iter->first);
+		}
+	}
+	m_ready2DoSock.clear();
+}
+void Fastcgipp::SocketGroup::add(const socket_t socket)
+{
+	std::lock_guard<std::mutex> lock(m_pollMutex);
+	m_ready2DoSock.push_back(std::make_pair(socket, true));
+}
+void Fastcgipp::SocketGroup::del(const socket_t socket)
+{
+	std::lock_guard<std::mutex> lock(m_pollMutex);
+	m_ready2DoSock.push_back(std::make_pair(socket, false));
 }
 

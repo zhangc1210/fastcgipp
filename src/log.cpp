@@ -131,7 +131,8 @@ std::wstring Fastcgipp::Logging::program(Fastcgipp::Logging::getProgram());
 void Fastcgipp::Logging::header(Level level)
 {
 	const std::time_t now = std::time(nullptr);
+	auto time = std::put_time(std::localtime(&now), L"%b %d %H:%M:%S ");
 	*logstream
-		<< std::put_time(std::localtime(&now), L"%b %d %H:%M:%S ")
+		<< time
 		<< hostname << ' ' << program << ' ' << levels[level];
 }
