@@ -31,17 +31,21 @@
 
 #include "fastcgi++/poll.hpp"
 #include "fastcgi++/log.hpp"
+
+#if defined(FASTCGIPP_WINDOWS)
+#include <algorithm>
+#else
 #ifdef FASTCGIPP_LINUX
 #include <sys/epoll.h>
-#include <unistd.h>
-#include <cstring>
 #elif defined FASTCGIPP_UNIX
 #include <algorithm>
+#endif
+#include <sys/socket.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <cstring>
-#elif defined FASTCGIPP_WINDOWS
-#include <algorithm>
 #endif
+
 
 extern int getLastSocketError();
 #ifdef FASTCGIPP_LINUX

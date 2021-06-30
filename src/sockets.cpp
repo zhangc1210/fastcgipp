@@ -852,8 +852,8 @@ Fastcgipp::SocketGroup::SocketGroup() :
 	// Add our wakeup socket into the poll list
 #if defined(FASTCGIPP_WINDOWS)
 #else
-	socketpair(AF_UNIX, SOCK_STREAM, 0, m_wakeSockets);
-	m_poll.add(m_wakeSockets[1]);
+	//socketpair(AF_UNIX, SOCK_STREAM, 0, m_wakeSockets);
+	//m_poll.add(m_wakeSockets[1]);
 #endif
 	DIAG_LOG("SocketGroup::SocketGroup(): Initialized ")
 }
@@ -1021,11 +1021,11 @@ bool Fastcgipp::SocketGroup::listen(
 	struct sockaddr* fcgi_addr = (struct sockaddr*)&fcgi_addr_in;
 
 
-	if (ifName == NULL) 
+	if (ifName == NULL)
 	{
 		fcgi_addr_in.sin_addr.s_addr = htonl(INADDR_ANY);
 	}
-	else 
+	else
 	{
 		if (unsigned(-1) == (fcgi_addr_in.sin_addr.s_addr = inet_addr(ifName)))
 		{

@@ -396,7 +396,8 @@ void Fastcgipp::Manager_base::push(Protocol::RequestId id, Message&& message)
 					bool bKill = body.kill();
 					if (bKill)
 					{
-						int onkill = true;
+						int onkill = 1;
+						++onkill;
 					}
 					request->second = makeRequest(
 							id,

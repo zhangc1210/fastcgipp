@@ -36,6 +36,7 @@
 #include <atomic>
 #include <deque>
 #include <string>
+#include <vector>
 #if defined(FASTCGIPP_WINDOWS)
 #include <WinSock2.h>
 typedef int ssize_t;
