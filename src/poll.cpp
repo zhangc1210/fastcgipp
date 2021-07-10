@@ -52,7 +52,8 @@ extern int getLastSocketError();
 const unsigned Fastcgipp::Poll::Result::pollIn = EPOLLIN;
 const unsigned Fastcgipp::Poll::Result::pollErr = EPOLLERR;
 const unsigned Fastcgipp::Poll::Result::pollHup = EPOLLHUP;
-const unsigned Fastcgipp::Poll::Result::pollRdHup = EPOLLRDHUP;
+//const unsigned Fastcgipp::Poll::Result::pollRdHup = EPOLLRDHUP;
+const unsigned Fastcgipp::Poll::Result::pollRdHup = EPOLLHUP;
 #elif defined FASTCGIPP_UNIX
 const unsigned Fastcgipp::Poll::Result::pollIn = POLLIN;
 const unsigned Fastcgipp::Poll::Result::pollErr = POLLERR;
@@ -149,7 +150,8 @@ void Fastcgipp::set_reuse(socket_t sock)
 }
 Fastcgipp::Poll::Poll()
 #ifdef FASTCGIPP_LINUX
-    :m_poll(epoll_create1(0))
+    //:m_poll(epoll_create1(0))
+    :m_poll(epoll_create(1024))
 #endif
 {}
 
@@ -207,6 +209,7 @@ Fastcgipp::Poll::Result Fastcgipp::Poll::poll(int timeout)
 #ifdef FASTCGIPP_LINUX
         result.m_socket = epollEvent.data.fd;
         result.m_events = epollEvent.events;
+		ERR_LOG("New Poll Message on fd:" << result.m_socket)
 #elif defined FASTCGIPP_UNIX
         const auto fd = std::find_if(
                 m_poll.begin(),
@@ -246,9 +249,10 @@ Fastcgipp::Poll::Result Fastcgipp::Poll::poll(int timeout)
 bool Fastcgipp::Poll::add(const socket_t socket)
 {
 #ifdef FASTCGIPP_LINUX
+    ERR_LOG("New Poll fd:" << socket)
 	epoll_event event;
 	event.data.fd = socket;
-	event.events = EPOLLIN | EPOLLERR | EPOLLHUP | EPOLLRDHUP;
+	event.events = EPOLLIN | EPOLLERR | EPOLLHUP/* | EPOLLRDHUP*/;
 	return epoll_ctl(m_poll, EPOLL_CTL_ADD, socket, &event) != -1;
 #elif defined FASTCGIPP_UNIX
 	const auto fd = std::find_if(
