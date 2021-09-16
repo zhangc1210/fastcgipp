@@ -209,7 +209,7 @@ Fastcgipp::Poll::Result Fastcgipp::Poll::poll(int timeout)
 #ifdef FASTCGIPP_LINUX
         result.m_socket = epollEvent.data.fd;
         result.m_events = epollEvent.events;
-		ERR_LOG("New Poll Message on fd:" << result.m_socket)
+	DEBUG_LOG("New Poll Message on fd:" << result.m_socket)
 #elif defined FASTCGIPP_UNIX
         const auto fd = std::find_if(
                 m_poll.begin(),
@@ -249,7 +249,7 @@ Fastcgipp::Poll::Result Fastcgipp::Poll::poll(int timeout)
 bool Fastcgipp::Poll::add(const socket_t socket)
 {
 #ifdef FASTCGIPP_LINUX
-    ERR_LOG("New Poll fd:" << socket)
+    	DEBUG_LOG("New Poll fd:" << socket)
 	epoll_event event;
 	event.data.fd = socket;
 	event.events = EPOLLIN | EPOLLERR | EPOLLHUP/* | EPOLLRDHUP*/;
