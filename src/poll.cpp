@@ -203,25 +203,25 @@ Fastcgipp::Poll::Result Fastcgipp::Poll::poll(int timeout)
 		FAIL_LOG("Error on poll: " << cError)
 	}
 #endif
-    else if(pollResult>0)
-    {
-        result.m_data = true;
+	else if (pollResult > 0)
+	{
+		result.m_data = true;
 #ifdef FASTCGIPP_LINUX
-        result.m_socket = epollEvent.data.fd;
-        result.m_events = epollEvent.events;
-	DEBUG_LOG("New Poll Message on fd:" << result.m_socket)
+		result.m_socket = epollEvent.data.fd;
+		result.m_events = epollEvent.events;
+		DEBUG_LOG("New Poll Message on fd:" << result.m_socket)
 #elif defined FASTCGIPP_UNIX
-        const auto fd = std::find_if(
-                m_poll.begin(),
-                m_poll.end(),
-                [] (const pollfd& x)
-                {
-                    return x.revents != 0;
-                });
-        if(fd == m_poll.end())
-            FAIL_LOG("poll() gave a result >0 but no revents are non-zero")
-        result.m_socket = fd->fd;
-        result.m_events = fd->revents;
+		const auto fd = std::find_if(
+			m_poll.begin(),
+			m_poll.end(),
+			[](const pollfd& x)
+			{
+				return x.revents != 0;
+			});
+		if (fd == m_poll.end())
+			FAIL_LOG("poll() gave a result >0 but no revents are non-zero")
+			result.m_socket = fd->fd;
+		result.m_events = fd->revents;
 #elif defined FASTCGIPP_WINDOWS
 		const auto fd = std::find_if(
 			m_poll.begin(),
@@ -249,7 +249,7 @@ Fastcgipp::Poll::Result Fastcgipp::Poll::poll(int timeout)
 bool Fastcgipp::Poll::add(const socket_t socket)
 {
 #ifdef FASTCGIPP_LINUX
-    	DEBUG_LOG("New Poll fd:" << socket)
+	DEBUG_LOG("New Poll fd:" << socket)
 	epoll_event event;
 	event.data.fd = socket;
 	event.events = EPOLLIN | EPOLLERR | EPOLLHUP/* | EPOLLRDHUP*/;
