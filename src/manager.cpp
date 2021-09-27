@@ -39,7 +39,7 @@ Fastcgipp::Manager_base::Manager_base(unsigned threads):
 				std::placeholders::_2)),
 	m_terminate(true),
 	m_stop(true),
-	m_threads(threads)
+	m_threads(threads<=2?threads:threads-2)//
 #if FASTCGIPP_LOG_LEVEL > 3
 	,m_requestCount(0),
 	m_maxRequests(0),
