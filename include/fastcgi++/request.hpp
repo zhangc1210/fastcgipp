@@ -236,7 +236,7 @@ namespace Fastcgipp
          * @return Boolean value indication completion (true means complete)
          * @sa callback
          */
-        virtual bool response() =0;
+        virtual bool responseProcess() =0;
 
         //! Generate a data input response
         /*!
