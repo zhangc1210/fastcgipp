@@ -31,25 +31,52 @@
 
 template<class charT> void Fastcgipp::Request<charT>::complete()
 {
-    out.flush();
-    err.flush();
+	out.flush();
+	err.flush();
+	/*{
+		Block record(sizeof(Protocol::Header));
 
-    Block record(sizeof(Protocol::Header)+sizeof(Protocol::EndRequest));
+		Protocol::Header& header
+			= *reinterpret_cast<Protocol::Header*>(record.begin());
+		header.version = Protocol::version;
+		header.type = Protocol::RecordType::OUTPUT;
+		header.fcgiId = m_id.m_id;
+		header.contentLength = 0;
+		header.paddingLength = 0;
 
-    Protocol::Header& header
-        = *reinterpret_cast<Protocol::Header*>(record.begin());
-    header.version = Protocol::version;
-    header.type = Protocol::RecordType::END_REQUEST;
-    header.fcgiId = m_id.m_id;
-    header.contentLength = sizeof(Protocol::EndRequest);
-    header.paddingLength = 0;
+		m_send(m_id.m_socket, std::move(record), false);
+	}
+	{
+		Block record(sizeof(Protocol::Header));
 
-    Protocol::EndRequest& body =
-        *reinterpret_cast<Protocol::EndRequest*>(record.begin()+sizeof(header));
-    body.appStatus = 0;
-    body.protocolStatus = m_status;
+		Protocol::Header& header
+			= *reinterpret_cast<Protocol::Header*>(record.begin());
+		header.version = Protocol::version;
+		header.type = Protocol::RecordType::ERR;
+		header.fcgiId = m_id.m_id;
+		header.contentLength = 0;
+		header.paddingLength = 0;
 
-    m_send(m_id.m_socket, std::move(record), m_kill);
+		m_send(m_id.m_socket, std::move(record), false);
+	}*/
+	{
+		Block record(sizeof(Protocol::Header) + sizeof(Protocol::EndRequest));
+
+		Protocol::Header& header
+			= *reinterpret_cast<Protocol::Header*>(record.begin());
+		header.version = Protocol::version;
+		header.type = Protocol::RecordType::END_REQUEST;
+		header.fcgiId = m_id.m_id;
+		header.contentLength = sizeof(Protocol::EndRequest);
+		header.paddingLength = 0;
+
+		Protocol::EndRequest& body =
+			*reinterpret_cast<Protocol::EndRequest*>(record.begin() + sizeof(header));
+		body.appStatus = 0;
+		body.protocolStatus = m_status;
+
+		m_send(m_id.m_socket, std::move(record), m_kill);
+	}
 }
 template<class charT>
 bool Fastcgipp::Request<charT>::inputRecordProcess(Message &message)
@@ -176,7 +203,7 @@ std::unique_lock<std::mutex>Fastcgipp::Request<charT>::handler()
         }
 
         m_message = std::move(message);
-        if(response())
+        if(responseProcess())
         {
             complete();
             break;

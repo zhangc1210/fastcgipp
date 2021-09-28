@@ -189,15 +189,13 @@ Fastcgipp::Poll::Result Fastcgipp::Poll::poll(int timeout)
 #if defined(FASTCGIPP_WINDOWS)
 	if (pollResult < 0)
 	{
-		if (err == WSAENOTSOCK)
+		if (err != WSAENOTSOCK)
 		{
-			++err;
-			--err;
+			FAIL_LOG("Error on poll: " << err)
 		}
-		FAIL_LOG("Error on poll: " << err)
 	}
 #else
-	if (pollResult < 0 && err != EINTR)
+	if (pollResult < 0 && err != EINTR && err != ENOTSOCK)
 	{
 		const char* cError = std::strerror(err);
 		FAIL_LOG("Error on poll: " << cError)

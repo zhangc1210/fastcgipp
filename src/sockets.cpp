@@ -692,13 +692,16 @@ ssize_t Fastcgipp::Socket::read(char* buffer, size_t size) const
 	{
 		int lastError = getLastSocketError();
 #if defined(FASTCGIPP_WINDOWS)
-			if (lastError == WSAEWOULDBLOCK)
+		if (lastError == WSAEWOULDBLOCK)
 #else
-			if (lastError == EAGAIN)
+		if (lastError == EAGAIN)
 #endif
-				return 0;
-		WARNING_LOG("Socket read() error on fd " \
-			<< m_data->m_socket << "errno:" << lastError << "-" << std::strerror(lastError))
+			return 0;
+		if (lastError != WSAESHUTDOWN)
+		{
+			WARNING_LOG("Socket read() error on fd " \
+				<< m_data->m_socket << "errno:" << lastError << "-" << std::strerror(lastError))
+		}
 		delayClose();//close();
 		return -1;
 	}
@@ -776,7 +779,7 @@ ssize_t Fastcgipp::Socket::write2(const char* buffer, size_t size) const
 void Fastcgipp::Socket::delayClose()const
 {
 	std::lock_guard<std::mutex> lock(m_sockDataMutex);
-	//shutdown(m_data->m_socket);
+	shutdown(m_data->m_socket);
 	m_data->m_group.del(m_data->m_socket);
 	m_data->m_valid = false;
 #if FASTCGIPP_LOG_LEVEL > 3
