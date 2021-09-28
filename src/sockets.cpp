@@ -693,11 +693,17 @@ ssize_t Fastcgipp::Socket::read(char* buffer, size_t size) const
 		int lastError = getLastSocketError();
 #if defined(FASTCGIPP_WINDOWS)
 		if (lastError == WSAEWOULDBLOCK)
+		{
+			return 0;
+		}
+		if (lastError != WSAESHUTDOWN)
 #else
 		if (lastError == EAGAIN)
-#endif
+		{
 			return 0;
-		if (lastError != WSAESHUTDOWN)
+		}
+		if (lastError != ESHUTDOWN)
+#endif
 		{
 			WARNING_LOG("Socket read() error on fd " \
 				<< m_data->m_socket << "errno:" << lastError << "-" << std::strerror(lastError))
