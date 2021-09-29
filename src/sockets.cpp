@@ -785,9 +785,9 @@ ssize_t Fastcgipp::Socket::write2(const char* buffer, size_t size) const
 void Fastcgipp::Socket::delayClose()const
 {
 	std::lock_guard<std::mutex> lock(m_sockDataMutex);
-	shutdown(m_data->m_socket);
+	//shutdown(m_data->m_socket);
 	m_data->m_group.del(m_data->m_socket);
-	m_data->m_valid = false;
+	//m_data->m_valid = false;
 #if FASTCGIPP_LOG_LEVEL > 3
 	if (!m_data->m_closing)
 		++m_data->m_group.m_connectionKillCount;
@@ -1395,9 +1395,10 @@ void Fastcgipp::SocketGroup::createSocket(const socket_t listener)
 		&addrlen);
 	if (socket < 0)
 	{
-		FAIL_LOG("Unable to accept() with fd " \
+		ERR_LOG("Unable to accept() with fd " \
 			<< listener << ": " \
 			<< std::strerror(getLastSocketError()))
+		return;
 	}
 	if (!setNonBlocking(socket))
 	{
@@ -1414,6 +1415,18 @@ void Fastcgipp::SocketGroup::createSocket(const socket_t listener)
 		add(socket);
 #if FASTCGIPP_LOG_LEVEL > 3
 		++m_incomingConnectionCount;
+		{
+			sockaddr_in addrPeer;
+			socklen_t addrlen = sizeof(sockaddr_in);
+			int nAddrLen = sizeof(addrPeer);
+			if (0 == getpeername(socket, (sockaddr*)&addrPeer, &nAddrLen))
+			{
+				char cB[INET_ADDRSTRLEN] = { 0 };
+				DEBUG_LOG("new Connection from " << inet_ntop(AF_INET, &addrPeer.sin_addr, cB, sizeof(cB))
+					<< ":" << ntohs(addrPeer.sin_port));
+				DEBUG_LOG(" Connection Count:"<<m_incomingConnectionCount);
+			}
+		}
 #endif
 	}
 	else
