@@ -149,7 +149,7 @@ bool Fastcgipp::Transceiver::transmit()
 			m_sendBufferSize-=dataSize;
 			if(sent < 0)
 			{
-				record->socket.delayClose();//record->socket.close();
+				record->socket.close(); //record->socket.delayClose();//record->socket.close();
 				std::lock_guard<std::mutex> lock(m_sendBufferMutex);
 				std::list<std::unique_ptr<Record>> &listRecord=m_sendBuffer[lastSocket];
 				for(auto iterList=listRecord.begin();iterList != listRecord.end();++iterList)
@@ -245,7 +245,7 @@ bool Fastcgipp::Transceiver::transmit()
 				m_sendBufferSize-=dataSize;
 				if(sent < 0)
 				{
-					record->socket.delayClose();//record->socket.close();
+					record->socket.close(); //record->socket.delayClose();//record->socket.close();
 					std::list<std::unique_ptr<Record>> &listRecord=m_sendBuffer[lastSocket];
 					for(auto iterList=listRecord.begin();iterList != listRecord.end();++iterList)
 					{

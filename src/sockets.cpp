@@ -708,7 +708,7 @@ ssize_t Fastcgipp::Socket::read(char* buffer, size_t size) const
 			WARNING_LOG("Socket read() error on fd " \
 				<< m_data->m_socket << "errno:" << lastError << "-" << std::strerror(lastError))
 		}
-		delayClose();//close();
+		close();// delayClose();//close();
 		return -1;
 	}
 	if (count == 0 && m_data->m_closing)
@@ -750,7 +750,7 @@ ssize_t Fastcgipp::Socket::write(const char* buffer, size_t size) const
 			return 0;
 		WARNING_LOG("Socket write() error on fd " \
 			<< m_data->m_socket << ": " << strerror(getLastSocketError()))
-		delayClose();//close();
+		close();//delayClose();//close();
 		return -1;
 	}
 #if FASTCGIPP_LOG_LEVEL > 3
